@@ -1,0 +1,17 @@
+{
+  "name": "techcare",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.34.7",
+  "engines": { "node": ">=24 <25" },
+  "scripts": {
+    "dev:web": "pnpm --filter @techcare/web dev",
+    "build": "pnpm -r --if-present build",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "check:structure": "node scripts/check-structure.mjs",
+    "sql:build": "node scripts/build-sql.mjs",
+    "sql:check": "node scripts/build-sql.mjs --check"
+  }
+}
