@@ -27,7 +27,6 @@ test-results/
 /docs/
 /reference/
 /guias-equipo/
-/seguimiento/
 /README.md
 /AGENTS.md
 /CLAUDE.md
@@ -35,7 +34,13 @@ test-results/
 /.agents/
 /.opencode/
 /.claude/
-# Solo se versionan Markdown de seguimiento y avisos legales del código.
+# Markdown versionable: seguimiento, cinco documentos tecnicos y avisos legales.
 *.md
 !/seguimiento/**/*.md
 !/apps/web/THIRD_PARTY_NOTICES.md
+!/Docs/
+!/Docs/01-arquitectura-flujos.md
+!/Docs/02-contratos-dtos.md
+!/Docs/03-endpoints-bd.md
+!/Docs/04-errores-seguridad.md
+!/Docs/05-frontend-diseno.md
