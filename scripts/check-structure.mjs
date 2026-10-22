@@ -1,11 +1,18 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
-import { resolve, relative } from 'node:path'
+import { resolve, relative, dirname } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
 const ignored = new Set(['node_modules', '.git', 'dist', 'coverage', '.vite', '.vercel', '.artifacts'])
 const forbidden = new Set(['docs', 'reference', 'guias-equipo'])
+const sharedDocs = new Set([
+  'Docs/01-arquitectura-flujos.md',
+  'Docs/02-contratos-dtos.md',
+  'Docs/03-endpoints-bd.md',
+  'Docs/04-errores-seguridad.md',
+  'Docs/05-frontend-diseno.md',
+])
 const localAgentDirectories = new Set(['.cursor', '.agents', '.claude', '.opencode'])
 const localAgentFile = /^(?:AGENTS|CLAUDE)\.md$/i
 function isAgentPath(name) {
@@ -23,8 +30,8 @@ async function walk(dir) {
       await walk(full)
     } else {
       if (name.startsWith('database/') && !name.endsWith('.sql')) { console.error(`database solo admite scripts SQL: ${name}`); failures++ }
-      if (name.endsWith('.md') && !name.startsWith('seguimiento/') && name !== 'apps/web/THIRD_PARTY_NOTICES.md') {
-        console.error(`Guia/manual fuera de seguimiento: ${name}`); failures++
+      if (name.endsWith('.md') && !name.startsWith('seguimiento/') && name !== 'apps/web/THIRD_PARTY_NOTICES.md' && !sharedDocs.has(name)) {
+        console.error(`Markdown no previsto en el repositorio: ${name}`); failures++
       }
       if (/^(?:package-lock\.json|yarn\.lock)$/.test(entry.name)) { console.error(`Usar solo pnpm: ${name}`); failures++ }
       if (entry.name.startsWith('.env') && entry.name !== '.env.example') { console.error(`No incluir secretos: ${name}`); failures++ }
@@ -32,6 +39,18 @@ async function walk(dir) {
   }
 }
 await walk(root)
+for (const name of sharedDocs) {
+  const full = resolve(root, name)
+  if (!existsSync(full)) { console.error(`Documento tecnico requerido: ${name}`); failures++; continue }
+  const content = await readFile(full, 'utf8')
+  if ((content.match(/^```/gm) ?? []).length % 2 !== 0) { console.error(`Bloque de codigo sin cerrar: ${name}`); failures++ }
+  const prose = content.replace(/^```[^\n]*\n[\s\S]*?^```\s*$/gm, '')
+  for (const match of prose.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {
+    const target = match[1].split('#')[0]
+    if (!target || /^(?:https?:|mailto:)/.test(target)) continue
+    if (!existsSync(resolve(dirname(full), decodeURIComponent(target)))) { console.error(`Enlace inexistente: ${name} -> ${target}`); failures++ }
+  }
+}
 // La presencia local esta permitida; lo que se prohíbe es versionarla.
 // gitignore no retira un archivo que ya estaba agregado al indice.
 if (existsSync(resolve(root, '.git'))) {
