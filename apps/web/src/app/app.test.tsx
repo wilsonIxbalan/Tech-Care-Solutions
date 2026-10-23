@@ -10,6 +10,7 @@ describe('navegación de TechCare', () => {
     expect(screen.getByRole('heading', { name: 'Servicio técnico, de principio a fin' })).toBeVisible()
     expect(screen.getAllByText('Conexión pendiente')).toHaveLength(12)
     expect(screen.getAllByText('Vista preparada')).toHaveLength(2)
+    expect(screen.getByText('Alta preparada. Listado, filtros y edición todavía requieren interfaz.')).toBeVisible()
     fireEvent.click(within(screen.getByRole('navigation', { name: 'Navegación principal' })).getByRole('link', { name: 'Clientes' }))
     expect(await screen.findByRole('heading', { name: 'Clientes' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Nuevo cliente' })).toBeVisible()

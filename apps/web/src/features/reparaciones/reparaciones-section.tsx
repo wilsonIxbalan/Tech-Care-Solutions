@@ -27,9 +27,9 @@ export function ReparacionesSection({ catalogos = {} }: { catalogos?: Reparacion
         <CardHeader><CardTitle>Después de registrar la reparación</CardTitle></CardHeader>
         <CardContent>
           <dl className="grid gap-5 md:grid-cols-3">
-            <div><dt className="text-sm font-semibold">Actividades</dt><dd className="mt-2 text-sm text-muted-foreground">Pendientes de conexión. Requieren una reparación registrada en proceso.</dd></div>
-            <div><dt className="text-sm font-semibold">Finalización</dt><dd className="mt-2 text-sm text-muted-foreground">Pendiente de conexión. Requiere una reparación registrada y la autorización del servidor.</dd></div>
-            <div><dt className="text-sm font-semibold">Consumo de repuestos</dt><dd className="mt-2 text-sm text-muted-foreground">Pendiente de conexión. El servidor comprobará existencias y registrará los movimientos de inventario.</dd></div>
+            <div><dt className="text-sm font-semibold">Actividades</dt><dd className="mt-2 text-sm text-muted-foreground">Interfaz de actividades todavía no preparada. Su integración requiere una reparación registrada en proceso.</dd></div>
+            <div><dt className="text-sm font-semibold">Finalización</dt><dd className="mt-2 text-sm text-muted-foreground">Interfaz de revisión y confirmación todavía no preparada. La operación requiere una reparación registrada y autorización del servidor.</dd></div>
+            <div><dt className="text-sm font-semibold">Consumo de repuestos</dt><dd className="mt-2 text-sm text-muted-foreground">Interfaz de consumo todavía no preparada. El servidor deberá comprobar existencias y registrar los movimientos de inventario.</dd></div>
           </dl>
         </CardContent>
       </Card>

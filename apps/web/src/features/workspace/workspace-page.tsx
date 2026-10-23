@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { businessModules } from '@/app/navigation'
+import { partialFrontend } from './module-readiness'
 import { PageHeader } from '@/components/shared/page-header'
 import {
   Card,
@@ -44,6 +45,7 @@ export function WorkspacePage() {
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline">{['/inventario', '/reportes'].includes(module.path) ? 'Vista preparada' : 'Formulario preparado'}</Badge>
                   <Badge variant="outline">Conexión pendiente</Badge>
+                  {partialFrontend[module.path] && <Badge variant="outline">Interfaz parcial</Badge>}
                 </div>
                 <CardTitle>{module.title}</CardTitle>
               </CardHeader>
@@ -52,6 +54,7 @@ export function WorkspacePage() {
                 <p className="text-sm leading-6 text-muted-foreground">
                   {module.description}
                 </p>
+                {partialFrontend[module.path] && <p className="mt-3 text-xs leading-6 text-muted-foreground">{partialFrontend[module.path]}</p>}
               </CardContent>
             </Card>
           </Link>
