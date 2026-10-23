@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,10 +22,11 @@ export function DraftSection({ title, action, children }: { title: string; actio
   </section>
 }
 
-export function DraftActions({ blocked = false, message, onCancel }: { blocked?: boolean; message: string; onCancel: () => void }) {
+export function DraftActions({ blocked = false, blockedReason = 'La validación completa no está disponible. Revisa las selecciones y los requisitos indicados.', message, onCancel }: { blocked?: boolean; blockedReason?: string; message: string; onCancel: () => void }) {
+  const reasonId = useId()
   return <>
-    {blocked && <p className="rounded-lg border p-3 text-sm">La validación completa requiere datos y catálogos disponibles de la API.</p>}
+    {blocked && <p id={reasonId} className="rounded-lg border p-3 text-sm">{blockedReason}</p>}
     {message && !blocked && <p role="status" className="rounded-lg border bg-muted p-3 text-sm">{message}</p>}
-    <div className="flex flex-wrap gap-3"><Button type="submit" disabled={blocked}>Validar datos</Button><Button variant="outline" onClick={onCancel}>Cancelar</Button></div>
+    <div className="flex flex-wrap gap-3"><Button type="submit" disabled={blocked} aria-describedby={blocked ? reasonId : undefined}>Validar datos</Button><Button variant="outline" onClick={onCancel}>Cancelar</Button></div>
   </>
 }
