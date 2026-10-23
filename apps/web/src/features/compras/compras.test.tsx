@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ComprasPage } from './compras-page'
 import { createCompraSchema, estimatePurchase } from './compra-schema'
 import type { CompraCatalogos } from './compra-schema'
+import type { CompraDetalleDto } from '@/types/domain'
 
 const catalogos: CompraCatalogos = {
   proveedores: [{ idProveedor: 1, nit: 'Prueba', nombre: 'Proveedor de prueba', nombreContacto: null, telefono: 'Prueba', email: null, direccion: null, estado: 'ACTIVO' }],
@@ -11,6 +12,30 @@ const catalogos: CompraCatalogos = {
 }
 const valid = { idProveedor: '1', idBodegaDestino: '2', numeroDocumentoProveedor: '', observaciones: '', items: [{ idRepuesto: '3', cantidad: '2', costoUnitario: '0.10' }] }
 describe('compras', () => {
+  it('selecciona y revisa el encabezado histórico, conserva nulos y no sustituye costos por precios actuales', () => {
+    const compra: CompraDetalleDto = { idCompra: 8, numeroCompra: 'Compra de prueba', idProveedor: 1, proveedorNombre: 'Proveedor de prueba', idBodegaDestino: 2, bodegaNombre: 'Bodega de prueba', idUsuarioRegistro: 5, fechaCompra: '2026-10-22T12:00:00Z', fechaRecepcion: null, idUsuarioRecepcion: null, numeroDocumentoProveedor: null, estado: 'PENDIENTE', observaciones: 'Observación histórica de prueba', total: '0.20', items: [{ idDetalleCompra: 1, idRepuesto: 3, codigoRepuesto: 'PR', repuestoNombre: 'Repuesto de prueba', cantidad: 2, costoUnitario: '0.10', subtotal: '0.20' }] }
+    const { rerender } = render(<ComprasPage catalogos={catalogos} compras={{ status: 'success', data: [compra] }} detalles={{ status: 'success', data: [compra] }} />)
+    fireEvent.change(screen.getByLabelText('Ver detalle de compra recibido'), { target: { value: '8' } })
+    expect(screen.getByText('Recepción (UTC)').nextElementSibling).toHaveTextContent('—')
+    expect(screen.getByText('Documento del proveedor').nextElementSibling).toHaveTextContent('—')
+    expect(screen.getByText('Observación histórica de prueba')).toBeVisible()
+    expect(screen.getByRole('table', { name: 'Líneas de compra' })).toHaveTextContent('Q 0.10')
+    rerender(<ComprasPage compras={{ status: 'success', data: [compra] }} detalles={{ status: 'loading' }} />)
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando detalles')
+    expect(screen.queryByRole('table', { name: 'Líneas de compra' })).not.toBeInTheDocument()
+    rerender(<ComprasPage compras={{ status: 'success', data: [compra] }} detalles={{ status: 'error', message: 'Error de detalle recibido' }} />)
+    expect(screen.getByRole('alert')).toHaveTextContent('Error de detalle recibido')
+  })
+  it('muestra el error de detalle vacío junto a su región después de quitar todas las líneas', async () => {
+    render(<ComprasPage catalogos={catalogos} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Preparar compra' }))
+    fireEvent.change(screen.getByLabelText('Proveedor *'), { target: { value: '1' } })
+    fireEvent.change(screen.getByLabelText('Bodega destino *'), { target: { value: '2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar línea 1' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Validar datos' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Agrega al menos un repuesto')
+    expect(screen.getByRole('region', { name: 'Detalle del borrador' })).toHaveAccessibleDescription('Agrega al menos un repuesto.')
+  })
   it('valida catálogos activos, detalle obligatorio, unicidad, cantidades y límite SQL por línea', () => {
     const schema = createCompraSchema(catalogos)
     expect(schema.safeParse(valid).success).toBe(true)
