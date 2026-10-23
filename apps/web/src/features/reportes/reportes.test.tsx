@@ -15,6 +15,9 @@ describe('reportes preparados', () => {
     fireEvent.change(selector, { target: { value: 'actividad-tecnico' } })
     expect(screen.queryByLabelText('Número de serie *')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Validar datos' })).toBeDisabled()
+    fireEvent.change(selector, { target: { value: 'facturas-saldo' } })
+    expect(screen.getByLabelText('Sólo facturas con saldo *')).toBeRequired()
+    expect(screen.getByLabelText('Sólo facturas con saldo *')).toHaveValue('1')
   })
   it('exige técnico, fechas válidas e intervalo exclusivo, y rechaza selecciones desconocidas', () => {
     const schema = createReportSchema(reportDefinitions.find(r => r.id === 'actividad-tecnico')!, { tecnicos: [{ value: '2', label: 'Técnico de prueba' }] })
