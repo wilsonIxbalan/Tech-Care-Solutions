@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useDraftMessage } from '@/lib/use-draft-message'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -11,7 +11,7 @@ import type { MetodoPagoOption } from './facturacion-schema'
 export function PagoForm({ facturas, metodos, onCancel }: { facturas?: readonly FacturaResumenDto[]; metodos?: readonly MetodoPagoOption[]; onCancel: () => void }) {
   const schema = createPagoSchema(facturas, metodos)
   const form = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { idFactura: '', idMetodoPago: '', monto: '', referencia: '' } })
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useDraftMessage({ facturas, metodos })
   const idFactura = useWatch({ control: form.control, name: 'idFactura' })
   const factura = facturas?.find(f => String(f.idFactura) === idFactura)
   const { errors } = form.formState
@@ -26,6 +26,6 @@ export function PagoForm({ facturas, metodos, onCancel }: { facturas?: readonly 
     </div>
     <p className="text-sm">Saldo recibido: {factura ? `Q ${factura.saldo}` : 'Selecciona una factura con saldo verificable.'}</p>
     <p className="text-sm text-muted-foreground">Se admiten varios pagos y pagos parciales. Esta comprobación es preliminar: el servidor deberá comprobar el saldo vigente y los permisos en la misma transacción. Responsable y fecha del pago corresponden al servidor.</p>
-    <DraftActions blocked={!disponibles?.length || !activos?.length} message={message} onCancel={() => { form.reset(); setMessage(''); onCancel() }} />
+    <DraftActions blocked={!disponibles?.length || !activos?.length} blockedReason={facturas === undefined || metodos === undefined ? 'Falta recibir facturas y métodos de pago para validar el borrador.' : !disponibles?.length ? 'Los datos recibidos no contienen facturas EMITIDA con saldo positivo verificable.' : 'El catálogo recibido no contiene métodos de pago activos.'} message={message} onCancel={() => { form.reset(); setMessage(''); onCancel() }} />
   </form>
 }

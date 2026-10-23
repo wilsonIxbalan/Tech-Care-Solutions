@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useDraftMessage } from '@/lib/use-draft-message'
 import { useForm } from 'react-hook-form'
 import type { FieldError, UseFormRegisterReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
@@ -44,7 +44,7 @@ function DiagnosticoSelect({ label, options, help, registration, error }: {
 }
 
 export function DiagnosticoForm({ catalogos, onCancel }: { catalogos: DiagnosticoCatalogos; onCancel: () => void }) {
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useDraftMessage(catalogos)
   const form = useForm<DiagnosticoFormInput, unknown, DiagnosticoFormValues>({
     resolver: zodResolver(createDiagnosticoSchema(catalogos)),
     defaultValues: { idOrden: '', idTecnico: '', descripcion: '', costoManoObraEstimado: '' },

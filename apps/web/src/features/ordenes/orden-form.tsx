@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useDraftMessage } from '@/lib/use-draft-message'
 import { useForm, useWatch } from 'react-hook-form'
 import type { FieldError, UseFormRegisterReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
@@ -42,7 +42,7 @@ function OrdenSelect({ label, options, help, registration, error }: {
 }
 
 export function OrdenForm({ catalogos, onCancel }: { catalogos: OrdenCatalogos; onCancel: () => void }) {
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useDraftMessage(catalogos)
   const form = useForm<OrdenFormInput, unknown, OrdenFormValues>({
     resolver: zodResolver(createOrdenSchema(catalogos)),
     defaultValues: {

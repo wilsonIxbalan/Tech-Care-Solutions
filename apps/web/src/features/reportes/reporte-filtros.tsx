@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useDraftMessage } from '@/lib/use-draft-message'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { SelectField, TextField } from '@/components/shared/form-fields'
@@ -9,7 +9,7 @@ import type { ReportCatalogos, ReportDefinition } from './reportes-model'
 export function ReporteFiltros({ report, catalogos, onCancel }: { report: ReportDefinition; catalogos: ReportCatalogos; onCancel: () => void }) {
   const defaults = Object.fromEntries(report.filters.map(filter => [filter.key, filter.kind === 'boolean' ? '1' : '']))
   const form = useForm<Record<string, string>>({ resolver: zodResolver(createReportSchema(report, catalogos)), defaultValues: defaults })
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useDraftMessage(catalogos)
   const blocked = report.filters.some(filter => filter.required && filter.catalog && !catalogos[filter.catalog]?.length)
   return <form aria-label="Filtros del reporte" noValidate className="space-y-4 rounded-xl border p-4" onChange={() => setMessage('')} onSubmit={form.handleSubmit(() => setMessage('Filtros válidos. No se ha ejecutado una consulta; la integración del reporte está pendiente.'), () => setMessage(''))}>
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{report.filters.map(filter => {

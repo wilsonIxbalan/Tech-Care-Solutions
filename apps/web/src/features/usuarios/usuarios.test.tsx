@@ -7,6 +7,19 @@ import type { RolRow, UsuarioRow } from './usuario-model'
 const usuarios: UsuarioRow[] = [1, 2].map(idUsuario => ({ idUsuario, nombreUsuario: `prueba${idUsuario}`, nombreCompleto: `Usuario de prueba ${idUsuario}`, email: `prueba${idUsuario}@example.com`, telefono: null, activo: idUsuario === 1, fechaCreacion: '2026-10-22T12:00:00Z', ultimoAcceso: null }))
 const roles: RolRow[] = [{ idRol: 3, codigo: 'TECNICO', nombre: 'Técnico de prueba', descripcion: null, activo: true }]
 describe('usuarios y roles preparados', () => {
+  it('retira una validación anterior cuando llegan nuevas asignaciones y explica el par ya asignado', async () => {
+    const { rerender } = render(<UsuariosPage usuarios={{ status: 'success', data: usuarios }} roles={{ status: 'success', data: roles }} asignaciones={{ status: 'success', data: [] }} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Preparar asignación de rol' }))
+    fireEvent.change(screen.getByLabelText('Usuario *'), { target: { value: '1' } })
+    fireEvent.change(screen.getByLabelText('Rol *'), { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Validar datos' }))
+    await screen.findByRole('status')
+    rerender(<UsuariosPage usuarios={{ status: 'success', data: usuarios }} roles={{ status: 'success', data: roles }} asignaciones={{ status: 'success', data: [{ idUsuario: 1, idRol: 3, fechaAsignacion: '2026-10-22T12:00:00Z' }] }} />)
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Validar datos' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Validar datos' })).toHaveAccessibleDescription('El usuario seleccionado ya tiene todos los roles del catálogo recibido.')
+    expect(screen.getByText(/El frontend no acredita permisos/)).toBeVisible()
+  })
   it('valida sólo el perfil y descarta campos ajenos; no deduce políticas de contraseña', () => {
     const valid = { nombreUsuario: 'prueba', nombreCompleto: 'Nombre de prueba', email: 'prueba@example.com', telefono: '', activo: '1' }
     expect(usuarioSchema.parse({ ...valid, password: 'campo ajeno' })).not.toHaveProperty('password')

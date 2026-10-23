@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useDraftMessage } from '@/lib/use-draft-message'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -10,7 +10,7 @@ import type { OrdenEntrega } from './entrega-schema'
 export function EntregaForm({ ordenes, onCancel }: { ordenes?: readonly OrdenEntrega[]; onCancel: () => void }) {
   const schema = createEntregaSchema(ordenes)
   const form = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { idOrden: '', nombreRecibe: '', documentoRecibe: '', observaciones: '' } })
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useDraftMessage(ordenes)
   const idOrden = useWatch({ control: form.control, name: 'idOrden' })
   const orden = ordenes?.find(o => String(o.idOrden) === idOrden)
   const { errors } = form.formState
@@ -22,6 +22,6 @@ export function EntregaForm({ ordenes, onCancel }: { ordenes?: readonly OrdenEnt
       <TextField id="entrega-documento" label="Documento de quien recibe" maxLength={30} error={errors.documentoRecibe?.message} {...form.register('documentoRecibe')} />
     </div><AreaField id="entrega-observaciones" label="Observaciones" maxLength={500} error={errors.observaciones?.message} {...form.register('observaciones')} />
     <p className="text-sm text-muted-foreground">Responsable y fecha corresponden al servidor. Esta revisión no declara elegibilidad definitiva: la API deberá verificar permisos, estado, factura, saldo vigente y ausencia de entrega previa en una transacción. El modelo no define un flujo de crédito.</p>
-    <DraftActions blocked={!orden || !permiteBorradorEntrega(orden)} message={message} onCancel={() => { form.reset(); setMessage(''); onCancel() }} />
+    <DraftActions blocked={!orden || !permiteBorradorEntrega(orden)} blockedReason={ordenes === undefined ? 'Catálogo de órdenes pendiente de conexión.' : !ordenes.length ? 'El catálogo recibido no contiene órdenes.' : !orden ? 'Selecciona una orden para revisar sus requisitos.' : 'La orden seleccionada tiene requisitos incumplidos o pendientes de verificar. Revisa el detalle anterior.'} message={message} onCancel={() => { form.reset(); setMessage(''); onCancel() }} />
   </form>
 }

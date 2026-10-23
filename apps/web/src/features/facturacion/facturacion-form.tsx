@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useDraftMessage } from '@/lib/use-draft-message'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -10,7 +10,7 @@ import type { OrdenFacturacion } from './facturacion-schema'
 export function FacturacionForm({ ordenes, onCancel }: { ordenes?: readonly OrdenFacturacion[]; onCancel: () => void }) {
   const schema = createFacturacionSchema(ordenes)
   const form = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { idOrden: '', nitFacturacion: '', nombreFacturacion: '', direccionFacturacion: '' } })
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useDraftMessage(ordenes)
   const { errors } = form.formState
   const disponibles = ordenes?.filter(o => o.estado === 'LISTO')
   return <form aria-label="Borrador de datos de facturación" noValidate className="space-y-5" onChange={() => setMessage('')} onSubmit={form.handleSubmit(() => setMessage('Datos preliminares válidos. Todavía no se ha emitido ni guardado una factura; falta conectar la API.'), () => setMessage(''))}>
@@ -21,6 +21,6 @@ export function FacturacionForm({ ordenes, onCancel }: { ordenes?: readonly Orde
       <TextField id="facturacion-nombre" label="Nombre de facturación" maxLength={150} error={errors.nombreFacturacion?.message} {...form.register('nombreFacturacion')} />
     </div><AreaField id="facturacion-direccion" label="Dirección de facturación" maxLength={250} error={errors.direccionFacturacion?.message} {...form.register('direccionFacturacion')} />
     <p className="text-sm text-muted-foreground">Número, responsable, fecha, líneas, tasa aplicable, impuesto y total serán confirmados por el servidor. La política de impuestos debe acordarse con backend.</p>
-    <DraftActions blocked={!disponibles?.length} message={message} onCancel={() => { form.reset(); setMessage(''); onCancel() }} />
+    <DraftActions blocked={!disponibles?.length} blockedReason={ordenes === undefined ? 'Catálogo de órdenes pendiente de conexión.' : 'El catálogo recibido no contiene órdenes LISTO.'} message={message} onCancel={() => { form.reset(); setMessage(''); onCancel() }} />
   </form>
 }

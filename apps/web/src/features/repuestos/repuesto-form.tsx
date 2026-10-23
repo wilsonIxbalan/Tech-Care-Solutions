@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useDraftMessage } from '@/lib/use-draft-message'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -10,7 +10,7 @@ import type { CategoriaOption } from './repuesto-model'
 export function RepuestoForm({ categorias, onCancel }: { categorias?: readonly CategoriaOption[]; onCancel: () => void }) {
   const schema = createRepuestoSchema(categorias)
   const form = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { idCategoria: '', codigo: '', nombre: '', descripcion: '', precioCompraReferencia: '', precioVenta: '' } })
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useDraftMessage(categorias)
   const { errors } = form.formState
   return <form aria-label="Borrador de repuesto" noValidate className="space-y-5" onChange={() => setMessage('')} onSubmit={form.handleSubmit(() => setMessage('Datos válidos. El repuesto aún no se ha guardado; falta conectar la API.'), () => setMessage(''))}>
     <div className="grid gap-4 sm:grid-cols-2">
@@ -22,6 +22,6 @@ export function RepuestoForm({ categorias, onCancel }: { categorias?: readonly C
     </div>
     <AreaField id="repuesto-descripcion" label="Descripción" maxLength={300} error={errors.descripcion?.message} {...form.register('descripcion')} />
     <p className="text-sm text-muted-foreground">La unicidad del código se comprobará en el servidor. Este catálogo no modifica existencias.</p>
-    <DraftActions blocked={!categorias?.length} message={message} onCancel={() => { form.reset(); setMessage(''); onCancel() }} />
+    <DraftActions blocked={!categorias?.length} blockedReason={categorias === undefined ? 'Catálogo de categorías pendiente de conexión.' : 'El catálogo recibido no contiene categorías.'} message={message} onCancel={() => { form.reset(); setMessage(''); onCancel() }} />
   </form>
 }

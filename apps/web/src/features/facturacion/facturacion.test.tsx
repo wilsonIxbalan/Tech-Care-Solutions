@@ -14,6 +14,18 @@ const factura: FacturaDetalleDto = {
 const metodos = [{ idMetodoPago: 1, nombre: 'Método de prueba', activo: true }]
 const valid = { idFactura: '1', idMetodoPago: '1', monto: '10.00', referencia: '' }
 describe('facturación y pagos', () => {
+  it('invalida el mensaje anterior y vuelve a comprobar un saldo actualizado sin borrar el borrador', async () => {
+    const { rerender } = render(<FacturacionPage facturas={{ status: 'success', data: [factura] }} metodos={metodos} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Preparar pago' }))
+    for (const [label, value] of [['Factura *', '1'], ['Método de pago *', '1'], ['Monto *', '10.00']]) fireEvent.change(screen.getByLabelText(label), { target: { value } })
+    fireEvent.click(screen.getByRole('button', { name: 'Validar datos' }))
+    await screen.findByRole('status')
+    rerender(<FacturacionPage facturas={{ status: 'success', data: [{ ...factura, saldo: '5.00' }] }} metodos={metodos} />)
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Monto *')).toHaveValue('10.00')
+    fireEvent.click(screen.getByRole('button', { name: 'Validar datos' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('supera el saldo recibido')
+  })
   it('hereda opcionales como null, limita datos fiscales y requiere orden LISTO recibida', () => {
     const schema = createFacturacionSchema([{ idOrden: 2, numeroOrden: 'Prueba', estado: 'LISTO' }])
     const value = { idOrden: '2', nitFacturacion: '', nombreFacturacion: '  ', direccionFacturacion: '' }

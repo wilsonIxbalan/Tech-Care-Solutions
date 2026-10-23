@@ -12,7 +12,7 @@ export function entregaRequirements(orden?: OrdenEntrega) {
   return [
     { label: 'Orden LISTO', status: !orden ? 'Pendiente de verificar' : orden.estado === 'LISTO' ? 'Coincide con los datos recibidos' : 'Estado no permitido' },
     { label: 'Factura vigente de la orden', status: factura === undefined ? 'Pendiente de verificar' : factura === null ? 'Falta factura' : factura.estado === 'ANULADA' || factura.idOrden !== orden?.idOrden ? 'Factura no válida para esta orden' : 'Coincide con los datos recibidos' },
-    { label: 'Saldo exactamente cero', status: !factura || moneyToMinor(factura.saldo) === null ? 'Pendiente de verificar' : moneyToMinor(factura.saldo) === 0n ? 'Coincide con los datos recibidos' : 'Tiene saldo pendiente' },
+    { label: 'Saldo exactamente cero', status: factura && (factura.estado === 'ANULADA' || factura.idOrden !== orden?.idOrden) ? 'No aplicable: falta una factura vigente de esta orden' : !factura || moneyToMinor(factura.saldo) === null ? 'Pendiente de verificar' : moneyToMinor(factura.saldo) === 0n ? 'Coincide con los datos recibidos' : 'Tiene saldo pendiente' },
   ]
 }
 export function permiteBorradorEntrega(orden: OrdenEntrega) {

@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useDraftMessage } from '@/lib/use-draft-message'
 import { useForm } from 'react-hook-form'
 import type { FieldError, UseFormRegisterReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
@@ -48,7 +48,7 @@ function CatalogSelect({ label, catalogName, options, registration, error }: {
 }
 
 export function EquipoForm({ catalogos, onCancel }: { catalogos: EquipoCatalogos; onCancel: () => void }) {
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useDraftMessage(catalogos)
   const form = useForm<EquipoFormInput, unknown, EquipoFormValues>({
     resolver: zodResolver(createEquipoSchema(catalogos)),
     defaultValues: {

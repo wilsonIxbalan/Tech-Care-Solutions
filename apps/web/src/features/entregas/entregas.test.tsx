@@ -7,6 +7,13 @@ import type { OrdenEntrega } from './entrega-schema'
 const orden: OrdenEntrega = { idOrden: 1, numeroOrden: 'Orden de prueba', estado: 'LISTO', factura: { idFactura: 2, idOrden: 1, estado: 'PAGADA', saldo: '0.00' } }
 const valid = { idOrden: '1', nombreRecibe: 'Receptor de prueba', documentoRecibe: '', observaciones: '' }
 describe('entrega preliminar', () => {
+  it('no presenta el cero de una factura anulada como requisito satisfecho ni atribuye el bloqueo a la conexión', () => {
+    render(<EntregasPage ordenes={[{ ...orden, factura: { ...orden.factura!, estado: 'ANULADA' } }]} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Preparar entrega' }))
+    fireEvent.change(screen.getByLabelText('Orden *'), { target: { value: '1' } })
+    expect(screen.getByText('No aplicable: falta una factura vigente de esta orden')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Validar datos' })).toHaveAccessibleDescription('La orden seleccionada tiene requisitos incumplidos o pendientes de verificar. Revisa el detalle anterior.')
+  })
   it('exige relación, factura vigente, estado y saldo verificables; cero de una factura anulada no autoriza entrega', () => {
     expect(permiteBorradorEntrega(orden)).toBe(true)
     for (const patch of [{ factura: undefined }, { factura: null }, { estado: 'REPARACION' as const }, { factura: { ...orden.factura!, estado: 'ANULADA' as const } }, { factura: { ...orden.factura!, idOrden: 9 } }, { factura: { ...orden.factura!, saldo: '0.01' } }, { factura: { ...orden.factura!, saldo: '0' } }]) {
