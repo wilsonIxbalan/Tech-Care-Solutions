@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { Money } from '@/types/api'
+import { nonNegativeMoneySchema } from '@/lib/money-schema'
 import { esTecnicoElegible, permiteDiagnostico } from '@/features/diagnosticos/diagnostico-catalogos'
 import type { DiagnosticoCatalogos } from '@/features/diagnosticos/diagnostico-catalogos'
 
@@ -9,23 +9,6 @@ function catalogId(ids: readonly number[] | undefined, message: string) {
     .refine(value => value === '' || ids?.some(id => String(id) === value), message)
     .transform(Number)
 }
-
-const decimalPattern = /^\d+(?:\.\d{1,2})?$/
-
-function integerPart(value: string) {
-  return value.split('.')[0].replace(/^0+(?=\d)/, '')
-}
-
-// DECIMAL(12,2), costo >= 0 (fase 01). No se convierten importes a Number
-// ni se redondean. Se completan dos decimales, como espera formatMoney.
-const costoEstimadoSchema = z.string().trim()
-  .min(1, 'Escribe el costo estimado de mano de obra.')
-  .regex(decimalPattern, 'Escribe un importe no negativo con punto decimal y hasta dos decimales.')
-  .refine(value => !decimalPattern.test(value) || integerPart(value).length <= 10, 'El costo estimado no puede superar 9999999999.99.')
-  .transform((value): Money => {
-    const decimals = value.split('.')[1] ?? ''
-    return `${integerPart(value)}.${decimals.padEnd(2, '0')}`
-  })
 
 // Reglas de sp_RegistrarDiagnostico (fase 07); no es un contrato de creación.
 // La unicidad del diagnóstico activo y la autorización deben repetirse en el servidor.
@@ -42,7 +25,10 @@ export function createDiagnosticoSchema(catalogos: DiagnosticoCatalogos) {
     descripcion: z.string().trim()
       .min(1, 'Escribe la descripción del diagnóstico.')
       .max(1000, 'La descripción debe tener como máximo 1000 caracteres.'),
-    costoManoObraEstimado: costoEstimadoSchema,
+    costoManoObraEstimado: nonNegativeMoneySchema(
+      'Escribe el costo estimado de mano de obra.',
+      'El costo estimado no puede superar 9999999999.99.',
+    ),
   })
 }
 

@@ -47,12 +47,13 @@ function validate() {
 }
 
 describe('sección de Diagnósticos', () => {
-  it('separa Diagnósticos de Reparaciones y mantiene el listado pendiente de API', () => {
+  it('separa los formularios provisionales y conserva las operaciones posteriores pendientes', () => {
     render(<DiagnosticosPage />)
     expect(within(screen.getByRole('region', { name: 'Diagnósticos' })).getByRole('button', { name: 'Nuevo diagnóstico' })).toBeVisible()
     const reparaciones = screen.getByRole('region', { name: 'Reparaciones' })
-    expect(within(reparaciones).getByRole('heading', { name: 'Reparaciones pendientes de implementación' })).toBeVisible()
-    expect(within(reparaciones).queryByRole('button')).not.toBeInTheDocument()
+    expect(within(reparaciones).getByRole('heading', { name: 'Consulta de reparaciones pendiente de conexión' })).toBeVisible()
+    expect(within(reparaciones).getByRole('button', { name: 'Preparar reparación' })).toBeVisible()
+    expect(within(reparaciones).queryByRole('form')).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Consulta de diagnósticos pendiente de conexión' })).toBeVisible()
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })

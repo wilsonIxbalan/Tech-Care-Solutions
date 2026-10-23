@@ -16,9 +16,9 @@ const values = { idOrden: '21', idTecnico: '31', descripcion: 'Diagnóstico de p
 describe('reglas del diagnóstico', () => {
   it('obtiene los campos del formulario sin inventar identificador, fecha ni estado', () => {
     expect(createDiagnosticoSchema(catalogos).parse({
-      ...values, descripcion: '  Diagnóstico de prueba  ',
+      ...values, descripcion: '  Diagnóstico de prueba  ', costoManoObraEstimado: '12.5',
       idDiagnostico: 999, fechaDiagnostico: '2026-10-22T00:00:00Z', estado: 'ACTIVO',
-    })).toEqual({ ...values, idOrden: 21, idTecnico: 31 })
+    })).toEqual({ ...values, idOrden: 21, idTecnico: 31, costoManoObraEstimado: '12.50' })
   })
 
   it.each(['RECIBIDO', 'DIAGNOSTICO'] as const)('permite el estado de entrada %s definido por el procedimiento', estado => {
@@ -56,28 +56,5 @@ describe('reglas del diagnóstico', () => {
     const result = schema.safeParse({ ...values, descripcion: 'x'.repeat(1001) })
     expect(result.success).toBe(false)
     if (!result.success) expect(result.error.issues[0].message).toBe('La descripción debe tener como máximo 1000 caracteres.')
-  })
-})
-
-describe('costo estimado DECIMAL(12,2) como Money', () => {
-  it.each([
-    ['0', '0.00'],
-    ['12', '12.00'],
-    ['12.5', '12.50'],
-    ['9999999999.99', '9999999999.99'],
-    [' 000012.01 ', '12.01'],
-    ['0.01', '0.01'],
-    ['00000000000.00', '0.00'],
-    ['9999999999.9', '9999999999.90'],
-  ])('normaliza %j a %j sin punto flotante', (input, expected) => {
-    const result = createDiagnosticoSchema(catalogos).parse({ ...values, costoManoObraEstimado: input })
-    expect(result.costoManoObraEstimado).toBe(expected)
-    expect(typeof result.costoManoObraEstimado).toBe('string')
-  })
-
-  it.each(['-0.01', '10000000000.00', '1.234', '1e3', '1,50', '1,000.00', 'NaN', 'Infinity'])('rechaza %j sin redondearlo ni reinterpretarlo', costoManoObraEstimado => {
-    const result = createDiagnosticoSchema(catalogos).safeParse({ ...values, costoManoObraEstimado })
-    expect(result.success).toBe(false)
-    if (!result.success) expect(result.error.issues[0].path).toEqual(['costoManoObraEstimado'])
   })
 })

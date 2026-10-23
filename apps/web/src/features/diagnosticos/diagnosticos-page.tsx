@@ -4,8 +4,10 @@ import { EmptyState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
 import type { DiagnosticoCatalogos } from '@/features/diagnosticos/diagnostico-catalogos'
 import { DiagnosticoForm } from '@/features/diagnosticos/diagnostico-form'
+import type { ReparacionCatalogos } from '@/features/reparaciones/reparacion-catalogos'
+import { ReparacionesSection } from '@/features/reparaciones/reparaciones-section'
 
-export function DiagnosticosPage({ catalogos = {} }: { catalogos?: DiagnosticoCatalogos }) {
+export function DiagnosticosPage({ catalogos = {}, reparacionCatalogos }: { catalogos?: DiagnosticoCatalogos; reparacionCatalogos?: ReparacionCatalogos }) {
   const [showForm, setShowForm] = useState(false)
   const newButtonRef = useRef<HTMLButtonElement>(null)
   const wasOpen = useRef(false)
@@ -20,7 +22,7 @@ export function DiagnosticosPage({ catalogos = {} }: { catalogos?: DiagnosticoCa
       <PageHeader
         eyebrow="TechCare / Servicio técnico"
         title="Diagnósticos y reparaciones"
-        description="Prepara los datos del diagnóstico. La sección de reparaciones está pendiente de implementación."
+        description="Prepara diagnósticos e inicios de reparación. El registro y las operaciones posteriores dependen de conectar la API."
       />
 
       <section aria-labelledby="diagnosticos-title" className="space-y-5">
@@ -35,13 +37,7 @@ export function DiagnosticosPage({ catalogos = {} }: { catalogos?: DiagnosticoCa
         />
       </section>
 
-      <section aria-labelledby="reparaciones-title" className="space-y-5">
-        <h2 id="reparaciones-title" className="text-xl font-semibold">Reparaciones</h2>
-        <EmptyState
-          title="Reparaciones pendientes de implementación"
-          description="Esta sección aún no registra reparaciones, actividades ni consumo de repuestos."
-        />
-      </section>
+      <ReparacionesSection catalogos={reparacionCatalogos} />
     </>
   )
 }
