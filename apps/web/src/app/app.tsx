@@ -1,7 +1,10 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
 import { Providers } from '@/app/providers'
 import { AppShell } from '@/app/app-shell'
+import { businessModules } from '@/app/navigation'
+import { WorkspacePage } from '@/features/workspace/workspace-page'
+import { ModulePage } from '@/features/workspace/module-page'
 import { EmptyState, LoadingState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
 
@@ -13,9 +16,10 @@ export function App() {
       <BrowserRouter>
         <Routes>
           <Route element={<AppShell />}>
-            <Route index element={<Suspense fallback={<LoadingState label="Preparando el kit visual…" />}><DesignSystemPage /></Suspense>} />
-            <Route path="kit" element={<Navigate to="/" replace />} />
-            <Route path="*" element={<EmptyState title="Esta pantalla aún no existe" description="Cristian construirá las rutas de negocio a partir de esta base. Por ahora puedes consultar el kit visual." action={<Button asChild><Link to="/">Volver al kit</Link></Button>} />} />
+            <Route index element={<WorkspacePage />} />
+            <Route path="kit" element={<Suspense fallback={<LoadingState label="Preparando el kit visual…" />}><DesignSystemPage /></Suspense>} />
+            {businessModules.map(module => <Route key={module.path} path={module.path} element={<ModulePage module={module} />} />)}
+            <Route path="*" element={<EmptyState title="Esta pantalla no existe" description="Selecciona un módulo del menú para continuar." action={<Button asChild><Link to="/">Volver al inicio</Link></Button>} />} />
           </Route>
         </Routes>
       </BrowserRouter>
