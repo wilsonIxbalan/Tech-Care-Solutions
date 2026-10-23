@@ -2,9 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
 import { Providers } from '@/app/providers'
 import { AppShell } from '@/app/app-shell'
-import { businessModules } from '@/app/navigation'
 import { WorkspacePage } from '@/features/workspace/workspace-page'
-import { ModulePage } from '@/features/workspace/module-page'
 import { EmptyState, LoadingState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
 
@@ -51,6 +49,7 @@ const ComprasPage = lazy(() => import('@/features/compras/compras-page').then(mo
 const FacturacionPage = lazy(() => import('@/features/facturacion/facturacion-page').then(module => ({ default: module.FacturacionPage })))
 const EntregasPage = lazy(() => import('@/features/entregas/entregas-page').then(module => ({ default: module.EntregasPage })))
 const ReportesPage = lazy(() => import('@/features/reportes/reportes-page').then(module => ({ default: module.ReportesPage })))
+const UsuariosPage = lazy(() => import('@/features/usuarios/usuarios-page').then(module => ({ default: module.UsuariosPage })))
 
 export function App() {
   return (
@@ -125,13 +124,7 @@ export function App() {
             <Route path="facturacion" element={<Suspense fallback={<LoadingState />}><FacturacionPage /></Suspense>} />
             <Route path="entregas" element={<Suspense fallback={<LoadingState />}><EntregasPage /></Suspense>} />
             <Route path="reportes" element={<Suspense fallback={<LoadingState />}><ReportesPage /></Suspense>} />
-            {businessModules.filter(module => !['/clientes', '/equipos', '/ordenes', '/diagnosticos', '/repuestos', '/proveedores', '/inventario', '/compras', '/facturacion', '/entregas', '/reportes'].includes(module.path)).map((module) => (
-              <Route
-                key={module.path}
-                path={module.path}
-                element={<ModulePage module={module} />}
-              />
-            ))}
+            <Route path="usuarios" element={<Suspense fallback={<LoadingState />}><UsuariosPage /></Suspense>} />
 
             <Route
               path="*"
