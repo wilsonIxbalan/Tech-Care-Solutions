@@ -5,6 +5,7 @@ import { SelectField } from '@/components/shared/form-fields'
 import { ReceivedTable } from '@/components/shared/received-table'
 import type { ReceivedData } from '@/lib/received-data'
 import type { FacturaDetalleDto } from '@/types/domain'
+import { formatMoney } from '@/lib/format'
 import { FacturacionForm } from './facturacion-form'
 import { PagoForm } from './pago-form'
 import { FacturaDetalle } from './factura-detalle'
@@ -18,7 +19,7 @@ export function FacturacionPage({ ordenes, metodos, facturas = { status: 'pendin
     <DraftSection title="Datos de facturación" action="Preparar datos de facturación">{cancel => <FacturacionForm ordenes={ordenes} onCancel={cancel} />}</DraftSection>
     <DraftSection title="Pagos" action="Preparar pago">{cancel => <PagoForm facturas={data} metodos={metodos} onCancel={cancel} />}</DraftSection>
     <ReceivedTable state={facturas} caption="Facturas" rowKey={f => f.idFactura} columns={[
-      { title: 'Factura', cell: f => f.numeroFactura }, { title: 'Orden', cell: f => f.numeroOrden }, { title: 'Cliente', cell: f => f.clienteNombre }, { title: 'Estado', cell: f => f.estado }, { title: 'Total (Q)', cell: f => f.total }, { title: 'Pagado (Q)', cell: f => f.totalPagado }, { title: 'Saldo (Q)', cell: f => f.saldo },
+      { title: 'Factura', cell: f => f.numeroFactura }, { title: 'Orden', cell: f => f.numeroOrden }, { title: 'Cliente', cell: f => f.clienteNombre }, { title: 'Estado', cell: f => f.estado }, { title: 'Total (Q)', cell: f => formatMoney(f.total) }, { title: 'Pagado (Q)', cell: f => formatMoney(f.totalPagado) }, { title: 'Saldo (Q)', cell: f => formatMoney(f.saldo) },
     ]} />
     <section className="space-y-4" aria-label="Detalle de factura"><h2 className="text-lg font-semibold">Detalle de factura</h2>
       <SelectField id="factura-detalle" label="Ver detalle recibido" options={data?.map(f => ({ value: String(f.idFactura), label: f.numeroFactura }))} value={idFactura} onChange={e => setIdFactura(e.target.value)} />

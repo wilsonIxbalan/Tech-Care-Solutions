@@ -4,6 +4,7 @@ import { DraftSection } from '@/components/shared/draft-section'
 import { TextField, SelectField } from '@/components/shared/form-fields'
 import { ReceivedTable } from '@/components/shared/received-table'
 import type { ReceivedData } from '@/lib/received-data'
+import { formatMoney } from '@/lib/format'
 import { RepuestoForm } from './repuesto-form'
 import type { CategoriaOption, RepuestoRow } from './repuesto-model'
 
@@ -21,7 +22,7 @@ export function RepuestosPage({ categorias, repuestos = { status: 'pending' } }:
     </div><p className="text-xs text-muted-foreground">Los filtros se aplican sólo a las filas recibidas. No se ha solicitado un catálogo al servidor.</p>
       <ReceivedTable state={rows} caption="Repuestos" rowKey={r => r.idRepuesto} columns={[
         { title: 'Código', cell: r => r.codigo }, { title: 'Nombre', cell: r => r.nombre }, { title: 'Categoría', cell: r => categorias?.find(c => c.idCategoria === r.idCategoria)?.nombre },
-        { title: 'Compra ref. (Q)', cell: r => r.precioCompraReferencia }, { title: 'Venta (Q)', cell: r => r.precioVenta }, { title: 'Estado', cell: r => r.estado },
+        { title: 'Compra ref. (Q)', cell: r => formatMoney(r.precioCompraReferencia) }, { title: 'Venta (Q)', cell: r => formatMoney(r.precioVenta) }, { title: 'Estado', cell: r => r.estado },
       ]} />
     </section></>
 }

@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/shared/page-header'
 import { SelectField, TextField } from '@/components/shared/form-fields'
 import { ReceivedTable } from '@/components/shared/received-table'
 import { Button } from '@/components/ui/button'
-import { dateRangeSchema, inCivilRange } from '@/lib/civil-date'
+import { dateRangeSchema, guatemalaCivilDay, inCivilRange } from '@/lib/civil-date'
 import { selection } from '@/lib/draft-schema'
 import type { ReceivedData } from '@/lib/received-data'
 import type { InventarioDto, MovimientoDto } from '@/types/domain'
@@ -32,7 +32,8 @@ export function InventarioPage({ catalogos = {}, inventario = { status: 'pending
   const stockRows = inventario.status === 'success' ? { ...inventario, data: inventario.data.filter(r =>
     (!filters.idBodega || String(r.idBodega) === filters.idBodega) && (!filters.idCategoria || String(r.idCategoria) === filters.idCategoria) && (!filters.idRepuesto || String(r.idRepuesto) === filters.idRepuesto)
     && (filters.stock !== 'cero' || r.existencia === 0) && (filters.stock !== 'minimo' || r.existencia <= r.stockMinimo)) } : inventario
-  const movementRows = movimientos.status === 'success' ? { ...movimientos, data: movimientos.data.filter(r =>
+  const unverifiedDates = Boolean((filters.desde || filters.hastaExclusiva) && movimientos.status === 'success' && movimientos.data.some(r => guatemalaCivilDay(r.fechaMovimiento) === null))
+  const movementRows: ReceivedData<MovimientoDto> = unverifiedDates ? { status: 'error', message: 'No se puede aplicar el intervalo: hay movimientos con fecha o zona no verificable. Limpia las fechas para revisar las filas recibidas.' } : movimientos.status === 'success' ? { ...movimientos, data: movimientos.data.filter(r =>
     (!filters.idBodega || String(r.idBodega) === filters.idBodega) && (!filters.idRepuesto || String(r.idRepuesto) === filters.idRepuesto) && (!filters.tipo || r.codigoTipoMovimiento === filters.tipo) && inCivilRange(r.fechaMovimiento, filters.desde, filters.hastaExclusiva)) } : movimientos
   return <><PageHeader title="Inventario y movimientos" description="Vistas de consulta. Los movimientos y las existencias sólo cambian mediante procesos controlados del servidor." />
     <form aria-label="Filtros de inventario" className="space-y-4 rounded-xl border p-4" noValidate onSubmit={form.handleSubmit(setFilters)}>

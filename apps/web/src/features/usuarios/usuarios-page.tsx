@@ -4,6 +4,7 @@ import { DraftSection } from '@/components/shared/draft-section'
 import { SelectField, TextField } from '@/components/shared/form-fields'
 import { ReceivedTable } from '@/components/shared/received-table'
 import type { ReceivedData } from '@/lib/received-data'
+import { formatUtcDateTime } from '@/lib/format'
 import { UsuarioForm } from './usuario-form'
 import { AsignacionForm } from './asignacion-form'
 import type { AsignacionRow, RolRow, UsuarioRow } from './usuario-model'
@@ -23,13 +24,13 @@ export function UsuariosPage({ usuarios = { status: 'pending' }, roles = { statu
       <TextField id="usuarios-busqueda" label="Filtrar usuarios recibidos" value={search} onChange={e => setSearch(e.target.value)} />
       <SelectField id="usuarios-estado" label="Filtrar por estado" placeholder="Todos" options={[{ value: '1', label: 'Activo' }, { value: '0', label: 'Inactivo' }]} value={activo} onChange={e => setActivo(e.target.value)} />
     </div><ReceivedTable state={filtered} caption="Usuarios" rowKey={u => u.idUsuario} columns={[
-      { title: 'Usuario', cell: u => u.nombreUsuario }, { title: 'Nombre', cell: u => u.nombreCompleto }, { title: 'Correo', cell: u => u.email }, { title: 'Teléfono', cell: u => u.telefono }, { title: 'Estado', cell: u => u.activo ? 'Activo' : 'Inactivo' }, { title: 'Creación (UTC)', cell: u => u.fechaCreacion }, { title: 'Último acceso (UTC)', cell: u => u.ultimoAcceso },
+      { title: 'Usuario', cell: u => u.nombreUsuario }, { title: 'Nombre', cell: u => u.nombreCompleto }, { title: 'Correo', cell: u => u.email }, { title: 'Teléfono', cell: u => u.telefono }, { title: 'Estado', cell: u => u.activo ? 'Activo' : 'Inactivo' }, { title: 'Creación (UTC)', cell: u => formatUtcDateTime(u.fechaCreacion) }, { title: 'Último acceso (UTC)', cell: u => formatUtcDateTime(u.ultimoAcceso) },
     ]} /></section>
     <section aria-label="Roles y permisos recibidos" className="space-y-3"><h2 className="text-lg font-semibold">Roles y permisos recibidos</h2><ReceivedTable state={roles} caption="Roles" rowKey={r => r.idRol} columns={[
       { title: 'Código', cell: r => r.codigo }, { title: 'Rol', cell: r => r.nombre }, { title: 'Descripción', cell: r => r.descripcion }, { title: 'Estado', cell: r => r.activo ? 'Activo' : 'Inactivo' }, { title: 'Permisos recibidos', cell: r => r.permisos === undefined ? 'Pendiente de datos' : r.permisos.length ? r.permisos.map(p => `${p.codigo}: ${p.descripcion}`).join('; ') : 'Sin permisos asignados según datos recibidos' },
     ]} /></section>
     <ReceivedTable state={asignaciones} caption="Asignaciones de roles" rowKey={a => `${a.idUsuario}-${a.idRol}`} columns={[
-      { title: 'Usuario', cell: a => users?.find(u => u.idUsuario === a.idUsuario)?.nombreUsuario ?? `ID recibido: ${a.idUsuario}` }, { title: 'Rol', cell: a => roleData?.find(r => r.idRol === a.idRol)?.nombre ?? `ID recibido: ${a.idRol}` }, { title: 'Asignación (UTC)', cell: a => a.fechaAsignacion },
+      { title: 'Usuario', cell: a => users?.find(u => u.idUsuario === a.idUsuario)?.nombreUsuario ?? `ID recibido: ${a.idUsuario}` }, { title: 'Rol', cell: a => roleData?.find(r => r.idRol === a.idRol)?.nombre ?? `ID recibido: ${a.idRol}` }, { title: 'Asignación (UTC)', cell: a => formatUtcDateTime(a.fechaAsignacion) },
     ]} />
   </>
 }

@@ -3,10 +3,20 @@ import { describe, expect, it } from 'vitest'
 import { InventarioPage } from './inventario-page'
 import { stockLabel } from './inventario-model'
 import { dateRangeSchema, guatemalaCivilDay, inCivilRange } from '@/lib/civil-date'
-import type { InventarioDto } from '@/types/domain'
+import type { InventarioDto, MovimientoDto } from '@/types/domain'
 
 const rows: InventarioDto[] = [0, 2, 3].map((existencia, i) => ({ idBodega: 1, bodegaNombre: 'Bodega de prueba', idCategoria: 1, categoriaNombre: 'Categoría de prueba', idRepuesto: i + 1, codigoRepuesto: `P${i}`, repuestoNombre: `Repuesto de prueba ${i}`, existencia, stockMinimo: 2, bajoMinimo: existencia <= 2, sinStock: existencia === 0, fechaUltimoMovimiento: null }))
 describe('inventario recibido', () => {
+  it('no descarta silenciosamente fechas sin zona para mostrar una falsa consulta vacía', async () => {
+    const row: MovimientoDto = { idMovimiento: 1, idBodega: 1, bodegaNombre: 'Bodega de prueba', idRepuesto: 1, codigoRepuesto: 'PR', repuestoNombre: 'Repuesto de prueba', codigoTipoMovimiento: 'COMPRA_ENTRADA', naturaleza: 'E', cantidad: 1, fechaMovimiento: '2026-10-22T12:00:00', idUsuario: 1, usuarioNombre: 'Usuario de prueba', documentoOrigen: 'COMPRA', numeroDocumento: 'Compra de prueba', existenciaResultante: 1, observacion: null }
+    render(<InventarioPage movimientos={{ status: 'success', data: [row] }} />)
+    fireEvent.change(screen.getByLabelText('Desde (movimientos)'), { target: { value: '2026-10-21' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar filtros a datos recibidos' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('fecha o zona no verificable')
+    expect(screen.queryByText('Consulta sin resultados')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }))
+    expect(screen.getByRole('table', { name: 'Movimientos' })).toHaveTextContent('Repuesto de prueba')
+  })
   it('distingue cero, igualdad al mínimo y existencia superior', () => {
     expect(rows.map(stockLabel)).toEqual(['Sin stock', 'Igual o inferior al mínimo', 'Sobre el mínimo'])
   })
