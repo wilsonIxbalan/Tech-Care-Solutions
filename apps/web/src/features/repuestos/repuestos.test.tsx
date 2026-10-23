@@ -16,6 +16,7 @@ describe('repuestos', () => {
     render(<RepuestosPage />)
     const trigger = screen.getByRole('button', { name: 'Preparar repuesto' })
     fireEvent.click(trigger)
+    expect(screen.getByLabelText('Código *')).toHaveFocus()
     expect(screen.getByRole('button', { name: 'Validar datos' })).toBeDisabled()
     fireEvent.change(screen.getByLabelText('Nombre *'), { target: { value: 'Temporal' } })
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))

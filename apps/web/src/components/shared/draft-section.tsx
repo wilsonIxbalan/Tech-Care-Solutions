@@ -7,16 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 export function DraftSection({ title, action, children }: { title: string; action: string; children: (cancel: () => void) => ReactNode }) {
   const [open, setOpen] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
+  const content = useRef<HTMLDivElement>(null)
   const wasOpen = useRef(false)
   useEffect(() => {
+    if (open) content.current?.querySelector<HTMLElement>('input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)')?.focus()
     if (wasOpen.current && !open) trigger.current?.focus()
     wasOpen.current = open
   }, [open])
   return <section className="space-y-4" aria-label={title}>
     <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold">{title}</h2>
-      <Button ref={trigger} hidden={open} onClick={() => setOpen(true)}>{action}</Button>
+      <Button ref={trigger} hidden={open} className={open ? 'hidden' : undefined} onClick={() => setOpen(true)}>{action}</Button>
     </div>
-    {open && <Card><CardHeader><CardTitle>{action}</CardTitle><p className="text-sm text-muted-foreground">Los campos con * son obligatorios. Se valida un borrador; todavía no se guarda.</p></CardHeader><CardContent>{children(() => setOpen(false))}</CardContent></Card>}
+    {open && <Card><CardHeader><CardTitle>{action}</CardTitle><p className="text-sm text-muted-foreground">Los campos con * son obligatorios. Se valida un borrador; todavía no se guarda.</p></CardHeader><CardContent ref={content}>{children(() => setOpen(false))}</CardContent></Card>}
   </section>
 }
 

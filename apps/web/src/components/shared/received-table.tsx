@@ -10,5 +10,5 @@ export function ReceivedTable<T>({ state = { status: 'pending' }, columns, rowKe
   if (state.status === 'loading') return <LoadingState label={`Consultando ${caption}…`} />
   if (state.status === 'error') return <ErrorState description={state.message} />
   if (!state.data.length) return <EmptyState title="Consulta sin resultados" description="La consulta recibida no contiene filas para estos filtros." />
-  return <Table><caption className="sr-only">{caption}</caption><TableHeader><TableRow>{columns.map(column => <TableHead key={column.title}>{column.title}</TableHead>)}</TableRow></TableHeader><TableBody>{state.data.map((row, index) => <TableRow key={rowKey(row, index)}>{columns.map(column => <TableCell className="max-w-sm break-words" key={column.title}>{column.cell(row) ?? '—'}</TableCell>)}</TableRow>)}</TableBody></Table>
+  return <Table containerLabel={`Tabla: ${caption}`}><caption className="sr-only">{caption}</caption><TableHeader><TableRow>{columns.map(column => <TableHead key={column.title}>{column.title}</TableHead>)}</TableRow></TableHeader><TableBody>{state.data.map((row, index) => <TableRow key={rowKey(row, index)}>{columns.map(column => <TableCell className="max-w-sm break-words" key={column.title}>{column.cell(row) ?? '—'}</TableCell>)}</TableRow>)}</TableBody></Table>
 }

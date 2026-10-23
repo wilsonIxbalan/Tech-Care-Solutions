@@ -8,7 +8,8 @@ describe('navegación de TechCare', () => {
   it('abre Clientes y muestra que la consulta aún no está conectada', async () => {
     render(<App />)
     expect(screen.getByRole('heading', { name: 'Servicio técnico, de principio a fin' })).toBeVisible()
-    expect(screen.getAllByText('API pendiente')).toHaveLength(3)
+    expect(screen.getAllByText('Conexión pendiente')).toHaveLength(12)
+    expect(screen.getAllByText('Vista preparada')).toHaveLength(2)
     fireEvent.click(within(screen.getByRole('navigation', { name: 'Navegación principal' })).getByRole('link', { name: 'Clientes' }))
     expect(await screen.findByRole('heading', { name: 'Clientes' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Nuevo cliente' })).toBeVisible()
@@ -52,6 +53,17 @@ describe('navegación de TechCare', () => {
     expect(screen.getByRole('button', { name: 'Preparar reparación' })).toBeVisible()
     expect(screen.getByRole('heading', { name: 'Consulta de reparaciones pendiente de conexión' })).toBeVisible()
     expect(screen.getByRole('link', { name: 'Diagnósticos y reparaciones' })).toHaveAttribute('aria-current', 'page')
+  })
+  it.each([
+    ['/proveedores', 'Proveedores'], ['/inventario', 'Inventario y movimientos'], ['/compras', 'Compras'],
+    ['/facturacion', 'Facturación y pagos'], ['/entregas', 'Entregas y cierre'], ['/reportes', 'Reportes'], ['/usuarios', 'Usuarios y roles'],
+  ])('abre directamente %s dentro de AppShell con conexión pendiente', async (path, title) => {
+    window.history.replaceState({}, '', path)
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: title, level: 1 })).toBeVisible()
+    expect(screen.getByRole('navigation', { name: 'Navegación principal' })).toBeVisible()
+    expect(screen.getAllByText('Consulta pendiente de conexión').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Consulta sin resultados')).not.toBeInTheDocument()
   })
   it('abre el login fuera del menú, la cabecera y el pie de AppShell', async () => {
     window.history.replaceState({}, '', '/login')

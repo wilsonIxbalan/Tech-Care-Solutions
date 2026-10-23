@@ -19,6 +19,7 @@ describe('inventario recibido', () => {
   })
   it('filtra filas recibidas y limpia sin editar existencias', async () => {
     render(<InventarioPage inventario={{ status: 'success', data: rows }} />)
+    expect(screen.getByRole('region', { name: 'Tabla: Existencias por bodega' })).toHaveAttribute('tabindex', '0')
     fireEvent.change(screen.getByLabelText('Situación de existencias'), { target: { value: 'minimo' } })
     fireEvent.click(screen.getByRole('button', { name: 'Aplicar filtros a datos recibidos' }))
     expect(await screen.findByText('Sin stock')).toBeVisible()
@@ -34,4 +35,3 @@ describe('inventario recibido', () => {
     expect(dateRangeSchema.safeParse({ desde: '2026-10-22', hastaExclusiva: '2026-10-22' }).success).toBe(false)
   })
 })
-

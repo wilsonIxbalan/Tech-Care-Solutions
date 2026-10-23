@@ -51,6 +51,7 @@ describe('compras', () => {
     }
     expect(screen.getByText('0.20')).toBeVisible()
     fireEvent.click(screen.getByRole('button', { name: 'Quitar línea 2' }))
+    expect(screen.getByRole('button', { name: 'Agregar línea' })).toHaveFocus()
     fireEvent.click(screen.getByRole('button', { name: 'Validar datos' }))
     expect(await screen.findByRole('status')).toHaveTextContent('aún no se ha guardado ni recibido')
     expect(fetchSpy).not.toHaveBeenCalled(); expect(storageSpy).not.toHaveBeenCalled()

@@ -1,8 +1,8 @@
 import type { ComponentProps } from 'react'
 import { cn } from '@/lib/utils'
 
-export function Table({ className, ...props }: ComponentProps<'table'>) {
-  return <div data-slot="table-container" className="w-full overflow-x-auto"><table data-slot="table" className={cn('w-full caption-bottom text-sm', className)} {...props} /></div>
+export function Table({ className, containerLabel, ...props }: ComponentProps<'table'> & { containerLabel?: string }) {
+  return <div data-slot="table-container" role={containerLabel ? 'region' : undefined} aria-label={containerLabel} tabIndex={containerLabel ? 0 : undefined} className="w-full overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-primary"><table data-slot="table" className={cn('w-full caption-bottom text-sm', className)} {...props} /></div>
 }
 export function TableHeader({ className, ...props }: ComponentProps<'thead'>) {
   return <thead className={cn('bg-muted/60 [&_tr]:border-b', className)} {...props} />

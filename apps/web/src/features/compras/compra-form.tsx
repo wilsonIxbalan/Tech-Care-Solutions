@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -16,6 +16,7 @@ export function CompraForm({ catalogos, onCancel }: { catalogos: CompraCatalogos
   const items = useWatch({ control: form.control, name: 'items' })
   const estimate = estimatePurchase(items)
   const [message, setMessage] = useState('')
+  const addButton = useRef<HTMLButtonElement>(null)
   const { errors } = form.formState
   const proveedores = catalogos.proveedores?.filter(p => p.estado === 'ACTIVO')
   const bodegas = catalogos.bodegas?.filter(b => b.estado === 'ACTIVA')
@@ -34,10 +35,10 @@ export function CompraForm({ catalogos, onCancel }: { catalogos: CompraCatalogos
           <SelectField id={`compra-repuesto-${index}`} label="Repuesto" required options={repuestos?.map(r => ({ value: String(r.idRepuesto), label: `${r.codigo} · ${r.nombre}` }))} error={errors.items?.[index]?.idRepuesto?.message} {...form.register(`items.${index}.idRepuesto`)} />
           <TextField id={`compra-cantidad-${index}`} label="Cantidad" required inputMode="numeric" error={errors.items?.[index]?.cantidad?.message} {...form.register(`items.${index}.cantidad`)} />
           <TextField id={`compra-costo-${index}`} label="Costo unitario" required inputMode="decimal" help="Punto decimal, hasta dos decimales; se permite cero." error={errors.items?.[index]?.costoUnitario?.message} {...form.register(`items.${index}.costoUnitario`)} />
-        </div><Button variant="outline" aria-label={`Quitar línea ${index + 1}`} onClick={() => { lines.remove(index); setMessage('') }}>Quitar línea</Button>
+        </div><Button variant="outline" aria-label={`Quitar línea ${index + 1}`} onClick={() => { lines.remove(index); setMessage(''); addButton.current?.focus() }}>Quitar línea</Button>
       </fieldset>)}
       {(errors.items?.root?.message || errors.items?.message) && <p role="alert" className="text-sm text-destructive">{errors.items.root?.message ?? errors.items.message}</p>}
-      <Button variant="outline" onClick={() => { lines.append({ ...emptyLine }, { focusName: `items.${lines.fields.length}.idRepuesto` }); setMessage('') }}>Agregar línea</Button>
+      <Button ref={addButton} variant="outline" onClick={() => { lines.append({ ...emptyLine }, { focusName: `items.${lines.fields.length}.idRepuesto` }); setMessage('') }}>Agregar línea</Button>
     </section>
     <p className="rounded-lg border p-3 text-sm">Estimación del borrador (Q): <strong>{estimate ?? 'Completa cantidades y costos válidos'}</strong>. El servidor será autoridad del total final.</p>
     <p className="text-sm text-muted-foreground">Número, usuario y fecha de compra serán generados o confirmados por el servidor. Iniciará PENDIENTE; recibirla y aumentar inventario requieren una transacción de la API.</p>

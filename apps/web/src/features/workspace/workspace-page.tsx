@@ -15,7 +15,7 @@ export function WorkspacePage() {
       <PageHeader
         eyebrow="TechCare Solutions"
         title="Servicio técnico, de principio a fin"
-        description="Selecciona un módulo. Los formularios disponibles están pendientes de conectar la API; otros módulos aún están por implementar."
+        description="Selecciona un módulo para validar borradores o revisar las vistas preparadas. Las consultas y operaciones reales siguen pendientes de conectar la API."
       />
 
       <div className="rounded-xl border bg-card p-5 text-sm leading-7">
@@ -41,11 +41,10 @@ export function WorkspacePage() {
           >
             <Card className="h-full transition-colors hover:border-primary">
               <CardHeader>
-                <Badge variant="outline" className="w-fit">
-                  {module.path === '/diagnosticos'
-                    ? 'Implementación parcial'
-                    : ['/clientes', '/equipos', '/ordenes'].includes(module.path) ? 'API pendiente' : 'Por implementar'}
-                </Badge>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline">{['/inventario', '/reportes'].includes(module.path) ? 'Vista preparada' : 'Formulario preparado'}</Badge>
+                  <Badge variant="outline">Conexión pendiente</Badge>
+                </div>
                 <CardTitle>{module.title}</CardTitle>
               </CardHeader>
 
