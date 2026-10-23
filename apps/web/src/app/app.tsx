@@ -44,6 +44,9 @@ const DiagnosticosPage = lazy(() =>
   })),
 )
 
+const RepuestosPage = lazy(() => import('@/features/repuestos/repuestos-page').then(module => ({ default: module.RepuestosPage })))
+const ProveedoresPage = lazy(() => import('@/features/proveedores/proveedores-page').then(module => ({ default: module.ProveedoresPage })))
+
 export function App() {
   return (
     <Providers>
@@ -110,7 +113,9 @@ export function App() {
               }
             />
 
-            {businessModules.filter(module => !['/clientes', '/equipos', '/ordenes', '/diagnosticos'].includes(module.path)).map((module) => (
+            <Route path="repuestos" element={<Suspense fallback={<LoadingState />}><RepuestosPage /></Suspense>} />
+            <Route path="proveedores" element={<Suspense fallback={<LoadingState />}><ProveedoresPage /></Suspense>} />
+            {businessModules.filter(module => !['/clientes', '/equipos', '/ordenes', '/diagnosticos', '/repuestos', '/proveedores'].includes(module.path)).map((module) => (
               <Route
                 key={module.path}
                 path={module.path}

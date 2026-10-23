@@ -33,11 +33,12 @@ describe('navegación de TechCare', () => {
     expect(screen.getByRole('heading', { name: 'Consulta de órdenes pendiente de conexión' })).toBeVisible()
     expect(screen.getByRole('link', { name: 'Órdenes de servicio' })).toHaveAttribute('aria-current', 'page')
   })
-  it('mantiene los otros módulos en su pantalla pendiente', () => {
+  it('abre Repuestos con formulario preparado y consulta pendiente', async () => {
     window.history.replaceState({}, '', '/repuestos')
     render(<App />)
-    expect(screen.getByRole('heading', { name: 'Repuestos' })).toBeVisible()
-    expect(screen.getByRole('heading', { name: 'Módulo pendiente de implementación' })).toBeVisible()
+    expect(await screen.findByRole('heading', { name: 'Repuestos' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Preparar repuesto' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Consulta pendiente de conexión' })).toBeVisible()
     expect(screen.getByRole('link', { name: 'Repuestos' })).toHaveAttribute('aria-current', 'page')
   })
   it('abre Diagnósticos y la preparación de Reparaciones dentro de AppShell', async () => {
