@@ -50,6 +50,7 @@ const InventarioPage = lazy(() => import('@/features/inventario/inventario-page'
 const ComprasPage = lazy(() => import('@/features/compras/compras-page').then(module => ({ default: module.ComprasPage })))
 const FacturacionPage = lazy(() => import('@/features/facturacion/facturacion-page').then(module => ({ default: module.FacturacionPage })))
 const EntregasPage = lazy(() => import('@/features/entregas/entregas-page').then(module => ({ default: module.EntregasPage })))
+const ReportesPage = lazy(() => import('@/features/reportes/reportes-page').then(module => ({ default: module.ReportesPage })))
 
 export function App() {
   return (
@@ -123,7 +124,8 @@ export function App() {
             <Route path="compras" element={<Suspense fallback={<LoadingState />}><ComprasPage /></Suspense>} />
             <Route path="facturacion" element={<Suspense fallback={<LoadingState />}><FacturacionPage /></Suspense>} />
             <Route path="entregas" element={<Suspense fallback={<LoadingState />}><EntregasPage /></Suspense>} />
-            {businessModules.filter(module => !['/clientes', '/equipos', '/ordenes', '/diagnosticos', '/repuestos', '/proveedores', '/inventario', '/compras', '/facturacion', '/entregas'].includes(module.path)).map((module) => (
+            <Route path="reportes" element={<Suspense fallback={<LoadingState />}><ReportesPage /></Suspense>} />
+            {businessModules.filter(module => !['/clientes', '/equipos', '/ordenes', '/diagnosticos', '/repuestos', '/proveedores', '/inventario', '/compras', '/facturacion', '/entregas', '/reportes'].includes(module.path)).map((module) => (
               <Route
                 key={module.path}
                 path={module.path}
