@@ -15,7 +15,7 @@ export function ReporteFiltros({ report, catalogos, onCancel }: { report: Report
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{report.filters.map(filter => {
       const props = { id: `reporte-${filter.key}`, label: filter.label, required: filter.required, error: form.formState.errors[filter.key]?.message, ...form.register(filter.key) }
       return filter.catalog || filter.kind === 'boolean'
-        ? <SelectField key={filter.key} {...props} placeholder={filter.required ? 'Selecciona una opción' : 'Todos'} options={filter.catalog ? catalogos[filter.catalog] : [{ value: '1', label: 'Sí' }, { value: '0', label: 'No' }]} />
+        ? <SelectField key={filter.key} {...props} placeholder={filter.kind === 'boolean' ? 'Selecciona Sí o No' : filter.required ? 'Selecciona una opción' : 'Todos'} options={filter.catalog ? catalogos[filter.catalog] : [{ value: '1', label: 'Sí' }, { value: '0', label: 'No' }]} />
         : <TextField key={filter.key} {...props} type={filter.kind === 'date' ? 'date' : 'text'} maxLength={filter.kind === 'serie' ? 60 : undefined} />
     })}</div>
     <p className="text-sm text-muted-foreground">Los límites de fecha son días civiles de Guatemala; Hasta no se incluye. La API deberá convertirlos a instantes UTC explícitos [Desde, HastaExclusiva). Validar no actualiza los resultados recibidos ni envía solicitudes.</p>

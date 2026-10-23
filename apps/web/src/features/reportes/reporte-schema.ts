@@ -6,7 +6,7 @@ export function createReportSchema(report: ReportDefinition, catalogos: ReportCa
   const shape: Record<string, z.ZodString> = {}
   for (const filter of report.filters) shape[filter.key] = z.string().trim().superRefine((value, ctx) => {
     const invalid = (message: string) => ctx.addIssue({ code: 'custom', message })
-    if (!value) { if (filter.required) invalid('Este filtro es obligatorio.'); return }
+    if (!value) { if (filter.required || filter.kind === 'boolean') invalid('Este filtro es obligatorio.'); return }
     if (filter.catalog && !catalogos[filter.catalog]?.some(option => option.value === value)) invalid('Selecciona una opción del catálogo recibido.')
     if (filter.kind === 'date' && formatCivilDate(value) === '—') invalid('Indica una fecha válida (AAAA-MM-DD).')
     if (filter.kind === 'serie' && value.length > 60) invalid('Usa como máximo 60 caracteres.')
