@@ -51,13 +51,15 @@ describe('facturación y pagos', () => {
     expect(screen.getAllByRole('button', { name: 'Validar datos' }).every(button => button.hasAttribute('disabled'))).toBe(true)
   })
   it('muestra pagos aplicados y anulados sin recalcular el saldo recibido', () => {
-    render(<FacturacionPage facturas={{ status: 'success', data: [factura] }} />)
+    render(<FacturacionPage facturas={{ status: 'success', data: [{ ...factura, detalles: [{ idDetalleFactura: 1, tipoLinea: 'MANO_OBRA', idReparacion: 11, idRepuestoReparacion: null, descripcion: 'Concepto histórico de prueba', cantidad: '2.00', precioUnitario: '5.00', subtotal: '10.00' }] }] }} />)
     fireEvent.change(screen.getByLabelText('Ver detalle recibido'), { target: { value: '1' } })
     const detail = within(screen.getByRole('region', { name: 'Detalle de factura' }))
     expect(detail.getByText('APLICADO')).toBeVisible()
     expect(detail.getByText('ANULADO')).toBeVisible()
     expect(detail.getByText('Motivo de prueba')).toBeVisible()
     expect(detail.getByText('Saldo (Q)').nextElementSibling).toHaveTextContent('10.00')
+    expect(detail.getByRole('table', { name: 'Líneas de factura' })).toHaveTextContent('Reparación #11')
+    expect(detail.getByRole('table', { name: 'Líneas de factura' })).toHaveTextContent('Q 5.00')
   })
   it('valida sin red ni persistencia y cancela limpiando mensajes y valores', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch')

@@ -41,6 +41,7 @@ describe('inventario recibido', () => {
   it('usa Guatemala con zona explícita y límites exclusivos sin conversiones implícitas', () => {
     expect(guatemalaCivilDay('2026-10-22T01:00:00Z')).toBe('2026-10-21')
     expect(guatemalaCivilDay('2026-10-22T01:00:00')).toBeNull()
+    expect(guatemalaCivilDay('2026-02-30T01:00:00Z')).toBeNull()
     expect(inCivilRange('2026-10-22T06:00:00Z', '2026-10-21', '2026-10-22')).toBe(false)
     expect(dateRangeSchema.safeParse({ desde: '2026-10-22', hastaExclusiva: '2026-10-22' }).success).toBe(false)
   })

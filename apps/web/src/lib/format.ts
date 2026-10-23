@@ -17,7 +17,7 @@ export function formatDateTime(value: string): string {
   return Number.isNaN(date.getTime()) ? '—' : dateTime.format(date)
 }
 
-function isZonedInstant(value: string) {
+export function isZonedInstant(value: string) {
   return /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,7})?(?:Z|[+-]\d{2}:\d{2})$/.test(value) && formatCivilDate(value.slice(0, 10)) !== '—'
 }
 
