@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,13 @@ import type { EquipoCatalogos } from '@/features/equipos/equipo-catalogos'
 
 export function EquiposPage({ catalogos = {} }: { catalogos?: EquipoCatalogos }) {
   const [showForm, setShowForm] = useState(false)
+  const newButtonRef = useRef<HTMLButtonElement>(null)
+  const wasOpen = useRef(false)
+
+  useEffect(() => {
+    if (wasOpen.current && !showForm) newButtonRef.current?.focus()
+    wasOpen.current = showForm
+  }, [showForm])
 
   return (
     <>
@@ -17,7 +24,7 @@ export function EquiposPage({ catalogos = {} }: { catalogos?: EquipoCatalogos })
         eyebrow="TechCare / Recepción"
         title="Equipos"
         description="Registro de equipos y consulta de su historial por número de serie."
-        actions={!showForm && <Button onClick={() => setShowForm(true)}>Nuevo equipo</Button>}
+        actions={!showForm && <Button ref={newButtonRef} onClick={() => setShowForm(true)}>Nuevo equipo</Button>}
       />
 
       {showForm && <EquipoForm catalogos={catalogos} onCancel={() => setShowForm(false)} />}

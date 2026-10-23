@@ -138,6 +138,7 @@ describe('formulario de Equipos', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(screen.queryByRole('form')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Nuevo equipo' })).toHaveFocus()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Nuevo equipo' }))
 

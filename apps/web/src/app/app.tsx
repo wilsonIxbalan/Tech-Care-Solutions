@@ -5,9 +5,14 @@ import { AppShell } from '@/app/app-shell'
 import { businessModules } from '@/app/navigation'
 import { WorkspacePage } from '@/features/workspace/workspace-page'
 import { ModulePage } from '@/features/workspace/module-page'
-import { LoginPage } from '@/features/auth/login-page'
 import { EmptyState, LoadingState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
+
+const LoginPage = lazy(() =>
+  import('@/features/auth/login-page').then((module) => ({
+    default: module.LoginPage,
+  })),
+)
 
 const DesignSystemPage = lazy(() =>
   import('@/features/design-system/design-system-page').then((module) => ({
@@ -27,12 +32,25 @@ const EquiposPage = lazy(() =>
   })),
 )
 
+const OrdenesPage = lazy(() =>
+  import('@/features/ordenes/ordenes-page').then((module) => ({
+    default: module.OrdenesPage,
+  })),
+)
+
 export function App() {
   return (
     <Providers>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/login"
+            element={
+              <Suspense fallback={<LoadingState label="Preparando inicio de sesión…" />}>
+                <LoginPage />
+              </Suspense>
+            }
+          />
 
           <Route element={<AppShell />}>
             <Route index element={<WorkspacePage />} />
@@ -68,7 +86,16 @@ export function App() {
               }
             />
 
-            {businessModules.filter(module => module.path !== '/clientes' && module.path !== '/equipos').map((module) => (
+            <Route
+              path="ordenes"
+              element={
+                <Suspense fallback={<LoadingState label="Preparando Órdenes…" />}>
+                  <OrdenesPage />
+                </Suspense>
+              }
+            />
+
+            {businessModules.filter(module => !['/clientes', '/equipos', '/ordenes'].includes(module.path)).map((module) => (
               <Route
                 key={module.path}
                 path={module.path}

@@ -153,6 +153,7 @@ describe('formulario de Clientes', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(screen.queryByRole('form')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Nuevo cliente' })).toHaveFocus()
     fireEvent.click(screen.getByRole('button', { name: 'Nuevo cliente' }))
 
     expect(screen.getByRole('combobox', { name: /Tipo de cliente/ })).toHaveValue('INDIVIDUAL')

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { App } from '@/app/app'
 
@@ -8,6 +8,7 @@ describe('navegación de TechCare', () => {
   it('abre Clientes y muestra que la consulta aún no está conectada', async () => {
     render(<App />)
     expect(screen.getByRole('heading', { name: 'Servicio técnico, de principio a fin' })).toBeVisible()
+    expect(screen.getAllByText('API pendiente')).toHaveLength(3)
     fireEvent.click(within(screen.getByRole('navigation', { name: 'Navegación principal' })).getByRole('link', { name: 'Clientes' }))
     expect(await screen.findByRole('heading', { name: 'Clientes' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Nuevo cliente' })).toBeVisible()
@@ -23,17 +24,26 @@ describe('navegación de TechCare', () => {
     expect(screen.getByRole('heading', { name: 'Consulta de equipos pendiente de conexión' })).toBeVisible()
     expect(screen.getByRole('link', { name: 'Equipos' })).toHaveAttribute('aria-current', 'page')
   })
-  it('mantiene los otros módulos en su pantalla pendiente', () => {
+  it('abre Órdenes dentro de AppShell sin simular registros', async () => {
     window.history.replaceState({}, '', '/ordenes')
     render(<App />)
-    expect(screen.getByRole('heading', { name: 'Órdenes de servicio' })).toBeVisible()
-    expect(screen.getByRole('heading', { name: 'Módulo pendiente de implementación' })).toBeVisible()
+    expect(await screen.findByRole('heading', { name: 'Órdenes de servicio' })).toBeVisible()
+    expect(screen.getByRole('navigation', { name: 'Navegación principal' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Nueva orden' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Consulta de órdenes pendiente de conexión' })).toBeVisible()
     expect(screen.getByRole('link', { name: 'Órdenes de servicio' })).toHaveAttribute('aria-current', 'page')
   })
-  it('abre el login fuera del menú, la cabecera y el pie de AppShell', () => {
+  it('mantiene los otros módulos en su pantalla pendiente', () => {
+    window.history.replaceState({}, '', '/repuestos')
+    render(<App />)
+    expect(screen.getByRole('heading', { name: 'Repuestos' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Módulo pendiente de implementación' })).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Repuestos' })).toHaveAttribute('aria-current', 'page')
+  })
+  it('abre el login fuera del menú, la cabecera y el pie de AppShell', async () => {
     window.history.replaceState({}, '', '/login')
     render(<App />)
-    expect(screen.getByRole('heading', { name: 'Iniciar sesión' })).toBeVisible()
+    expect(await screen.findByRole('heading', { name: 'Iniciar sesión' })).toBeVisible()
     expect(screen.getAllByRole('main')).toHaveLength(1)
     expect(screen.queryByRole('navigation', { name: 'Navegación principal' })).not.toBeInTheDocument()
     expect(screen.queryByRole('banner')).not.toBeInTheDocument()
@@ -43,6 +53,27 @@ describe('navegación de TechCare', () => {
     window.history.replaceState({}, '', '/kit')
     render(<App />)
     expect(await screen.findByRole('heading', { name: 'Esto es un kit, no un dashboard de negocio' })).toBeVisible()
+  })
+  it('abre el menú móvil, navega a Clientes y lo cierra devolviendo el foco', async () => {
+    render(<App />)
+    const trigger = screen.getByRole('button', { name: 'Abrir menú' })
+    fireEvent.click(trigger)
+    const dialog = await screen.findByRole('dialog', { name: 'Menú TechCare' })
+    expect(within(dialog).getByRole('navigation', { name: 'Navegación principal' })).toBeVisible()
+    fireEvent.click(within(dialog).getByRole('link', { name: 'Clientes' }))
+    expect(await screen.findByRole('heading', { name: 'Clientes' })).toBeVisible()
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    await waitFor(() => expect(trigger).toHaveFocus())
+  })
+  it.each(['botón', 'Escape'])('permite cerrar el menú mediante %s', async method => {
+    render(<App />)
+    const trigger = screen.getByRole('button', { name: 'Abrir menú' })
+    fireEvent.click(trigger)
+    const dialog = await screen.findByRole('dialog', { name: 'Menú TechCare' })
+    if (method === 'botón') fireEvent.click(within(dialog).getByRole('button', { name: 'Cerrar menú' }))
+    else fireEvent.keyDown(dialog, { key: 'Escape', code: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    await waitFor(() => expect(trigger).toHaveFocus())
   })
   it('permite volver al inicio desde una ruta desconocida', () => {
     window.history.replaceState({}, '', '/no-existe')
