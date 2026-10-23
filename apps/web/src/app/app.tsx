@@ -21,6 +21,12 @@ const ClientesPage = lazy(() =>
   })),
 )
 
+const EquiposPage = lazy(() =>
+  import('@/features/equipos/equipos-page').then((module) => ({
+    default: module.EquiposPage,
+  })),
+)
+
 export function App() {
   return (
     <Providers>
@@ -44,19 +50,29 @@ export function App() {
               }
             />
 
-            {businessModules.map((module) => (
+            <Route
+              path="clientes"
+              element={
+                <Suspense fallback={<LoadingState label="Preparando Clientes…" />}>
+                  <ClientesPage />
+                </Suspense>
+              }
+            />
+
+            <Route
+              path="equipos"
+              element={
+                <Suspense fallback={<LoadingState label="Preparando Equipos…" />}>
+                  <EquiposPage />
+                </Suspense>
+              }
+            />
+
+            {businessModules.filter(module => module.path !== '/clientes' && module.path !== '/equipos').map((module) => (
               <Route
                 key={module.path}
                 path={module.path}
-                element={
-                  module.path === '/clientes'
-                    ? (
-                      <Suspense fallback={<LoadingState label="Preparando Clientes…" />}>
-                        <ClientesPage />
-                      </Suspense>
-                    )
-                    : <ModulePage module={module} />
-                }
+                element={<ModulePage module={module} />}
               />
             ))}
 

@@ -14,12 +14,21 @@ describe('navegación de TechCare', () => {
     expect(screen.getByRole('heading', { name: 'Consulta de clientes pendiente de conexión' })).toBeVisible()
     expect(screen.getByRole('link', { name: 'Clientes' })).toHaveAttribute('aria-current', 'page')
   })
-  it('mantiene los otros módulos en su pantalla pendiente', () => {
+  it('abre Equipos dentro de AppShell y señala las consultas pendientes', async () => {
     window.history.replaceState({}, '', '/equipos')
     render(<App />)
-    expect(screen.getByRole('heading', { name: 'Equipos' })).toBeVisible()
-    expect(screen.getByRole('heading', { name: 'Módulo pendiente de implementación' })).toBeVisible()
+    expect(await screen.findByRole('heading', { name: 'Equipos' })).toBeVisible()
+    expect(screen.getByRole('navigation', { name: 'Navegación principal' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Nuevo equipo' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Consulta de equipos pendiente de conexión' })).toBeVisible()
     expect(screen.getByRole('link', { name: 'Equipos' })).toHaveAttribute('aria-current', 'page')
+  })
+  it('mantiene los otros módulos en su pantalla pendiente', () => {
+    window.history.replaceState({}, '', '/ordenes')
+    render(<App />)
+    expect(screen.getByRole('heading', { name: 'Órdenes de servicio' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Módulo pendiente de implementación' })).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Órdenes de servicio' })).toHaveAttribute('aria-current', 'page')
   })
   it('abre el login fuera del menú, la cabecera y el pie de AppShell', () => {
     window.history.replaceState({}, '', '/login')
