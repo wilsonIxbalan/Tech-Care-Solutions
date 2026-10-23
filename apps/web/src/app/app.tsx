@@ -38,6 +38,12 @@ const OrdenesPage = lazy(() =>
   })),
 )
 
+const DiagnosticosPage = lazy(() =>
+  import('@/features/diagnosticos/diagnosticos-page').then((module) => ({
+    default: module.DiagnosticosPage,
+  })),
+)
+
 export function App() {
   return (
     <Providers>
@@ -95,7 +101,16 @@ export function App() {
               }
             />
 
-            {businessModules.filter(module => !['/clientes', '/equipos', '/ordenes'].includes(module.path)).map((module) => (
+            <Route
+              path="diagnosticos"
+              element={
+                <Suspense fallback={<LoadingState label="Preparando Diagnósticos…" />}>
+                  <DiagnosticosPage />
+                </Suspense>
+              }
+            />
+
+            {businessModules.filter(module => !['/clientes', '/equipos', '/ordenes', '/diagnosticos'].includes(module.path)).map((module) => (
               <Route
                 key={module.path}
                 path={module.path}

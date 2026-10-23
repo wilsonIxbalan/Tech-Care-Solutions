@@ -40,6 +40,17 @@ describe('navegación de TechCare', () => {
     expect(screen.getByRole('heading', { name: 'Módulo pendiente de implementación' })).toBeVisible()
     expect(screen.getByRole('link', { name: 'Repuestos' })).toHaveAttribute('aria-current', 'page')
   })
+  it('abre Diagnósticos dentro de AppShell y conserva Reparaciones como pendiente', async () => {
+    window.history.replaceState({}, '', '/diagnosticos')
+    render(<App />)
+    expect(await screen.findByRole('heading', { name: 'Diagnósticos y reparaciones' })).toBeVisible()
+    expect(screen.getByRole('navigation', { name: 'Navegación principal' })).toBeVisible()
+    expect(screen.getByRole('region', { name: 'Diagnósticos' })).toBeVisible()
+    expect(screen.getByRole('region', { name: 'Reparaciones' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Nuevo diagnóstico' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Reparaciones pendientes de implementación' })).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Diagnósticos y reparaciones' })).toHaveAttribute('aria-current', 'page')
+  })
   it('abre el login fuera del menú, la cabecera y el pie de AppShell', async () => {
     window.history.replaceState({}, '', '/login')
     render(<App />)
