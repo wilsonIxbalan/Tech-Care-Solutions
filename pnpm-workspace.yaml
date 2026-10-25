@@ -2,5 +2,6 @@ packages:
   - apps/*
 
 onlyBuiltDependencies:
+  - argon2
   - '@tailwindcss/oxide'
   - esbuild

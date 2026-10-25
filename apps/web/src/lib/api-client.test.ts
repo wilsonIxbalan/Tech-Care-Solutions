@@ -5,13 +5,14 @@ beforeEach(() => vi.stubEnv('VITE_API_URL', 'https://api.example.test/api/v1'))
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals() })
 
 describe('API boundary', () => {
-  it('preserves the success envelope and sends a bearer token', async () => {
+  it('preserves the success envelope and includes session cookies', async () => {
     const mock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: { idOrden: 1 } }), { status: 200 }))
     vi.stubGlobal('fetch', mock)
-    await expect(apiFetch('/ordenes/1', { token: 'example-only' })).resolves.toEqual({ data: { idOrden: 1 } })
+    await expect(apiFetch('/ordenes/1')).resolves.toEqual({ data: { idOrden: 1 } })
     const [url, options] = mock.mock.calls[0] as [string, RequestInit]
     expect(url).toBe('https://api.example.test/api/v1/ordenes/1')
-    expect(new Headers(options.headers).get('Authorization')).toBe('Bearer example-only')
+    expect(options.credentials).toBe('include')
+    expect(new Headers(options.headers).has('Authorization')).toBe(false)
   })
   it('maps a declared business error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
@@ -27,10 +28,10 @@ describe('API boundary', () => {
     await expect(apiFetch('/facturas/1/pagos', { method: 'POST', body: '{}' })).rejects.toMatchObject({ code: 'SERVICIO_NO_DISPONIBLE' })
     expect(mock).toHaveBeenCalledTimes(1)
   })
-  it('does not send tokens to a supplied absolute URL', async () => {
+  it('does not send cookies to a supplied absolute URL', async () => {
     const mock = vi.fn()
     vi.stubGlobal('fetch', mock)
-    await expect(apiFetch('https://other.example/steal', { token: 'example-only' })).rejects.toMatchObject({ code: 'CONFIGURACION' })
+    await expect(apiFetch('https://other.example/steal')).rejects.toMatchObject({ code: 'CONFIGURACION' })
     expect(mock).not.toHaveBeenCalled()
   })
 })
