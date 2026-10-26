@@ -1,0 +1,12 @@
+# Reglas relativas al contexto de build (raiz del workspace).
+**/node_modules
+**/dist
+**/coverage
+.git
+.env
+.env.*
+**/.env
+**/.env.*
+analisis
+apps/web
+**/*.log
