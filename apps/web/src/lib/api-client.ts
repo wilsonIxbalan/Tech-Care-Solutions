@@ -23,25 +23,24 @@ function isApiError(value: unknown): value is ApiErrorResponse {
     && typeof value.requestId === 'string'
 }
 
-type ApiOptions = RequestInit & { token?: string }
+type ApiOptions = RequestInit
 
 /** No automatic retries: a financial POST can succeed even if its response is lost. */
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<ApiResponse<T>> {
-  const base = import.meta.env.VITE_API_URL?.trim()
-  if (!base) throw new ApiError('Falta configurar VITE_API_URL.', 'CONFIGURACION', 0)
+  const base = import.meta.env.VITE_API_URL?.trim() || '/api/v1'
   if (!path.startsWith('/') || path.startsWith('//')) {
     throw new ApiError('La ruta debe ser relativa a la API.', 'CONFIGURACION', 0)
   }
-  const { token, signal, ...init } = options
+  const { signal, ...init } = options
   const headers = new Headers(init.headers)
   headers.set('Accept', 'application/json')
   if (init.body !== undefined && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json')
-  if (token) headers.set('Authorization', `Bearer ${token}`)
+  headers.delete('Authorization')
   const timeout = AbortSignal.timeout(120_000)
   let response: Response
   try {
     response = await fetch(`${base.replace(/\/$/, '')}${path}`, {
-      ...init, headers, signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+      ...init, credentials: 'include', headers, signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
     })
   } catch (error) {
     if (signal?.aborted) throw error
