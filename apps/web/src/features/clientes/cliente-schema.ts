@@ -19,8 +19,7 @@ const commonFields = {
     .optional(),
 }
 
-// Datos del formulario, no un contrato de creación de la API.
-// Cada variante descarta las propiedades que no le corresponden.
+// Cada variante descarta propiedades ajenas; clienteBody normaliza los nullable del DTO.
 export const clienteSchema = z.discriminatedUnion('tipoCliente', [
   z.object({
     ...commonFields,

@@ -1,7 +1,6 @@
 import type { ClienteDto, EquipoDto } from '@/types/domain'
 
-// Opciones recibidas por la interfaz; no son contratos HTTP.
-// undefined: pendiente de conexión. []: catálogo recibido sin opciones.
+// Opciones para validar la selección; clientes incluye la selección persistida.
 export interface EquipoCatalogos {
   clientes?: readonly Pick<ClienteDto, 'idCliente' | 'nombreMostrar'>[]
   tiposEquipo?: readonly { idTipoEquipo: EquipoDto['idTipoEquipo']; nombre: string }[]

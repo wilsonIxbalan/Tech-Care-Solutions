@@ -123,8 +123,55 @@ export class MastersRepository {
   ) {
     return this.db.transaction(async (tx) => {
       const config = masters[name];
+      // Primer acceso de TODA escritura de usuarios: mutex estable antes de leer
+      // usuarios/roles. UPDLOCK evita la conversión S->X entre dos sesiones
+      // Serializable que intenten retirar a administradores distintos.
+      let activeAdmins: number[] = [];
+      if (name === 'usuarios') {
+        await this.db.query(
+          "SELECT IdRol FROM dbo.Rol WITH (UPDLOCK,HOLDLOCK) WHERE Codigo='ADMINISTRADOR';",
+          [],
+          tx,
+        );
+        activeAdmins = (
+          await this.db.query(
+            "SELECT u.IdUsuario FROM dbo.Usuario u JOIN dbo.UsuarioRol ur ON ur.IdUsuario=u.IdUsuario JOIN dbo.Rol r ON r.IdRol=ur.IdRol WHERE u.Activo=1 AND r.Activo=1 AND r.Codigo='ADMINISTRADOR';",
+            [],
+            tx,
+          )
+        ).recordset.map((row) => Number(row.IdUsuario));
+      }
       const current = id ? await this.one(name, id, tx) : undefined;
       const merged = { ...current, ...body };
+      if (name === 'usuarios') {
+        if (
+          !id ||
+          (body.nombreUsuario !== undefined &&
+            body.nombreUsuario !== current?.nombreUsuario)
+        ) {
+          if (
+            typeof body.nombreUsuario !== 'string' ||
+            !/^[^\s@\p{C}]+$/u.test(body.nombreUsuario)
+          )
+            throw invalid(
+              'nombreUsuario',
+              'El usuario no debe contener @, espacios ni caracteres de control.',
+            );
+        }
+        if (
+          id &&
+          activeAdmins.includes(id) &&
+          activeAdmins.length === 1 &&
+          (body.activo === false ||
+            (body.roles !== undefined &&
+              !(body.roles as string[]).includes('ADMINISTRADOR')))
+        )
+          throw new ApiError(
+            409,
+            'ULTIMO_ADMINISTRADOR',
+            'Debe permanecer al menos un administrador activo.',
+          );
+      }
       if (name === 'clientes') {
         if (
           merged.tipoCliente === 'INDIVIDUAL' &&

@@ -21,4 +21,5 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm --filter @techcare/api test:e2e --runInBand
       - run: pnpm build

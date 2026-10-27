@@ -4,7 +4,7 @@ Estándar v1 · 21/10/2026. Leer después: [contratos](02-contratos-dtos.md), [e
 
 ## Estado y alcance
 
-Existe un kit frontend y scripts SQL; backend y pantallas de negocio están pendientes. Estos documentos definen qué construir, no certifican funcionalidades ya ejecutadas. Entrega: 31/10/2026.
+Las bases frontend, backend y SQL estan integradas en devWilson. La integracion funcional se valida por recorridos; la presencia de un formulario no certifica persistencia ni una prueba con mocks certifica Azure. Entrega: 31/10/2026.
 
 Tres capas y un backend modular, sin microservicios, Redis, crédito, integración SAT ni refresh tokens. Guías operativas y configuración privada permanecen en la carpeta compartida; estos cinco documentos técnicos sí se versionan.
 
@@ -49,7 +49,7 @@ Abastecimiento: proveedor → compra PENDIENTE → recepción RECIBIDA → inven
 - BODEGA: repuestos, proveedores, bodegas, compras y ajustes.
 - CAJA: factura, pagos y entrega. REPORTES_VER permite consultar reportes a los perfiles configurados.
 
-Los permisos reales proceden de UsuarioRol/RolPermiso activos. Ocultar menús no sustituye el guard. Roles SQL del equipo y cuenta técnica de API no son estos perfiles de negocio.
+Los permisos reales proceden de UsuarioRol/RolPermiso activos. Ocultar menús no sustituye el guard. Roles SQL del equipo y cuenta técnica de API no son estos perfiles de negocio. Los reportes financieros requieren ADMINISTRADOR o CAJA; los roles restantes conservan las consultas operativas autorizadas. No existe un rol analitico nuevo.
 
 ## Secuencia de desarrollo y aceptación
 

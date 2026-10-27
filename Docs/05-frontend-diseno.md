@@ -4,7 +4,7 @@ Responsable: Cristian. Usar la base existente de apps/web y [tecnologías acorda
 
 ## Pantallas que se construyen
 
-1. **Login `/login`:** nombreUsuario/password → POST auth/login; después cargar usuario/permisos. Logout por POST, no borrar un token desde JavaScript.
+1. **Login `/login`:** usuario o correo/password → POST auth/login (campo HTTP `nombreUsuario`); después cargar usuario/permisos. Logout por POST, no borrar un token desde JavaScript.
 2. **Inicio `/dashboard`:** GET dashboard; seis indicadores y actividad reciente calculados en SQL. Nada de cifras de ejemplo en la aplicación final.
 3. **Clientes `/clientes`:** lista/búsqueda y formulario ClienteInput; alternar persona/empresa y sus campos requeridos. GET/POST/PATCH clientes.
 4. **Equipos `/equipos`:** EquipoInput; cliente, tipo/marca de catálogos, modelo, serie, descripción y estado. GET/POST/PATCH equipos; desde serie abrir historial.
@@ -38,14 +38,24 @@ La organización de secciones puede reutilizar páginas/modal/drawer de la base;
 - Lucide: un mismo icono para una misma acción; tamaño consistente, texto junto a acciones importantes y aria-label en botones de solo icono. Estado con texto/icono, nunca solo color.
 - Sonner success tras respuesta confirmada; error breve una vez. Alert inline para campos/global persistente, 409, permisos o resultado no confirmado. Conservar entradas al fallar.
 - Foco visible y teclado en formularios/diálogos; submit deshabilitado mientras procesa. Campos readonly para números/fechas generados y totales del servidor.
+- Branding visible: Tech Care Solutions, paleta teal/azul oscuro y propuesta A «Continuidad» aprobada: monograma T/C. Se aplica a login, navegacion y factura; los archivos de exploracion se conservan fuera de las pantallas operativas.
+- Avatar con iniciales derivadas del nombre completo, sin fotografia ni indicador de presencia inventado. Mostrar los roles existentes de la sesion; una cuenta puede tener varios.
+- Agrupar la navegacion por operativa, con iconografia por dominio y dashboard de datos reales. Retirar textos academicos, de implementacion, guias y estados de desarrollo de las pantallas publicadas; conservar ayuda operativa y validaciones.
+- Exportaciones: resultados filtrados completos hasta 10 000 filas, XLSX multihoja y CSV por conjunto. Finanzas solo ADMINISTRADOR o CAJA. La factura PDF es una simulacion Carta, no certificacion fiscal.
 
-## Ajustes pendientes del kit antes de integrar sesión
+## Integracion y validacion de sesion
 
-- Cambiar LoginResponse al LoginResult del documento 02; retirar accessToken/tokenType y almacenamiento de JWT.
-- Adaptar apiFetch a credentials=include, sin Authorization Bearer; usar VITE_API_URL=/api/v1.
-- Configurar proxy local en vite.config.ts y rewrite /api antes de index.html en vercel.json, con host Render real aprobado; no están aplicados por esta documentación.
+- LoginResponse respeta LoginResult del documento 02, sin accessToken/tokenType ni almacenamiento de JWT.
+- apiFetch usa credentials=include, sin Authorization Bearer; usar VITE_API_URL=/api/v1.
+- El proxy local existe en vite.config.ts. El rewrite /api antes de index.html en vercel.json sigue condicionado al host Render real aprobado; no hay servicios Render/Vercel creados todavia.
 - Ajustar manejo de sesión y ConfirmDialog para mostrar mensajes de negocio conocidos sin convertir todo rechazo en resultado desconocido; reservar ese aviso para fallos ambiguos de red/servidor.
 - Actualizar tests de transporte/login; la galería actual y sus pruebas no certifican la autenticación ni los procesos finales.
+
+## Separacion de pruebas
+
+- Frontend: `apps/web/test/` refleja las features y contiene setup/fixtures; `vitest.config.ts` reutiliza la configuracion Vite sin inyectar tipos testing al producto.
+- Backend: `apps/api/test/unit/` y `apps/api/test/http/`. Pruebas HTTP reutilizan `configureApp`, que es configuracion productiva compartida, sustituyendo los proveedores externos por dobles de prueba.
+- Ninguna prueba automatizada de esta capa puede leer secretos privados o conectar a Azure. La validacion de integridad SQL real requiere autorizacion explicita y un entorno de datos controlado.
 
 ## Aceptación de una pantalla
 

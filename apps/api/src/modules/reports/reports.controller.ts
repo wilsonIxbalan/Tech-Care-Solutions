@@ -1,7 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import { ReportQuery } from '../../common/query.dto';
-import { Permissions } from '../auth/access';
+import { Permissions, Roles } from '../auth/access';
 import { ReportsService } from './reports.service';
 @ApiTags('reportes')
 @ApiCookieAuth('session')
@@ -30,15 +30,18 @@ export class ReportsController {
   @Get('bajo-minimo') minimum(@Query() query: ReportQuery) {
     return this.service.report('bajo-minimo', query);
   }
+  @Roles('ADMINISTRADOR', 'CAJA')
   @Get('compras-proveedor') purchases(@Query() query: ReportQuery) {
     return this.service.report('compras-proveedor', query);
   }
   @Get('movimientos') movements(@Query() query: ReportQuery) {
     return this.service.report('movimientos', query);
   }
+  @Roles('ADMINISTRADOR', 'CAJA')
   @Get('facturas-saldo') invoices(@Query() query: ReportQuery) {
     return this.service.report('facturas-saldo', query);
   }
+  @Roles('ADMINISTRADOR', 'CAJA')
   @Get('ingresos') income(@Query() query: ReportQuery) {
     return this.service.report('ingresos', query);
   }

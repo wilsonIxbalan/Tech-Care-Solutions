@@ -9,8 +9,8 @@ export async function login(input: LoginInput): Promise<LoginResponse> {
   return response.data
 }
 
-export async function getCurrentUser(): Promise<SessionUser> {
-  return (await apiFetch<SessionUser>('/auth/me')).data
+export async function getCurrentUser(signal?: AbortSignal): Promise<SessionUser> {
+  return (await apiFetch<SessionUser>('/auth/me', { signal })).data
 }
 
 export async function logout(): Promise<void> {

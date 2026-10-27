@@ -12,6 +12,7 @@ import { PurchasingModule } from './modules/purchasing/purchasing.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { StatusModule } from './modules/status/status.module';
+import { DownloadsModule } from './modules/downloads/downloads.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { StatusModule } from './modules/status/status.module';
     PurchasingModule,
     BillingModule,
     ReportsModule,
+    DownloadsModule,
     StatusModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: AccessGuard }],

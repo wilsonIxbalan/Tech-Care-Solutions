@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { optionalText, requiredText, selection } from '@/lib/draft-schema'
 import { nonNegativeMoneySchema } from '@/lib/money-schema'
 
-// Modelos de presentación basados en dbo.Repuesto / CategoriaRepuesto, no contratos HTTP.
+// Contratos públicos del maestro de repuestos y opciones de categoría.
 export interface CategoriaOption { idCategoria: number; nombre: string }
 export interface RepuestoRow { idRepuesto: number; idCategoria: number; codigo: string; nombre: string; descripcion: string | null; precioCompraReferencia: string; precioVenta: string; estado: 'ACTIVO' | 'INACTIVO' }
 export function createRepuestoSchema(categorias?: readonly CategoriaOption[]) {

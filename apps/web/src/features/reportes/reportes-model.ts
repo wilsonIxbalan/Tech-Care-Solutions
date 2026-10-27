@@ -1,12 +1,10 @@
-// Proyección de los doce procedimientos de database/fases/09_reportes.sql.
-// Claves SQL locales de presentación: el formato JSON debe acordarse con la API.
 export type ReportCatalog = 'estadosOrden' | 'prioridades' | 'tecnicos' | 'clientes' | 'ordenes' | 'bodegas' | 'categorias' | 'repuestos' | 'proveedores' | 'tiposMovimiento' | 'usuarios' | 'estadosCompra' | 'estadosFactura'
 export interface ReportOption { value: string; label: string }
 export type ReportCatalogos = Partial<Record<ReportCatalog, readonly ReportOption[]>>
 export interface ReportFilter { key: string; label: string; catalog?: ReportCatalog; required?: boolean; kind?: 'date' | 'serie' | 'boolean' }
 export interface ReportSet { key: string; title: string; columns: readonly string[]; nullable?: readonly string[] }
 export interface ReportDefinition { id: string; title: string; procedure: string; filters: readonly ReportFilter[]; sets: readonly ReportSet[]; note?: string }
-const dates: ReportFilter[] = [{ key: 'Desde', label: 'Desde (Guatemala)', kind: 'date' }, { key: 'HastaExclusiva', label: 'Hasta, exclusivo (Guatemala)', kind: 'date' }]
+const dates: ReportFilter[] = [{ key: 'Desde', label: 'Desde (Guatemala)', kind: 'date' }, { key: 'HastaExclusiva', label: 'Hasta (Guatemala, inclusive)', kind: 'date' }]
 const f = (key: string, label: string, catalog: ReportCatalog, required = false): ReportFilter => ({ key, label, catalog, required })
 const set = (key: string, title: string, columns: string, nullable?: string): ReportSet => ({ key, title, columns: columns.split(' '), nullable: nullable?.split(' ') })
 export const reportDefinitions = [
@@ -29,4 +27,22 @@ export type ReportRow = Readonly<Record<string, string | number | boolean | null
 const labels: Record<string, string> = {
   IdOrden: 'Orden (ID)', NumeroOrden: 'Orden', FechaIngreso: 'Ingreso (UTC)', FechaEstimada: 'Fecha estimada (civil)', Estado: 'Estado', Prioridad: 'Prioridad', ClienteNombre: 'Cliente', NumeroSerie: 'Serie', TipoEquipo: 'Tipo de equipo', Marca: 'Marca', IdTecnico: 'Técnico (ID)', TecnicoResponsable: 'Técnico responsable', IdCliente: 'Cliente (ID)', NombreMostrar: 'Nombre', TipoCliente: 'Tipo de cliente', NIT: 'NIT', IdEquipo: 'Equipo (ID)', IdDiagnostico: 'Diagnóstico (ID)', Diagnostico: 'Diagnóstico', Tecnico: 'Técnico', NumeroFactura: 'Factura', TotalFactura: 'Total de factura (Q)', Modelo: 'Modelo', ProblemaReportado: 'Problema reportado', EstadoOrden: 'Estado de orden', EstadoDiagnostico: 'Estado de diagnóstico', TecnicoDiagnostico: 'Técnico del diagnóstico', TotalManoObra: 'Mano de obra (Q)', TotalRepuestos: 'Repuestos (Q)', IdFactura: 'Factura (ID)', FechaEntrega: 'Entrega (UTC)', Tipo: 'Tipo', IdRegistro: 'Registro (ID)', TecnicoNombre: 'Técnico', Fecha: 'Fecha (UTC)', Descripcion: 'Descripción', Costo: 'Costo (Q)', IdRepuestoReparacion: 'Consumo (ID)', IdReparacion: 'Reparación (ID)', IdBodega: 'Bodega (ID)', BodegaNombre: 'Bodega', Codigo: 'Código', RepuestoNombre: 'Repuesto', Cantidad: 'Cantidad', PrecioCostoUnitario: 'Costo histórico (Q)', PrecioVentaUnitario: 'Venta histórica (Q)', Subtotal: 'Subtotal (Q)', IdCategoria: 'Categoría (ID)', CategoriaNombre: 'Categoría', IdRepuesto: 'Repuesto (ID)', Existencia: 'Existencia', StockMinimo: 'Mínimo', FechaUltimoMovimiento: 'Último movimiento (UTC)', IdCompra: 'Compra (ID)', NumeroCompra: 'Compra', FechaCompra: 'Compra (UTC)', IdProveedor: 'Proveedor (ID)', ProveedorNombre: 'Proveedor', UsuarioRegistro: 'Registrado por', IdDetalleCompra: 'Línea (ID)', CostoUnitario: 'Costo unitario (Q)', IdMovimiento: 'Movimiento (ID)', FechaMovimiento: 'Movimiento (UTC)', CodigoRepuesto: 'Código de repuesto', TipoMovimiento: 'Tipo de movimiento', Naturaleza: 'Entrada / salida', ExistenciaResultante: 'Existencia resultante', DocumentoOrigen: 'Origen', NumeroDocumento: 'Documento', UsuarioNombre: 'Responsable', Observacion: 'Observación', FechaFactura: 'Factura (UTC)', Total: 'Total (Q)', TotalPagado: 'Pagado (Q)', Saldo: 'Saldo (Q)', IdPago: 'Pago (ID)', FechaPago: 'Pago (UTC)', Monto: 'Monto (Q)', MetodoPago: 'Método', MetodoPagoNombre: 'Método', Referencia: 'Referencia', Anio: 'Año (UTC)', Mes: 'Mes (UTC)', CantidadFacturas: 'Cantidad de facturas', Impuesto: 'Impuesto (Q)', Recepcionista: 'Recepcionista', EstadoReparacion: 'Estado de reparación', TecnicoReparacion: 'Técnico de reparación', SaldoPendiente: 'Saldo pendiente (Q)', NombreRecibe: 'Receptor', IdHistorial: 'Historial (ID)', EstadoAnterior: 'Estado anterior', EstadoNuevo: 'Estado nuevo', FechaCambio: 'Cambio (UTC)',
 }
-export function reportColumnTitle(key: string) { return labels[key] ?? key }
+export function reportColumnTitle(key: string) {
+  const sqlKey = Object.keys(labels).find(column => reportPublicKey(column) === key) ?? key
+  return labels[sqlKey] ?? key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, letter => letter.toUpperCase())
+}
+
+export function reportPublicKey(key: string) {
+  return key.replace(/^[A-Z]+(?=[A-Z][a-z]|$)/, prefix => prefix.toLowerCase()).replace(/^[A-Z]/, letter => letter.toLowerCase())
+}
+
+export function reportHttpFilters(report: ReportDefinition, values: Readonly<Record<string, string>>) {
+  const params = new URLSearchParams()
+  for (const filter of report.filters) {
+    const value = values[filter.key]?.trim()
+    if (!value) continue
+    const key = filter.key === 'Desde' ? 'fechaDesde' : filter.key === 'HastaExclusiva' ? 'fechaHasta' : filter.key === 'CodigoTipo' ? 'codigoTipoMovimiento' : reportPublicKey(filter.key)
+    params.set(key, filter.kind === 'boolean' ? String(value === '1') : value)
+  }
+  return params
+}

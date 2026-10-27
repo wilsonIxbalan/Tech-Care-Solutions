@@ -1,48 +1,58 @@
-import { useRef } from 'react'
-import { useDraftMessage } from '@/lib/use-draft-message'
+import { useRef, useState } from 'react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { AreaField, SelectField, TextField } from '@/components/shared/form-fields'
-import { DraftActions } from '@/components/shared/draft-section'
+import { AreaField, TextField } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
-import { createCompraSchema, estimatePurchase } from './compra-schema'
+import { ambiguousResult, confirmed, useSupplyAccess, useSupplyMutation } from '@/features/inventario/api'
+import { SupplyError, SupplySelector } from '@/features/inventario/supply-controls'
+import type { SupplyOption } from '@/features/inventario/supply-controls'
+import { compraBody, createCompraSchema } from './compra-schema'
 import type { CompraCatalogos } from './compra-schema'
 
 const emptyLine = { idRepuesto: '', cantidad: '', costoUnitario: '' }
-export function CompraForm({ catalogos, onCancel }: { catalogos: CompraCatalogos; onCancel: () => void }) {
-  const schema = createCompraSchema(catalogos)
+export function CompraForm({ catalogos = {}, onCancel, onSaved }: { catalogos: CompraCatalogos; onCancel: () => void; onSaved?: (id: number) => void }) {
+  const { purchases } = useSupplyAccess()
+  const sending = useRef(false)
+  const [selected, setSelected] = useState<Record<string, SupplyOption | undefined>>({})
+  // IDs are validated by SQL against the current active masters, not against a truncated list.
+  const schema = createCompraSchema(catalogos, true)
   const form = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { idProveedor: '', idBodegaDestino: '', numeroDocumentoProveedor: '', observaciones: '', items: [{ ...emptyLine }] } })
   const lines = useFieldArray({ control: form.control, name: 'items' })
-  const items = useWatch({ control: form.control, name: 'items' })
-  const estimate = estimatePurchase(items)
-  const [message, setMessage] = useDraftMessage(catalogos)
-  const addButton = useRef<HTMLButtonElement>(null)
+  const values = useWatch({ control: form.control })
+  const save = useSupplyMutation<ReturnType<typeof compraBody>, { idCompra: number; numeroCompra: string; estado: string }>('/compras', 'POST', 'Compra registrada pendiente de recepción.', data => confirmed(data?.idCompra > 0 && typeof data.numeroCompra === 'string' && data.estado === 'PENDIENTE'))
   const { errors } = form.formState
-  const proveedores = catalogos.proveedores?.filter(p => p.estado === 'ACTIVO')
-  const bodegas = catalogos.bodegas?.filter(b => b.estado === 'ACTIVA')
-  const repuestos = catalogos.repuestos?.filter(r => r.estado === 'ACTIVO')
-  return <form aria-label="Borrador de compra" className="space-y-5" noValidate onChange={() => setMessage('')} onSubmit={form.handleSubmit(() => setMessage('Borrador válido. La compra aún no se ha guardado ni recibido; falta conectar la API.'), () => setMessage(''))}>
+  const blocked = !purchases || form.formState.isSubmitting || ambiguousResult(save.error)
+  function select(key: string, option: SupplyOption | undefined) { setSelected(current => ({ ...current, [key]: option })) }
+  return <form aria-label="Registrar compra" className="space-y-5 rounded-xl border p-4" noValidate onSubmit={async event => {
+    event.preventDefault()
+    if (sending.current || blocked) return
+    sending.current = true
+    try { await form.handleSubmit(async data => { try { const result = await save.mutateAsync(compraBody(data)); onSaved?.(result.idCompra) } catch { /* Preserve draft. */ } })(event) }
+    finally { sending.current = false }
+  }}>
+    <fieldset disabled={blocked} className="space-y-5">
     <div className="grid gap-4 sm:grid-cols-2">
-      <SelectField id="compra-proveedor" label="Proveedor" required options={proveedores?.map(p => ({ value: String(p.idProveedor), label: p.nombre }))} error={errors.idProveedor?.message} {...form.register('idProveedor')} />
-      <SelectField id="compra-bodega" label="Bodega destino" required options={bodegas?.map(b => ({ value: String(b.idBodega), label: b.nombre }))} error={errors.idBodegaDestino?.message} {...form.register('idBodegaDestino')} />
+      <SupplySelector resource="proveedores" label="Proveedor" id="compra-proveedor" active required disabled={blocked} value={values.idProveedor ?? ''} selected={selected.proveedor} options={catalogos.proveedores?.filter(p => p.estado === 'ACTIVO').map(p => ({ id: p.idProveedor, nombre: p.nombre }))} error={errors.idProveedor?.message} onSelect={option => { select('proveedor', option); form.setValue('idProveedor', option ? String(option.id) : '', { shouldValidate: true }) }} />
+      <SupplySelector resource="bodegas" label="Bodega destino" id="compra-bodega" active required disabled={blocked} value={values.idBodegaDestino ?? ''} selected={selected.bodega} options={catalogos.bodegas?.filter(b => b.estado === 'ACTIVA').map(b => ({ id: b.idBodega, nombre: b.nombre }))} error={errors.idBodegaDestino?.message} onSelect={option => { select('bodega', option); form.setValue('idBodegaDestino', option ? String(option.id) : '', { shouldValidate: true }) }} />
       <TextField id="compra-documento" label="Documento del proveedor" maxLength={40} error={errors.numeroDocumentoProveedor?.message} {...form.register('numeroDocumentoProveedor')} />
     </div>
     <AreaField id="compra-observaciones" label="Observaciones" maxLength={500} error={errors.observaciones?.message} {...form.register('observaciones')} />
-    <section aria-label="Detalle del borrador" aria-describedby={errors.items?.root?.message || errors.items?.message ? 'compra-detalle-error' : undefined} className="space-y-4"><h3 className="font-semibold">Detalle</h3>
-      <p className="text-sm text-muted-foreground">Cada repuesto debe aparecer una sola vez. El costo introducido será el costo histórico de esa línea; no cambia el precio de referencia del catálogo.</p>
-      {lines.fields.map((line, index) => <fieldset key={line.id} className="min-w-0 space-y-3 rounded-lg border p-3"><legend className="px-1 text-sm font-medium">Línea {index + 1}</legend>
+    <section aria-label="Detalle de compra" className="space-y-4"><h3 className="font-semibold">Detalle</h3>
+      <p className="text-sm text-muted-foreground">Cada repuesto debe aparecer una sola vez. El costo será histórico de esta línea; no cambia el catálogo.</p>
+      {lines.fields.map((line, index) => <fieldset key={line.id} className="min-w-0 space-y-3 rounded-lg border p-3"><legend>Línea {index + 1}</legend>
         <div className="grid gap-4 sm:grid-cols-3">
-          <SelectField id={`compra-repuesto-${index}`} label="Repuesto" required options={repuestos?.map(r => ({ value: String(r.idRepuesto), label: `${r.codigo} · ${r.nombre}` }))} error={errors.items?.[index]?.idRepuesto?.message} {...form.register(`items.${index}.idRepuesto`)} />
+          <SupplySelector resource="repuestos" label={`Repuesto de línea ${index + 1}`} id={`compra-repuesto-${index}`} active required disabled={blocked} value={values.items?.[index]?.idRepuesto ?? ''} selected={selected[line.id]} options={catalogos.repuestos?.filter(r => r.estado === 'ACTIVO').map(r => ({ id: r.idRepuesto, nombre: `${r.codigo} · ${r.nombre}` }))} error={errors.items?.[index]?.idRepuesto?.message} onSelect={option => { select(line.id, option); form.setValue(`items.${index}.idRepuesto`, option ? String(option.id) : '', { shouldValidate: true }) }} />
           <TextField id={`compra-cantidad-${index}`} label="Cantidad" required inputMode="numeric" error={errors.items?.[index]?.cantidad?.message} {...form.register(`items.${index}.cantidad`)} />
-          <TextField id={`compra-costo-${index}`} label="Costo unitario" required inputMode="decimal" help="Punto decimal, hasta dos decimales; se permite cero." error={errors.items?.[index]?.costoUnitario?.message} {...form.register(`items.${index}.costoUnitario`)} />
-        </div><Button variant="outline" aria-label={`Quitar línea ${index + 1}`} onClick={() => { lines.remove(index); setMessage(''); addButton.current?.focus() }}>Quitar línea</Button>
+          <TextField id={`compra-costo-${index}`} label="Costo unitario" required inputMode="decimal" help="Hasta dos decimales; se permite cero." error={errors.items?.[index]?.costoUnitario?.message} {...form.register(`items.${index}.costoUnitario`)} />
+        </div><Button type="button" variant="outline" aria-label={`Quitar línea ${index + 1}`} onClick={() => lines.remove(index)}>Quitar línea</Button>
       </fieldset>)}
-      {(errors.items?.root?.message || errors.items?.message) && <p id="compra-detalle-error" role="alert" className="text-sm text-destructive">{errors.items.root?.message ?? errors.items.message}</p>}
-      <Button ref={addButton} variant="outline" onClick={() => { lines.append({ ...emptyLine }, { focusName: `items.${lines.fields.length}.idRepuesto` }); setMessage('') }}>Agregar línea</Button>
+      {(errors.items?.root?.message || errors.items?.message) && <p role="alert">{errors.items.root?.message ?? errors.items.message}</p>}
+      <Button type="button" variant="outline" disabled={lines.fields.length >= 500} onClick={() => lines.append({ ...emptyLine })}>Agregar línea</Button>
     </section>
-    <p className="rounded-lg border p-3 text-sm">Estimación del borrador (Q): <strong>{estimate ?? 'Completa cantidades y costos válidos'}</strong>. El servidor será autoridad del total final.</p>
-    <p className="text-sm text-muted-foreground">Número, usuario y fecha de compra serán generados o confirmados por el servidor. Iniciará PENDIENTE; recibirla y aumentar inventario requieren una transacción de la API.</p>
-    <DraftActions blocked={!proveedores?.length || !bodegas?.length || !repuestos?.length} blockedReason={catalogos.proveedores === undefined || catalogos.bodegas === undefined || catalogos.repuestos === undefined ? 'Falta recibir los catálogos de proveedores, bodegas y repuestos.' : 'Los catálogos recibidos deben contener un proveedor activo, una bodega activa y repuestos activos.'} message={message} onCancel={() => { form.reset(); setMessage(''); onCancel() }} />
+    </fieldset>
+    <p className="text-sm text-muted-foreground">La compra se registra pendiente de recepción. Confirma su llegada a bodega para actualizar las existencias.</p>
+    <SupplyError error={save.error} />
+    <div className="flex gap-3"><Button type="submit" disabled={blocked}>{form.formState.isSubmitting ? 'Registrando…' : 'Registrar compra'}</Button><Button type="button" variant="outline" disabled={form.formState.isSubmitting} onClick={onCancel}>Cerrar</Button></div>
   </form>
 }

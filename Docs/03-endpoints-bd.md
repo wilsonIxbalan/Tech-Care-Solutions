@@ -1,6 +1,6 @@
 # 03 · Endpoints y entregables de BD
 
-Base `/api/v1`. [DTO de entrada/salida](02-contratos-dtos.md); [sesión y errores](04-errores-seguridad.md). Las rutas son contrato de construcción, no endpoints ya implementados.
+Base `/api/v1`. [DTO de entrada/salida](02-contratos-dtos.md); [sesión y errores](04-errores-seguridad.md). El contrato se valida con pruebas HTTP aisladas; la integracion real con Azure requiere una comprobacion autorizada independiente.
 
 ## Lecturas y mantenimientos
 
@@ -47,7 +47,7 @@ No ofrecer anular factura/compra/consumo hasta contar con su proceso compensator
 
 ## Doce reportes
 
-`GET /reportes/<slug>` requiere REPORTES_VER. SQL de referencia: [fase 09](../database/fases/09_reportes.sql); todos los procedimientos siguientes usan dbo. fechaDesde/fechaHasta son días de Guatemala: API los convierte a @Desde/@HastaExclusiva UTC.
+`GET /reportes/<slug>` requiere REPORTES_VER. `facturas-saldo`, `ingresos` y `compras-proveedor` requieren ademas ADMINISTRADOR o CAJA, tanto en consulta como en descarga. La restriccion del reporte de compras no retira las operaciones de compras/inventario de BODEGA. SQL de referencia: [fase 09](../database/fases/09_reportes.sql); todos los procedimientos siguientes usan dbo. fechaDesde/fechaHasta son días de Guatemala: API los convierte a @Desde/@HastaExclusiva UTC.
 
 1. `ordenes-activas` → usp_ReporteOrdenesActivas; estado/idPrioridad/idTecnico/fechas.
 2. `historial-cliente` → usp_ReporteHistorialCliente; idCliente obligatorio, fechas opcionales.
@@ -63,6 +63,18 @@ No ofrecer anular factura/compra/consumo hasta contar con su proceso compensator
 12. `trazabilidad` → usp_ReporteTrazabilidad; idOrden; {orden,historial:[],diagnosticos:[],reparaciones:[],movimientos:[],factura,pagos:[],entrega}.
 
 Historial cliente/equipo: {cliente|equipo,ordenes:[]}; preservar cabecera sin órdenes. El repository agrupa resultsets sin duplicar cabeceras; no sumar totales repetidos ni paginar filas hijas como si fueran órdenes. El backend completa el detalle desde las vistas cuando el SP entrega una proyección parcial.
+
+Historiales y trazabilidad se consultan por sus identificadores/fechas especificos, sin `search` textual. Ese parametro se rechaza en lugar de ignorarse o recortar por separado padres e hijos. La misma validacion aplica al JSON y a las exportaciones.
+
+## Descargas aprobadas
+
+- `GET /reportes/<slug>/exportar?formato=csv&conjunto=1` o `?formato=xlsx` (sin conjunto), con los mismos filtros de negocio HTTP. CSV exige un conjunto valido; XLSX incluye todos los conjuntos.
+- `GET /facturas/:id/pdf` requiere ADMINISTRADOR o CAJA y uno de FACTURAR/PAGOS_REGISTRAR/REPORTES_VER.
+- Exportar todos los resultados filtrados, no solamente la pagina visible, hasta un maximo de 10 000 filas por descarga. Superar el limite produce un aviso; nunca se truncan los resultados silenciosamente.
+- XLSX genuino con varias hojas cuando hay conjuntos relacionados; CSV UTF-8 con seleccion del conjunto. Preservar IDs, ceros, acentos, fechas e importes oficiales. Neutralizar formulas procedentes de campos de texto.
+- Factura PDF simulada en papel Carta, con datos fiscales y lineas historicas de una factura persistida. Sin integracion SAT ni validez de factura electronica certificada. No reconstruir importes a partir de precios actuales ni crear otra factura al descargar.
+- Todas las descargas requieren sesion y autorizacion en backend; respuesta binaria con MIME correcto, nombre seguro y `Cache-Control: private, no-store`. No se incluyen en el envelope JSON.
+- Logo aprobado: propuesta A «Continuidad», monograma T/C. No inventar NIT, direccion ni datos legales del emisor.
 
 ## Qué entrega BD al backend
 

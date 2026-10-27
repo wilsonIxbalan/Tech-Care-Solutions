@@ -4,12 +4,14 @@ import { SessionUser } from './auth.dto';
 @Injectable()
 export class AuthRepository {
   constructor(private readonly db: DatabaseService) {}
-  async credentials(nombreUsuario: string) {
+  async credentials(identificador: string) {
     const result = await this.db.query(
-      'SELECT IdUsuario,PasswordHash,Activo FROM dbo.Usuario WHERE NombreUsuario=@NombreUsuario;',
-      [text('NombreUsuario', 50, nombreUsuario)],
+      'SELECT TOP (2) IdUsuario,PasswordHash,Activo FROM dbo.Usuario WHERE NombreUsuario=@Identificador OR Email=@Identificador;',
+      [text('Identificador', 120, identificador)],
     );
-    return result.recordset[0];
+    // Un username legacy puede coincidir con el correo de otra cuenta.
+    // No escoger TOP (1), ni excluir inactivos: también sería ambiguo.
+    return result.recordset.length === 1 ? result.recordset[0] : undefined;
   }
   async session(
     id: number,

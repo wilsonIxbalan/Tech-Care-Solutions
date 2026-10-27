@@ -1,6 +1,11 @@
 packages:
   - apps/*
 
+# Correcciones de seguridad transitivas, sin actualizar Nest ni cambiar su API.
+overrides:
+  '@nestjs/platform-express>multer': '2.5.0'
+  '@nestjs/swagger>js-yaml': '5.4.1'
+
 onlyBuiltDependencies:
   - argon2
   - '@tailwindcss/oxide'

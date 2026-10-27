@@ -34,7 +34,7 @@ Notación: `s(n)` string de máximo n; `?` opcional, sujeto a nullabilidad; Mone
 - **RepuestoInput:** idCategoria, codigo s(30), nombre s(120), descripcion? s(300), precioCompraReferencia Money, precioVenta Money, estado? ACTIVO/INACTIVO.
 - **ProveedorInput:** nit s(20), nombre s(150), telefono s(20), nombreContacto? s(120), email? s(120), direccion? s(250), estado? ACTIVO/INACTIVO.
 - **BodegaInput:** codigo s(20), nombre s(80), ubicacion? s(200), estado? ACTIVA/INACTIVA.
-- **UsuarioInput:** nombreUsuario s(50), nombreCompleto s(150), email s(120), telefono? s(20), password obligatoria al crear/opcional al cambiar, activo? boolean, roles: RoleCode[]. Solo roles existentes; nunca password ni PasswordHash en una respuesta.
+- **UsuarioInput:** nombreUsuario s(50) sin `@` en altas o cambios de identificador, nombreCompleto s(150), email valido s(120), telefono? s(20), password obligatoria al crear/opcional al cambiar, activo? boolean, roles: RoleCode[]. Solo roles existentes; nunca password ni PasswordHash en una respuesta. No permitir desactivar ni retirar el rol al ultimo administrador activo.
 - **CatalogoInput:** marca/tipo de equipo: nombre s(60); categoría: nombre s(80), descripcion? s(200); método de pago: codigo s(20), nombre s(60), activo? boolean. No editor genérico de tablas/roles/transiciones.
 
 ## DTO de acciones
@@ -64,6 +64,10 @@ Usuario público: {idUsuario,nombreUsuario,nombreCompleto,email,telefono,activo,
 
 ## Contrato de sesión aprobado
 
-LoginInput = {nombreUsuario,password}. LoginResult = {usuario: SessionUser, expiresIn: 3600}; se envía dentro de data y la cookie llega por Set-Cookie. Me devuelve data = SessionUser; Logout devuelve data = {message:"Sesión cerrada."}.
+LoginInput = {nombreUsuario,password}. Por compatibilidad, `nombreUsuario` es el nombre del campo HTTP, pero acepta un identificador de hasta 120 caracteres: usuario o correo. El formulario lo etiqueta «Usuario o correo». La consulta es parametrizada y una coincidencia con mas de una identidad se rechaza, nunca se elige la primera. La contraseña no se recorta ni normaliza.
 
-SessionUser = {idUsuario,nombreUsuario,nombreCompleto,roles: RoleCode[],permisos: string[]}. **No accessToken/tokenType en JSON ni token en almacenamiento web.** El LoginResponse anterior del kit aún debe ajustarse a este contrato al implementar sesión.
+LoginResult = {usuario: SessionUser, expiresIn: 3600}; se envía dentro de data y la cookie llega por Set-Cookie. Me devuelve data = SessionUser; Logout devuelve data = {message:"Sesión cerrada."}.
+
+SessionUser = {idUsuario,nombreUsuario,nombreCompleto,roles: RoleCode[],permisos: string[]}. **No accessToken/tokenType en JSON ni token en almacenamiento web.** La interfaz recupera la sesion con `/auth/me`; la firma y expiracion del JWT se verifican en el backend.
+
+Politica aprobada: reportes financieros restringidos a ADMINISTRADOR o CAJA, ademas del permiso REPORTES_VER. No se crea un rol ANALISTA. Ocultar opciones de interfaz no sustituye la autorizacion del endpoint.

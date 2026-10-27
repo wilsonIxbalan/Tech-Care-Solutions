@@ -3,6 +3,11 @@ import { nonNegativeMoneySchema } from '@/lib/money-schema'
 import { esTecnicoElegible, permiteDiagnostico } from '@/features/diagnosticos/diagnostico-catalogos'
 import type { DiagnosticoCatalogos } from '@/features/diagnosticos/diagnostico-catalogos'
 
+export const diagnosticoInputSchema = z.object({
+  descripcion: z.string().trim().min(1, 'Escribe la descripción del diagnóstico.').max(1000),
+  costoManoObraEstimado: nonNegativeMoneySchema('Escribe el costo estimado de mano de obra.', 'El costo estimado no puede superar 9999999999.99.'),
+})
+
 function catalogId(ids: readonly number[] | undefined, message: string) {
   return z.string().trim()
     .min(1, message)

@@ -1,38 +1,50 @@
-import { useEffect, useRef, useState } from 'react'
-import { EmptyState } from '@/components/shared/states'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useSession } from '@/features/auth/session-context'
+import { canService } from '@/features/ordenes/api'
+import { ServiceForm } from '@/features/ordenes/service-form'
+import { ReceivedTable } from '@/components/shared/received-table'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import type { ReparacionCatalogos } from '@/features/reparaciones/reparacion-catalogos'
-import { ReparacionForm } from '@/features/reparaciones/reparacion-form'
+import { formatMoney, formatUtcDateTime } from '@/lib/format'
+import type { OrdenDetalleDto, ReparacionDto } from '@/types/domain'
+import type { ReparacionCatalogos } from './reparacion-catalogos'
+import { ReparacionForm } from './reparacion-form'
+import { actividadInputSchema, finalizarInputSchema } from './reparacion-schema'
+import { ConsumoForm } from './consumo-form'
 
-export function ReparacionesSection({ catalogos = {} }: { catalogos?: ReparacionCatalogos }) {
-  const [showForm, setShowForm] = useState(false)
-  const newButtonRef = useRef<HTMLButtonElement>(null)
-  const wasOpen = useRef(false)
+function ReparacionDetalle({ reparacion: r, orden }: { reparacion: ReparacionDto; orden: OrdenDetalleDto }) {
+  const { user } = useSession()
+  const [action, setAction] = useState('')
+  const inProgress = r.estado === 'EN_PROCESO' && orden.estado === 'REPARACION' && !orden.factura
+  const canActivity = inProgress && canService(user, 'REPARACION_GESTIONAR', true)
+  const canConsume = inProgress && canService(user, 'REPUESTOS_CONSUMIR')
+  const canFinish = inProgress && canService(user, 'REPARACION_GESTIONAR') && (user?.roles.includes('ADMINISTRADOR') || (user?.roles.includes('TECNICO') && user.idUsuario === r.idTecnico))
+  return <article className="space-y-4 rounded-xl border p-4">
+    <h3 className="font-semibold">Reparación #{r.idReparacion} · {r.estado}</h3>
+    <p>{r.descripcion}</p><p>Técnico: {r.tecnicoNombre} · Mano de obra: {formatMoney(r.costoManoObra)}</p>
+    <p>Inicio: {formatUtcDateTime(r.fechaInicio)} · Fin: {r.fechaFin ? formatUtcDateTime(r.fechaFin) : 'En proceso'}</p>
+    <ReceivedTable state={{ status: 'success', data: r.actividades }} caption="Actividades" rowKey={a => a.idActividad} columns={[
+      { title: 'Descripción', cell: a => a.descripcion }, { title: 'Técnico', cell: a => a.tecnicoNombre }, { title: 'Horas', cell: a => a.horasInvertidas }, { title: 'Fecha', cell: a => formatUtcDateTime(a.fechaActividad) },
+    ]} />
+    <ReceivedTable state={{ status: 'success', data: r.repuestos }} caption="Repuestos consumidos" rowKey={c => c.idRepuestoReparacion} columns={[
+      { title: 'Repuesto', cell: c => `${c.codigoRepuesto} · ${c.repuestoNombre}` }, { title: 'Bodega', cell: c => c.bodegaNombre }, { title: 'Cantidad', cell: c => c.cantidad }, { title: 'Precio histórico (Q)', cell: c => formatMoney(c.precioVentaUnitario) }, { title: 'Subtotal (Q)', cell: c => formatMoney(c.subtotal) }, { title: 'Estado', cell: c => c.estado },
+    ]} />
+    {!action && <div className="flex flex-wrap gap-2">{canActivity && <Button variant="outline" onClick={() => setAction('actividad')}>Registrar actividad</Button>}{canConsume && <Button variant="outline" onClick={() => setAction('consumo')}>Consumir repuesto</Button>}{canFinish && <Button onClick={() => setAction('finalizar')}>Finalizar reparación</Button>}</div>}
+    {action === 'actividad' && canActivity && <ServiceForm title="Registrar actividad" path={`/reparaciones/${r.idReparacion}/actividades`} schema={actividadInputSchema} onCancel={() => setAction('')} fields={[{ name: 'descripcion', label: 'Descripción de la actividad', kind: 'area', required: true, maxLength: 500 }, { name: 'horasInvertidas', label: 'Horas invertidas', inputMode: 'decimal', required: true, help: 'Más de cero y hasta 999.99 horas. Hasta dos decimales.' }]} />}
+    {action === 'consumo' && canConsume && <ConsumoForm idReparacion={r.idReparacion} onCancel={() => setAction('')} />}
+    {action === 'finalizar' && canFinish && <ServiceForm title="Finalizar reparación" path={`/reparaciones/${r.idReparacion}/finalizar`} schema={finalizarInputSchema} onCancel={() => setAction('')} confirm submitLabel="Revisar finalización" body={v => ({ observacion: v.observacion || null })} fields={[{ name: 'observacion', label: 'Observación de finalización', kind: 'area', maxLength: 500 }]}>
+      <p>La orden quedará lista cuando todas sus reparaciones estén finalizadas.</p>
+    </ServiceForm>}
+  </article>
+}
 
-  useEffect(() => {
-    if (wasOpen.current && !showForm) newButtonRef.current?.focus()
-    wasOpen.current = showForm
-  }, [showForm])
-
-  return (
-    <section aria-labelledby="reparaciones-title" className="space-y-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 id="reparaciones-title" className="text-xl font-semibold">Reparaciones</h2>
-        {!showForm && <Button ref={newButtonRef} onClick={() => setShowForm(true)}>Preparar reparación</Button>}
-      </div>
-      {showForm && <ReparacionForm catalogos={catalogos} onCancel={() => setShowForm(false)} />}
-      <EmptyState title="Consulta de reparaciones pendiente de conexión" description="El listado estará disponible cuando se conecte la API. Validar el formulario no crea ninguna reparación." />
-      <Card>
-        <CardHeader><CardTitle>Después de registrar la reparación</CardTitle></CardHeader>
-        <CardContent>
-          <dl className="grid gap-5 md:grid-cols-3">
-            <div><dt className="text-sm font-semibold">Actividades</dt><dd className="mt-2 text-sm text-muted-foreground">Interfaz de actividades todavía no preparada. Su integración requiere una reparación registrada en proceso.</dd></div>
-            <div><dt className="text-sm font-semibold">Finalización</dt><dd className="mt-2 text-sm text-muted-foreground">Interfaz de revisión y confirmación todavía no preparada. La operación requiere una reparación registrada y autorización del servidor.</dd></div>
-            <div><dt className="text-sm font-semibold">Consumo de repuestos</dt><dd className="mt-2 text-sm text-muted-foreground">Interfaz de consumo todavía no preparada. El servidor deberá comprobar existencias y registrar los movimientos de inventario.</dd></div>
-          </dl>
-        </CardContent>
-      </Card>
-    </section>
-  )
+export function ReparacionesSection({ orden }: { orden?: OrdenDetalleDto; catalogos?: ReparacionCatalogos }) {
+  const [showForm, setShowForm] = useState(true)
+  if (!orden) return <p>Consulta las reparaciones desde el <Link to="/ordenes" className="underline">detalle de una orden</Link>.</p>
+  return <section aria-label="Reparaciones" className="space-y-4"><h2 className="text-xl font-semibold">Reparaciones</h2>
+    {showForm && <ReparacionForm orden={orden} onCancel={() => setShowForm(false)} />}
+    {!showForm && <Button variant="outline" onClick={() => setShowForm(true)}>Ver inicio de reparación</Button>}
+    {!orden.reparaciones.length && <p>La orden no tiene reparaciones registradas.</p>}
+    {orden.reparaciones.map(r => <ReparacionDetalle key={r.idReparacion} reparacion={r} orden={orden} />)}
+  </section>
 }

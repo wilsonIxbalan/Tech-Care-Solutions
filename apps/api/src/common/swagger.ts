@@ -381,22 +381,37 @@ export function documentResponses(document: OpenAPIObject) {
         Object.keys(operation.responses).find((status) =>
           status.startsWith('2'),
         ) ?? '200';
+      const exportRoute = key === 'get /reportes/{slug}/exportar';
+      const pdfRoute = key === 'get /facturas/{id}/pdf';
       operation.responses[success] = {
         description: 'Operación confirmada.',
-        content: {
+        content: exportRoute ? {
+          'text/csv': { schema: { type: 'string', format: 'binary' } },
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+            schema: { type: 'string', format: 'binary' },
+          },
+        } : pdfRoute ? {
+          'application/pdf': { schema: { type: 'string', format: 'binary' } },
+        } : {
           'application/json': {
             schema: outputs[key] ?? envelope({ type: 'object' }),
           },
         },
       };
-      for (const status of ['400', '401', '403', '404', '409', '500', '503'])
+      for (const status of ['400', '401', '403', '404', '409', '413', '429', '500', '503'])
         operation.responses[status] = {
           description: 'Error controlado; consultar error.code y requestId.',
           content: { 'application/json': { schema: error } },
         };
       if (method !== 'get')
         operation.description = `${operation.description ?? ''} Requiere Content-Type: application/json y Origin exacto autorizado. No repetir automáticamente si se pierde la respuesta.`;
-      if (key.startsWith('get /reportes/')) {
+      if (
+        key.startsWith('get /reportes/') &&
+        Object.prototype.hasOwnProperty.call(
+          reports,
+          key.slice('get /reportes/'.length),
+        )
+      ) {
         const slug = key.split('/').pop()! as keyof typeof reports;
         const allowed = new Set<string>([
           ...reports[slug].keys,

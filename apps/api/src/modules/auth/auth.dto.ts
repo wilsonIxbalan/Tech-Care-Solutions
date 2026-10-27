@@ -2,7 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 import { Text } from '../../common/validation';
 export class LoginDto {
-  @Text(50) nombreUsuario!: string;
+  // Se conserva el nombre del campo: admite nombre de usuario o correo.
+  @Text(120) nombreUsuario!: string;
   @ApiProperty({ type: String, format: 'password' })
   @IsString()
   @MinLength(1)

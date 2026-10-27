@@ -1,75 +1,72 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { ArrowUpRight, Blocks, CheckCheck, Menu, Wrench } from 'lucide-react'
+import { BarChart3, Boxes, ClipboardList, CreditCard, Gauge, LogOut, Menu, Monitor, Package, PackageCheck, ShoppingCart, Truck, Users, UsersRound, Wrench } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Tooltip } from '@/components/ui/tooltip'
+import { BrandMark } from '@/components/shared/brand-mark'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { businessModules } from '@/app/navigation'
+import { useSession } from '@/features/auth/session-context'
+import { initials, roleLabels } from '@/features/auth/roles'
+import { canAccessPath } from '@/features/auth/route-access'
 
-const navigation = [
-  { href: '/', label: 'Inicio', icon: Blocks },
-  ...businessModules.map(module => ({ href: module.path, label: module.title, icon: Wrench })),
-  { href: '/kit', label: 'Kit visual', icon: Blocks },
+const groups = [
+  { title: 'General', links: [{ href: '/dashboard', label: 'Inicio', icon: Gauge }] },
+  { title: 'Servicio técnico', links: [
+    { href: '/clientes', label: 'Clientes', icon: UsersRound }, { href: '/equipos', label: 'Equipos', icon: Monitor },
+    { href: '/ordenes', label: 'Órdenes de servicio', icon: ClipboardList }, { href: '/diagnosticos', label: 'Diagnósticos y reparaciones', icon: Wrench }, { href: '/entregas', label: 'Entregas y cierre', icon: PackageCheck },
+  ] },
+  { title: 'Abastecimiento', links: [
+    { href: '/repuestos', label: 'Repuestos', icon: Package }, { href: '/inventario', label: 'Inventario y movimientos', icon: Boxes },
+    { href: '/proveedores', label: 'Proveedores', icon: Truck }, { href: '/compras', label: 'Compras', icon: ShoppingCart },
+  ] },
+  { title: 'Administración', links: [
+    { href: '/facturacion', label: 'Facturación y pagos', icon: CreditCard }, { href: '/reportes', label: 'Reportes', icon: BarChart3 }, { href: '/usuarios', label: 'Usuarios y roles', icon: Users },
+  ] },
 ]
 
 function Navigation({ onNavigate }: { onNavigate?: () => void }) {
-  return (
-    <div className="flex h-full flex-col overflow-y-auto">
-      <Link to="/" className="flex items-center gap-3 px-6 pt-7 pb-9" onClick={onNavigate}>
-        <span className="flex size-10 items-center justify-center rounded-xl bg-teal-700 text-white"><Wrench className="size-5" aria-hidden="true" /></span>
-        <div><p className="text-lg font-semibold tracking-tight text-white">TechCare<span className="text-teal-300">.</span></p><p className="mt-0.5 text-[10px] tracking-[0.16em] text-slate-400 uppercase">Solutions</p></div>
-      </Link>
-      <p className="mb-3 px-6 text-[10px] font-semibold tracking-[0.15em] text-slate-500 uppercase">Sistema / Módulos</p>
-      <nav aria-label="Navegación principal" className="space-y-1 px-3">
-        {navigation.map(({ href, label, icon: Icon }) => (
-          <NavLink key={href} to={href} end={href === '/'} onClick={onNavigate}
-            className={({ isActive }) => cn('flex items-center gap-3 rounded-lg px-3 py-3 text-sm text-slate-300 transition-colors outline-none hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-teal-300', isActive && 'bg-teal-800/35 text-teal-100')}>
-            <Icon className="size-4" aria-hidden="true" />{label}
-          </NavLink>
-        ))}
-      </nav>
-      <div className="mx-5 mt-8 rounded-xl border border-white/10 bg-white/[0.035] p-4">
-        <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-teal-200"><CheckCheck className="size-4" aria-hidden="true" />Una misma base</div>
-        <p className="text-xs leading-6 text-slate-400">Componentes consistentes. Contratos claros. La base de datos en el centro.</p>
-      </div>
-      <div className="mt-auto px-6 pt-10 pb-6">
-        <div className="mb-3 flex -space-x-2" aria-hidden="true">
-          {['WI', 'AN', 'AX', 'CR'].map((name) => <span key={name} className="flex size-8 items-center justify-center rounded-full border-2 border-sidebar bg-slate-700 text-[10px] font-medium text-white">{name}</span>)}
-        </div>
-        <p className="text-xs font-medium text-slate-200">Wilson · Angela · Axel · Cristian</p>
-        <p className="mt-1 text-[11px] text-slate-500">Base de Datos I · TechCare Solutions</p>
-      </div>
-    </div>
-  )
+  const { user } = useSession()
+  return <div className="flex h-full flex-col overflow-y-auto">
+    <Link to="/dashboard" className="rounded-lg px-6 pt-7 pb-8 outline-none focus-visible:ring-2 focus-visible:ring-teal-300" onClick={onNavigate}>
+      <div className="flex items-center gap-3"><BrandMark className="h-10 w-12 text-teal-200" /><div><p className="text-xl font-semibold tracking-tight text-white">Tech Care</p><p className="mt-1 text-xs tracking-[0.18em] text-teal-200 uppercase">Solutions</p></div></div>
+    </Link>
+    <nav aria-label="Navegación principal" className="space-y-6 px-3 pb-6">
+      {groups.map(group => ({ ...group, links: group.links.filter(link => canAccessPath(user, link.href)) })).filter(group => group.links.length > 0).map(group => <div key={group.title}><p className="mb-2 px-3 text-[10px] font-semibold tracking-[0.14em] text-slate-400 uppercase">{group.title}</p><div className="space-y-1">
+        {group.links.map(({ href, label, icon: Icon }) => <NavLink key={href} to={href} onClick={onNavigate} className={({ isActive }) => cn('flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 transition-colors outline-none hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-teal-300', isActive && 'bg-teal-800/40 text-teal-100')}><Icon className="size-4 shrink-0" aria-hidden="true" />{label}</NavLink>)}
+      </div></div>)}
+    </nav>
+    <p className="mt-auto border-t border-white/10 px-6 py-5 text-xs text-slate-400">Gestión de servicio técnico</p>
+  </div>
 }
 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const [logoutError, setLogoutError] = useState('')
+  const { user, signOut } = useSession()
   const { hash, pathname } = useLocation()
-  const currentTitle = pathname === '/kit' ? 'Kit visual' : businessModules.find(module => module.path === pathname)?.title ?? 'Inicio'
-  useEffect(() => {
-    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView()
-  }, [hash])
-
-  return (
-    <div className="min-h-screen">
-      <a href="#contenido" className="sr-only z-[100] rounded bg-card p-3 focus:not-sr-only focus:fixed focus:top-3 focus:left-3">Saltar al contenido</a>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 bg-sidebar lg:block"><Navigation /></aside>
-      <div className="lg:pl-60">
-        <header className="sticky top-0 z-20 flex h-18 items-center justify-between border-b bg-card/95 px-5 backdrop-blur-sm sm:px-9">
-          <div className="flex items-center gap-3">
-            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <SheetTrigger asChild><Button variant="ghost" size="icon" className="lg:hidden" aria-label="Abrir menú"><Menu /></Button></SheetTrigger>
-              <SheetContent><SheetTitle className="sr-only">Menú TechCare</SheetTitle><SheetDescription className="sr-only">Módulos del sistema TechCare.</SheetDescription><Navigation onNavigate={() => setMobileOpen(false)} /></SheetContent>
-            </Sheet>
-            <p className="text-xs text-muted-foreground"><span className="hidden sm:inline">Proyecto académico <span className="mx-2 text-slate-300">/</span></span><span className="font-medium text-foreground">{currentTitle}</span></p>
-          </div>
-          <div className="flex items-center gap-3"><Badge variant="outline" className="hidden sm:inline-flex"><span className="size-1.5 rounded-full bg-teal-600" />En desarrollo</Badge><span className="text-xs text-muted-foreground">v0.1</span></div>
-        </header>
-        <main id="contenido" tabIndex={-1} className="mx-auto max-w-7xl space-y-10 px-5 py-8 outline-none sm:px-9 sm:py-10"><Outlet /></main>
-        <footer className="flex flex-wrap items-center justify-between gap-2 border-t px-5 py-5 text-[11px] text-muted-foreground sm:px-9"><span>TechCare Solutions · Servicio técnico</span><span className="flex items-center gap-1">Frontend → API → SQL Server <ArrowUpRight className="size-3" aria-hidden="true" /></span></footer>
-      </div>
+  const currentTitle = businessModules.find(module => module.path === pathname)?.title ?? 'Inicio'
+  useEffect(() => { if (hash) document.getElementById(hash.slice(1))?.scrollIntoView() }, [hash])
+  return <div className="min-h-screen">
+    <a href="#contenido" className="sr-only z-[100] rounded bg-card p-3 focus:not-sr-only focus:fixed focus:top-3 focus:left-3">Saltar al contenido</a>
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 bg-sidebar lg:block"><Navigation /></aside>
+    <div className="lg:pl-64">
+      <header className="sticky top-0 z-20 flex min-h-20 items-center justify-between gap-3 border-b bg-card/95 px-5 py-3 backdrop-blur-sm sm:px-9">
+        <div className="flex items-center gap-3">
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}><SheetTrigger asChild><Button variant="ghost" size="icon" className="lg:hidden" aria-label="Abrir menú"><Menu /></Button></SheetTrigger><SheetContent><SheetTitle className="sr-only">Menú TechCare</SheetTitle><SheetDescription className="sr-only">Módulos de Tech Care Solutions.</SheetDescription><Navigation onNavigate={() => setMobileOpen(false)} /></SheetContent></Sheet>
+          <p className="hidden text-sm font-medium sm:block">{currentTitle}</p>
+        </div>
+        <div className="flex min-w-0 items-center gap-3">
+          <span aria-hidden="true" className="avatar-halo flex size-10 shrink-0 rounded-full p-0.5 ring-4 ring-primary/5"><span className="flex size-full items-center justify-center rounded-full bg-card text-sm font-semibold text-primary">{initials(user?.nombreCompleto ?? '')}</span></span>
+          <div className="min-w-0"><p className="truncate text-sm font-semibold">{user?.nombreCompleto}</p><div className="mt-1 flex flex-wrap gap-1">{user?.roles.map(role => <Badge key={role} variant="outline" className="text-[10px]">{roleLabels[role]}</Badge>)}</div></div>
+          <Tooltip content="Cerrar sesión"><Button variant="ghost" size="icon" aria-label="Cerrar sesión" disabled={closing} onClick={async () => { setClosing(true); setLogoutError(''); try { await signOut() } catch { setLogoutError('No pudimos cerrar la sesión. Intenta nuevamente.'); setClosing(false) } }}><LogOut aria-hidden="true" /></Button></Tooltip>
+        </div>
+      </header>
+      <main id="contenido" tabIndex={-1} className="mx-auto max-w-7xl space-y-8 px-5 py-8 outline-none sm:px-9 sm:py-10">{logoutError && <p role="alert" className="rounded-lg border border-destructive/20 p-4 text-sm text-destructive">{logoutError}</p>}<Outlet /></main>
+      <footer className="border-t px-5 py-5 text-xs text-muted-foreground sm:px-9">Tech Care Solutions · Servicio técnico</footer>
     </div>
-  )
+  </div>
 }
