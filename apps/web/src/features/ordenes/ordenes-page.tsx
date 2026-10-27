@@ -1,35 +1,48 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { PageHeader } from '@/components/shared/page-header'
-import { EmptyState } from '@/components/shared/states'
+import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
+import { TextField, SelectField } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
-import type { OrdenCatalogos } from '@/features/ordenes/orden-catalogos'
-import { OrdenForm } from '@/features/ordenes/orden-form'
+import { useSession } from '@/features/auth/session-context'
+import { formatUtcDateTime } from '@/lib/format'
+import type { OrdenCatalogos } from './orden-catalogos'
+import { OrdenForm } from './orden-form'
+import { canService, orderStates, useOrdenes, useServiceCatalogos } from './api'
 
-export function OrdenesPage({ catalogos = {} }: { catalogos?: OrdenCatalogos }) {
+export function OrdenList({ initialState = '', title = 'Órdenes' }: { initialState?: string; title?: string }) {
+  const [filters, setFilters] = useState({ page: 1, pageSize: 20, search: '', estado: initialState, idCliente: '', idEquipo: '', idPrioridad: '', idTecnico: '', fechaDesde: '', fechaHasta: '' })
+  const validDates = !filters.fechaDesde || !filters.fechaHasta || filters.fechaDesde <= filters.fechaHasta
+  const orders = useOrdenes(filters, validDates)
+  const catalogos = useServiceCatalogos()
+  const change = (key: keyof typeof filters, value: string) => setFilters({ ...filters, [key]: value, page: 1 })
+  return <section className="space-y-4" aria-label={title}>
+    <h2 className="text-xl font-semibold">{title}</h2>
+    <div className="grid gap-3 md:grid-cols-3">
+      <TextField id={`${title}-search`} label="Buscar orden" type="search" maxLength={150} value={filters.search} onChange={e => change('search', e.target.value)} />
+      <SelectField id={`${title}-estado`} label="Estado" placeholder="Todos" options={orderStates.map(value => ({ value, label: value }))} value={filters.estado} onChange={e => change('estado', e.target.value)} />
+      <SelectField id={`${title}-prioridad`} label="Prioridad" help="Filtra por prioridad de recepción." placeholder="Todas" options={catalogos.data?.data.prioridades.map(p => ({ value: String(p.id), label: p.nombre })) ?? []} value={filters.idPrioridad} onChange={e => change('idPrioridad', e.target.value)} />
+      <SelectField id={`${title}-tecnico`} label="Técnico" help="Filtra por el técnico de servicio." placeholder="Todos" options={catalogos.data?.data.tecnicos.map(t => ({ value: String(t.id), label: t.nombre })) ?? []} value={filters.idTecnico} onChange={e => change('idTecnico', e.target.value)} />
+      {(['idCliente', 'idEquipo'] as const).map(key => <TextField key={key} id={`${title}-${key}`} label={key === 'idCliente' ? 'ID de cliente' : 'ID de equipo'} inputMode="numeric" value={filters[key]} onChange={e => { if (/^\d*$/.test(e.target.value)) change(key, e.target.value) }} />)}
+      <TextField id={`${title}-desde`} label="Desde" type="date" value={filters.fechaDesde} onChange={e => change('fechaDesde', e.target.value)} />
+      <TextField id={`${title}-hasta`} label="Hasta" type="date" value={filters.fechaHasta} error={!validDates ? 'Debe ser igual o posterior a Desde.' : undefined} onChange={e => change('fechaHasta', e.target.value)} />
+    </div>
+    {catalogos.isError && <ErrorState description={catalogos.error.message} onRetry={() => void catalogos.refetch()} />}
+    {orders.isPending ? <LoadingState label="Consultando órdenes…" /> : orders.isError ? <ErrorState description={orders.error.message} onRetry={() => void orders.refetch()} /> : <>
+      {!orders.data.data.length ? <EmptyState title="Sin órdenes" description="No hay órdenes que coincidan con estos filtros." /> : <div className="overflow-x-auto"><table className="w-full text-left text-sm"><caption className="sr-only">{title}</caption><thead><tr>{['Orden', 'Cliente', 'Equipo', 'Estado', 'Prioridad', 'Ingreso'].map(h => <th key={h} className="p-2">{h}</th>)}</tr></thead><tbody>{orders.data.data.map(o => <tr key={o.idOrden} className="border-t"><td className="p-2"><Link className="underline" to={`/ordenes/${o.idOrden}`}>{o.numeroOrden}</Link></td><td className="p-2">{o.clienteNombre}</td><td className="p-2">{o.numeroSerie}</td><td className="p-2">{o.estado}</td><td className="p-2">{o.prioridad}</td><td className="p-2">{formatUtcDateTime(o.fechaIngreso)}</td></tr>)}</tbody></table></div>}
+      <div className="flex items-center gap-3"><Button variant="outline" disabled={filters.page <= 1 || orders.isFetching} onClick={() => setFilters({ ...filters, page: filters.page - 1 })}>Anterior</Button><span>Página {filters.page} de {Math.max(1, orders.data.meta?.totalPages ?? 1)} · {orders.data.meta?.total ?? orders.data.data.length} órdenes</span><Button variant="outline" disabled={filters.page >= (orders.data.meta?.totalPages ?? 1) || orders.isFetching} onClick={() => setFilters({ ...filters, page: filters.page + 1 })}>Siguiente</Button></div>
+    </>}
+  </section>
+}
+
+export function OrdenesPage(_props: { catalogos?: OrdenCatalogos }) {
+  // Keep the previous optional props contract; production options always come from the API.
+  void _props
   const [showForm, setShowForm] = useState(false)
-  const newButtonRef = useRef<HTMLButtonElement>(null)
-  const wasOpen = useRef(false)
-
-  useEffect(() => {
-    if (wasOpen.current && !showForm) newButtonRef.current?.focus()
-    wasOpen.current = showForm
-  }, [showForm])
-
-  return (
-    <>
-      <PageHeader
-        eyebrow="TechCare / Recepción"
-        title="Órdenes de servicio"
-        description="Recepción de equipos para servicio técnico."
-        actions={!showForm && <Button ref={newButtonRef} onClick={() => setShowForm(true)}>Nueva orden</Button>}
-      />
-
-      {showForm && <OrdenForm catalogos={catalogos} onCancel={() => setShowForm(false)} />}
-
-      <EmptyState
-        title="Consulta de órdenes pendiente de conexión"
-        description="El listado de órdenes estará disponible cuando se conecte la API."
-      />
-    </>
-  )
+  const { user } = useSession()
+  const navigate = useNavigate()
+  return <div className="space-y-5"><PageHeader eyebrow="TechCare / Recepción" title="Órdenes de servicio" description="Recepción y seguimiento de equipos." actions={canService(user, 'ORDENES_CREAR') && !showForm && <Button onClick={() => setShowForm(true)}>Nueva orden</Button>} />
+    {showForm && <OrdenForm onCancel={() => setShowForm(false)} onCreated={id => navigate(`/ordenes/${id}`)} />}
+    <OrdenList />
+  </div>
 }

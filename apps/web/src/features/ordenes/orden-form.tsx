@@ -1,183 +1,58 @@
+import { useRef, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useDraftMessage } from '@/lib/use-draft-message'
-import { useForm, useWatch } from 'react-hook-form'
-import type { FieldError, UseFormRegisterReturn } from 'react-hook-form'
+import { AreaField, SelectField, TextField } from '@/components/shared/form-fields'
+import { ErrorState, LoadingState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { NativeSelect } from '@/components/ui/native-select'
-import { Textarea } from '@/components/ui/textarea'
-import type { OrdenCatalogos } from '@/features/ordenes/orden-catalogos'
-import { createOrdenSchema } from '@/features/ordenes/orden-schema'
-import type { OrdenFormInput, OrdenFormValues } from '@/features/ordenes/orden-schema'
+import { useSession } from '@/features/auth/session-context'
+import { ApiError } from '@/lib/api-client'
+import type { ClienteDto, EquipoDto } from '@/types/domain'
+import type { OrdenCatalogos } from './orden-catalogos'
+import { createOrdenSchema, type OrdenFormInput, type OrdenFormValues } from './orden-schema'
+import { canService, useServiceCatalogos, useServiceMutation } from './api'
+import { ApiSelector } from './api-selector'
+import { ServiceError } from './service-form'
 
-function OrdenSelect({ label, options, help, registration, error }: {
-  label: string
-  options?: readonly { id: number; nombre: string }[]
-  help: string
-  registration: UseFormRegisterReturn
-  error?: FieldError
-}) {
-  const id = `orden-${registration.name}`
-
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label} *</Label>
-      <NativeSelect
-        {...registration}
-        id={id}
-        required
-        disabled={!options?.length}
-        aria-invalid={Boolean(error)}
-        aria-describedby={`${id}-help${error ? ` ${id}-error` : ''}`}
-      >
-        <option value="">{options === undefined ? 'Pendiente de conexión' : 'Selecciona una opción'}</option>
-        {options?.map(option => <option key={option.id} value={option.id}>{option.nombre}</option>)}
-      </NativeSelect>
-      <p id={`${id}-help`} className="text-xs text-muted-foreground">{help}</p>
-      {error && <p id={`${id}-error`} role="alert" className="text-xs text-destructive">{error.message}</p>}
-    </div>
-  )
-}
-
-export function OrdenForm({ catalogos, onCancel }: { catalogos: OrdenCatalogos; onCancel: () => void }) {
-  const [message, setMessage] = useDraftMessage(catalogos)
+export function OrdenForm({ onCancel, onCreated }: { catalogos?: OrdenCatalogos; onCancel: () => void; onCreated?: (id: number) => void }) {
+  const { user } = useSession()
+  const [cliente, setCliente] = useState<ClienteDto | null>(null)
+  const [equipo, setEquipo] = useState<EquipoDto | null>(null)
+  const catalogos = useServiceCatalogos()
+  const mutation = useServiceMutation<{ idOrden: number; numeroOrden: string; estado: string }>('/ordenes')
+  const lock = useRef(false)
+  const [created, setCreated] = useState<string | null>(null)
   const form = useForm<OrdenFormInput, unknown, OrdenFormValues>({
-    resolver: zodResolver(createOrdenSchema(catalogos)),
-    defaultValues: {
-      idCliente: '', idEquipo: '', idPrioridad: '', problemaReportado: '', fechaEstimada: '', observaciones: '',
-    },
+    resolver: zodResolver(createOrdenSchema({ clientes: cliente ? [cliente] : [], equipos: equipo ? [equipo] : [], prioridades: catalogos.data?.data.prioridades.map(p => ({ idPrioridad: p.id, nombre: p.nombre })) ?? [] })),
+    defaultValues: { idCliente: '', idEquipo: '', idPrioridad: '', problemaReportado: '', fechaEstimada: '', observaciones: '' },
   })
-  const idCliente = useWatch({ control: form.control, name: 'idCliente' })
-  const { errors, isSubmitting } = form.formState
-  const clientesActivos = catalogos.clientes?.filter(cliente => cliente.estado === 'ACTIVO')
-  const clienteSeleccionado = clientesActivos?.find(cliente => String(cliente.idCliente) === idCliente)
-  const equiposCliente = catalogos.equipos?.filter(equipo => equipo.estado === 'ACTIVO' && equipo.idCliente === clienteSeleccionado?.idCliente)
-  const catalogosDisponibles = Boolean(
-    clientesActivos?.length
-    && catalogos.equipos?.some(equipo => equipo.estado === 'ACTIVO' && clientesActivos.some(cliente => cliente.idCliente === equipo.idCliente))
-    && catalogos.prioridades?.length
-    && (!clienteSeleccionado || equiposCliente?.length),
-  )
-  const clienteHelp = clientesActivos === undefined
-    ? 'Catálogo de clientes pendiente de conexión.'
-    : clientesActivos.length ? 'Selecciona un cliente activo.' : 'El catálogo recibido no contiene clientes activos.'
-  const equipoHelp = catalogos.equipos === undefined
-    ? 'Catálogo de equipos pendiente de conexión.'
-    : !clienteSeleccionado
-      ? 'Selecciona primero un cliente activo.'
-      : equiposCliente?.length
-        ? 'Solo se muestran equipos activos del cliente seleccionado.'
-        : 'El catálogo recibido no contiene equipos activos para este cliente.'
-  const prioridadHelp = catalogos.prioridades === undefined
-    ? 'Catálogo de prioridades pendiente de conexión.'
-    : catalogos.prioridades.length ? 'Selecciona una prioridad.' : 'El catálogo recibido no contiene prioridades.'
-
-  function cancel() {
-    form.reset()
-    setMessage('')
-    onCancel()
+  const { errors } = form.formState
+  async function submit(values: OrdenFormValues) {
+    if (lock.current || !canService(user, 'ORDENES_CREAR')) return
+    lock.current = true
+    try {
+      const result = await mutation.mutateAsync({ ...values, fechaEstimada: values.fechaEstimada || null, observaciones: values.observaciones || null })
+      setCreated(`${result.data.numeroOrden} · ${result.data.estado}`)
+      onCreated?.(result.data.idOrden)
+    } catch (error) {
+      if (error instanceof ApiError) Object.entries(error.details ?? {}).forEach(([key, messages]) => {
+        if (key in form.getValues()) form.setError(key as keyof OrdenFormInput, { type: 'server', message: messages.join(' ') })
+      })
+    } finally { lock.current = false }
   }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle id="orden-form-title">Recepción de orden</CardTitle>
-        <p className="text-sm text-muted-foreground">Los campos con * son obligatorios.</p>
-        <p className="text-sm text-muted-foreground">Al registrarse realmente, la orden iniciará en RECIBIDO.</p>
-      </CardHeader>
-      <CardContent>
-        <form
-          aria-labelledby="orden-form-title"
-          className="space-y-5"
-          noValidate
-          onChange={() => setMessage('')}
-          onSubmit={form.handleSubmit(
-            () => setMessage('Los datos del formulario son válidos. La orden aún no se ha registrado: falta conectar la API.'),
-            () => setMessage(''),
-          )}
-        >
-          <div className="grid gap-5 sm:grid-cols-2">
-            <OrdenSelect
-              label="Cliente"
-              options={clientesActivos?.map(cliente => ({ id: cliente.idCliente, nombre: cliente.nombreMostrar }))}
-              help={clienteHelp}
-              registration={form.register('idCliente', { onChange: () => form.resetField('idEquipo') })}
-              error={errors.idCliente}
-            />
-            <OrdenSelect
-              label="Equipo"
-              options={equiposCliente?.map(equipo => ({ id: equipo.idEquipo, nombre: `${equipo.numeroSerie} · ${equipo.modelo}` }))}
-              help={equipoHelp}
-              registration={form.register('idEquipo')}
-              error={errors.idEquipo}
-            />
-            <OrdenSelect
-              label="Prioridad"
-              options={catalogos.prioridades?.map(prioridad => ({ id: prioridad.idPrioridad, nombre: prioridad.nombre }))}
-              help={prioridadHelp}
-              registration={form.register('idPrioridad')}
-              error={errors.idPrioridad}
-            />
-            <div className="space-y-2">
-              <Label htmlFor="orden-fecha-estimada">Fecha estimada</Label>
-              <Input
-                id="orden-fecha-estimada"
-                type="date"
-                aria-invalid={Boolean(errors.fechaEstimada)}
-                aria-describedby={`orden-fecha-ayuda${errors.fechaEstimada ? ' orden-fecha-error' : ''}`}
-                {...form.register('fechaEstimada')}
-              />
-              <p id="orden-fecha-ayuda" className="text-xs text-muted-foreground">
-                Fecha opcional. Al registrar, se comprobará que no sea anterior al ingreso en Guatemala.
-              </p>
-              {errors.fechaEstimada && <p id="orden-fecha-error" role="alert" className="text-xs text-destructive">{errors.fechaEstimada.message}</p>}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="orden-problema">Problema reportado *</Label>
-            <Textarea
-              id="orden-problema"
-              required
-              aria-invalid={Boolean(errors.problemaReportado)}
-              aria-describedby={errors.problemaReportado ? 'orden-problema-error' : undefined}
-              {...form.register('problemaReportado')}
-            />
-            {errors.problemaReportado && <p id="orden-problema-error" role="alert" className="text-xs text-destructive">{errors.problemaReportado.message}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="orden-observaciones">Observaciones</Label>
-            <Textarea
-              id="orden-observaciones"
-              aria-invalid={Boolean(errors.observaciones)}
-              aria-describedby={errors.observaciones ? 'orden-observaciones-error' : undefined}
-              {...form.register('observaciones')}
-            />
-            {errors.observaciones && <p id="orden-observaciones-error" role="alert" className="text-xs text-destructive">{errors.observaciones.message}</p>}
-          </div>
-
-          {!catalogosDisponibles && (
-            <p id="orden-catalogos-pendientes" className="rounded-lg border bg-muted p-3 text-sm">
-              La validación completa requiere clientes activos, sus equipos activos y prioridades disponibles en los catálogos.
-            </p>
-          )}
-          {message && catalogosDisponibles && <p role="status" className="rounded-lg border bg-muted p-3 text-sm">{message}</p>}
-
-          <div className="flex flex-wrap gap-3">
-            <Button
-              type="submit"
-              disabled={!catalogosDisponibles || isSubmitting}
-              aria-describedby={!catalogosDisponibles ? 'orden-catalogos-pendientes' : undefined}
-            >
-              Validar datos
-            </Button>
-            <Button type="button" variant="outline" onClick={cancel}>Cancelar</Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
-  )
+  if (created) return <div role="status" className="rounded-xl border p-4">Orden registrada: {created}. <Button variant="outline" onClick={onCancel}>Cerrar</Button></div>
+  return <form aria-label="Recepción de orden" noValidate className="space-y-4 rounded-xl border p-4" onSubmit={event => { void form.handleSubmit(submit)(event) }}>
+    <h2 className="text-lg font-semibold">Recepción de orden</h2>
+    <fieldset disabled={mutation.isPending} className="space-y-4">
+      <ApiSelector<ClienteDto> path="/clientes" label="Cliente" filters={{ estado: 'ACTIVO' }} selected={cliente} valueOf={c => c.idCliente} labelOf={c => c.nombreMostrar} error={errors.idCliente?.message} onSelect={value => {
+        setCliente(value); setEquipo(null); form.setValue('idCliente', value ? String(value.idCliente) : '', { shouldValidate: true }); form.setValue('idEquipo', '')
+      }} />
+      <ApiSelector<EquipoDto> key={cliente?.idCliente ?? 'sin-cliente'} path="/equipos" label="Equipo" filters={{ estado: 'ACTIVO', idCliente: cliente?.idCliente }} selected={equipo} disabled={!cliente} valueOf={e => e.idEquipo} labelOf={e => `${e.numeroSerie} · ${e.modelo}`} error={errors.idEquipo?.message} onSelect={value => { setEquipo(value); form.setValue('idEquipo', value ? String(value.idEquipo) : '', { shouldValidate: true }) }} />
+      {catalogos.isPending ? <LoadingState label="Cargando prioridades…" /> : catalogos.isError ? <ErrorState description={catalogos.error.message} onRetry={() => void catalogos.refetch()} /> : <SelectField id="orden-prioridad" label="Prioridad" required options={catalogos.data.data.prioridades.map(p => ({ value: String(p.id), label: p.nombre }))} error={errors.idPrioridad?.message} {...form.register('idPrioridad')} />}
+      <TextField id="orden-fecha" label="Fecha estimada" type="date" error={errors.fechaEstimada?.message} help="Fecha de entrega prevista en Guatemala; no puede ser anterior al ingreso." {...form.register('fechaEstimada')} />
+      <AreaField id="orden-problema" label="Problema reportado" required maxLength={1000} error={errors.problemaReportado?.message} {...form.register('problemaReportado')} />
+      <AreaField id="orden-observaciones" label="Observaciones" maxLength={500} error={errors.observaciones?.message} {...form.register('observaciones')} />
+    </fieldset>
+    <ServiceError error={mutation.error} />
+    <div className="flex gap-2"><Button type="submit" disabled={mutation.isPending || !catalogos.data || !canService(user, 'ORDENES_CREAR')}>{mutation.isPending ? 'Registrando…' : 'Registrar orden'}</Button><Button type="button" variant="outline" disabled={mutation.isPending} onClick={onCancel}>Cancelar</Button></div>
+  </form>
 }

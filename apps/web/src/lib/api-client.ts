@@ -25,6 +25,16 @@ function isApiError(value: unknown): value is ApiErrorResponse {
 
 type ApiOptions = RequestInit
 
+const sessionListeners = new Set<() => void>()
+export function onSessionInvalid(listener: () => void) {
+  sessionListeners.add(listener)
+  return () => { sessionListeners.delete(listener) }
+}
+
+export function notifySessionInvalid() {
+  sessionListeners.forEach(listener => listener())
+}
+
 /** No automatic retries: a financial POST can succeed even if its response is lost. */
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<ApiResponse<T>> {
   const base = import.meta.env.VITE_API_URL?.trim() || '/api/v1'
@@ -51,7 +61,12 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
   }
   let body: unknown
   try { body = await response.json() } catch { body = null }
+  if (signal?.aborted) throw signal.reason
   if (!response.ok) {
+    if ((response.status === 401 && path !== '/auth/login')
+      || (isApiError(body) && body.error.code === 'USUARIO_INACTIVO')) {
+      notifySessionInvalid()
+    }
     if (isApiError(body)) {
       throw new ApiError(body.error.message, body.error.code, response.status, body.requestId, body.error.details)
     }

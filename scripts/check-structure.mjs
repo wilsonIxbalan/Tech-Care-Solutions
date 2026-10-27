@@ -29,12 +29,19 @@ async function walk(dir) {
       if (forbidden.has(entry.name)) { console.error(`Carpeta no versionable: ${name}`); failures++; continue }
       await walk(full)
     } else {
+      if (/^apps\/(?:web|api)\/src\//.test(name) && (
+        /\.(?:test|spec|e2e-spec)\.[cm]?[jt]sx?$/.test(name)
+        || /\/(?:test|tests|__tests__|__mocks__|fixtures)\//.test(name)
+      )) {
+        console.error(`Las pruebas y fixtures deben estar fuera de src: ${name}`); failures++
+      }
       if (name.startsWith('database/') && !name.endsWith('.sql')) { console.error(`database solo admite scripts SQL: ${name}`); failures++ }
       if (name.endsWith('.md') && !name.startsWith('seguimiento/') && name !== 'apps/web/THIRD_PARTY_NOTICES.md' && !sharedDocs.has(name)) {
         console.error(`Markdown no previsto en el repositorio: ${name}`); failures++
       }
       if (/^(?:package-lock\.json|yarn\.lock)$/.test(entry.name)) { console.error(`Usar solo pnpm: ${name}`); failures++ }
-      if (entry.name.startsWith('.env') && entry.name !== '.env.example') { console.error(`No incluir secretos: ${name}`); failures++ }
+      // Un .env privado local es necesario para desarrollar. Se comprueba abajo
+      // que no este agregado a Git, sin abrirlo ni imprimir su contenido.
     }
   }
 }
@@ -56,9 +63,13 @@ for (const name of sharedDocs) {
 if (existsSync(resolve(root, '.git'))) {
   const tracked = spawnSync('git', ['ls-files', '--cached', '-z'], { cwd: root, encoding: 'utf8' })
   if (tracked.status !== 0) { console.error('No se pudo comprobar el indice de Git.'); failures++ }
-  else for (const name of tracked.stdout.split('\0').filter(Boolean)) {
-    if (isAgentPath(name)) { console.error(`Configuracion personal agregada a Git: ${name}`); failures++ }
-  }
+   else for (const name of tracked.stdout.split('\0').filter(Boolean)) {
+     if (isAgentPath(name)) { console.error(`Configuracion personal agregada a Git: ${name}`); failures++ }
+     const filename = name.split('/').at(-1)
+     if (filename.startsWith('.env') && filename !== '.env.example') {
+       console.error(`Archivo de secretos agregado a Git: ${name}`); failures++
+     }
+   }
 }
 const ci = await readFile(resolve(root, '.github/workflows/ci.yml'), 'utf8')
 if (!ci.includes('branches: [developer, main]')) { console.error('CI debe comprobar developer.'); failures++ }

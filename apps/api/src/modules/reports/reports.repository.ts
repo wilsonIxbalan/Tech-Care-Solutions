@@ -71,6 +71,14 @@ export class ReportsRepository {
   async execute(slug: string, query: ReportQuery) {
     if (!Object.prototype.hasOwnProperty.call(reports, slug)) throw notFound();
     const report = reports[slug as keyof typeof reports];
+    if (
+      ['historial-cliente', 'historial-equipo', 'trazabilidad'].includes(slug) &&
+      query.search !== undefined
+    )
+      throw invalid(
+        'search',
+        'Este historial se consulta por sus filtros específicos, sin búsqueda de texto.',
+      );
     const allowed = new Set<string>([
       ...report.keys,
       'page',

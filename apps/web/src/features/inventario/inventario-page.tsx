@@ -1,55 +1,76 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { PageHeader } from '@/components/shared/page-header'
 import { SelectField, TextField } from '@/components/shared/form-fields'
 import { ReceivedTable } from '@/components/shared/received-table'
+import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
-import { dateRangeSchema, guatemalaCivilDay, inCivilRange } from '@/lib/civil-date'
-import { selection } from '@/lib/draft-schema'
+import { optionalCivilDate } from '@/lib/civil-date'
 import type { ReceivedData } from '@/lib/received-data'
 import type { InventarioDto, MovimientoDto } from '@/types/domain'
 import type { CategoriaOption, RepuestoRow } from '@/features/repuestos/repuesto-model'
 import { inventoryColumns, movementColumns } from './inventario-model'
 import type { BodegaOption, TipoMovimientoOption } from './inventario-model'
+import { listState, useSupplyAccess, useSupplyCatalogs, useSupplyList } from './api'
+import { SupplyPagination, SupplySelector } from './supply-controls'
+import type { SupplyOption } from './supply-controls'
+import { AjusteForm, MinimoForm } from './inventario-forms'
+import { sqlInteger } from './inventario-schema'
+import { BodegasPanel } from '@/features/bodegas/bodegas-panel'
 
 export interface InventarioCatalogos { bodegas?: readonly BodegaOption[]; categorias?: readonly CategoriaOption[]; repuestos?: readonly RepuestoRow[]; tipos?: readonly TipoMovimientoOption[] }
-const defaults = { idBodega: '', idCategoria: '', idRepuesto: '', tipo: '', desde: '', hastaExclusiva: '', stock: '' as '' | 'cero' | 'minimo' }
-export function InventarioPage({ catalogos = {}, inventario = { status: 'pending' }, movimientos = { status: 'pending' } }: {
-  catalogos?: InventarioCatalogos; inventario?: ReceivedData<InventarioDto>; movimientos?: ReceivedData<MovimientoDto>
-}) {
-  const optionalSelection = (values: string[] | undefined, label: string) => z.union([z.literal(''), selection(values, label)])
-  const schema = dateRangeSchema.and(z.object({
-    idBodega: optionalSelection(catalogos.bodegas?.map(b => String(b.idBodega)), 'una bodega'),
-    idCategoria: optionalSelection(catalogos.categorias?.map(c => String(c.idCategoria)), 'una categoría'),
-    idRepuesto: optionalSelection(catalogos.repuestos?.map(r => String(r.idRepuesto)), 'un repuesto'),
-    tipo: optionalSelection(catalogos.tipos?.map(t => t.codigo), 'un tipo'), stock: z.enum(['', 'cero', 'minimo']),
-  }))
-  const form = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema), defaultValues: defaults })
+const defaults = { search: '', idBodega: '', idCategoria: '', idRepuesto: '', codigoTipoMovimiento: '', fechaDesde: '', fechaHasta: '', idUsuario: '', bajoMinimo: '' }
+export function InventarioPage({ catalogos = {}, inventario, movimientos }: { catalogos?: InventarioCatalogos; inventario?: ReceivedData<InventarioDto>; movimientos?: ReceivedData<MovimientoDto> }) {
+  const access = useSupplyAccess()
+  const catalog = useSupplyCatalogs(access.stockRead && (!catalogos.categorias || !catalogos.tipos))
+  const categorias = catalogos.categorias ?? catalog.data?.categorias ?? []
+  const tipos = catalogos.tipos ?? catalog.data?.tipos ?? []
+  const [draft, setDraft] = useState(defaults)
   const [filters, setFilters] = useState(defaults)
-  const { errors } = form.formState
-  const stockRows = inventario.status === 'success' ? { ...inventario, data: inventario.data.filter(r =>
-    (!filters.idBodega || String(r.idBodega) === filters.idBodega) && (!filters.idCategoria || String(r.idCategoria) === filters.idCategoria) && (!filters.idRepuesto || String(r.idRepuesto) === filters.idRepuesto)
-    && (filters.stock !== 'cero' || r.existencia === 0) && (filters.stock !== 'minimo' || r.existencia <= r.stockMinimo)) } : inventario
-  const unverifiedDates = Boolean((filters.desde || filters.hastaExclusiva) && movimientos.status === 'success' && movimientos.data.some(r => guatemalaCivilDay(r.fechaMovimiento) === null))
-  const movementRows: ReceivedData<MovimientoDto> = unverifiedDates ? { status: 'error', message: 'No se puede aplicar el intervalo: hay movimientos con fecha o zona no verificable. Limpia las fechas para revisar las filas recibidas.' } : movimientos.status === 'success' ? { ...movimientos, data: movimientos.data.filter(r =>
-    (!filters.idBodega || String(r.idBodega) === filters.idBodega) && (!filters.idRepuesto || String(r.idRepuesto) === filters.idRepuesto) && (!filters.tipo || r.codigoTipoMovimiento === filters.tipo) && inCivilRange(r.fechaMovimiento, filters.desde, filters.hastaExclusiva)) } : movimientos
-  return <><PageHeader title="Inventario y movimientos" description="Vistas de consulta. Los movimientos y las existencias sólo cambian mediante procesos controlados del servidor." />
-    <form aria-label="Filtros de inventario" className="space-y-4 rounded-xl border p-4" noValidate onSubmit={form.handleSubmit(setFilters)}>
+  const [selected, setSelected] = useState<{ bodega?: SupplyOption; repuesto?: SupplyOption }>({})
+  const [error, setError] = useState('')
+  const [stockPage, setStockPage] = useState(1)
+  const [movementPage, setMovementPage] = useState(1)
+  const [editor, setEditor] = useState<InventarioDto | 'ajuste' | null>(null)
+  const common = { search: filters.search, idBodega: filters.idBodega, idRepuesto: filters.idRepuesto, pageSize: 20 }
+  const stock = useSupplyList<InventarioDto>('inventario', { ...common, page: stockPage, idCategoria: filters.idCategoria, bajoMinimo: filters.bajoMinimo ? filters.bajoMinimo === 'true' : undefined }, inventario === undefined)
+  const movements = useSupplyList<MovimientoDto>('inventario/movimientos', { ...common, page: movementPage, codigoTipoMovimiento: filters.codigoTipoMovimiento, idUsuario: filters.idUsuario, fechaDesde: filters.fechaDesde, fechaHasta: filters.fechaHasta }, movimientos === undefined)
+  if (!access.stockRead) return <EmptyState title="Acceso restringido" description="No tienes permiso para consultar inventario." />
+  return <><PageHeader title="Inventario y movimientos" description="Consulta existencias, movimientos y mínimos por bodega." actions={access.inventoryWrite && <Button disabled={Boolean(editor)} onClick={() => setEditor('ajuste')}>Nuevo ajuste</Button>} />
+    <BodegasPanel />
+    {editor === 'ajuste' && access.inventoryWrite && <AjusteForm onCancel={() => setEditor(null)} onSaved={() => setEditor(null)} />}
+    {editor && editor !== 'ajuste' && access.inventoryWrite && <MinimoForm key={`${editor.idBodega}-${editor.idRepuesto}`} row={editor} onCancel={() => setEditor(null)} onSaved={() => setEditor(null)} />}
+    {catalog.isError && <ErrorState description={catalog.error.message} onRetry={() => void catalog.refetch()} />}
+    {catalog.isPending && (!catalogos.categorias || !catalogos.tipos) && <LoadingState label="Consultando categorías y tipos…" />}
+    <form aria-label="Filtros de inventario" className="space-y-4 rounded-xl border p-4" noValidate onSubmit={event => {
+      event.preventDefault()
+      if (!optionalCivilDate.safeParse(draft.fechaDesde).success || !optionalCivilDate.safeParse(draft.fechaHasta).success || (draft.fechaDesde && draft.fechaHasta && draft.fechaDesde > draft.fechaHasta)) { setError('Indica un intervalo de fechas válido.'); return }
+      if (draft.idUsuario && !sqlInteger(1).safeParse(draft.idUsuario).success) { setError('Indica un identificador de usuario válido.'); return }
+      setError(''); setFilters(draft); setStockPage(1); setMovementPage(1)
+    }}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <SelectField id="inventario-bodega" label="Bodega" placeholder="Todas" options={catalogos.bodegas?.map(b => ({ value: String(b.idBodega), label: b.nombre }))} error={errors.idBodega?.message} {...form.register('idBodega')} />
-        <SelectField id="inventario-categoria" label="Categoría (existencias)" placeholder="Todas" options={catalogos.categorias?.map(c => ({ value: String(c.idCategoria), label: c.nombre }))} error={errors.idCategoria?.message} {...form.register('idCategoria')} />
-        <SelectField id="inventario-repuesto" label="Repuesto" placeholder="Todos" options={catalogos.repuestos?.map(r => ({ value: String(r.idRepuesto), label: `${r.codigo} · ${r.nombre}` }))} error={errors.idRepuesto?.message} {...form.register('idRepuesto')} />
-        <SelectField id="inventario-stock" label="Situación de existencias" placeholder="Todas" options={[{ value: 'cero', label: 'Stock cero' }, { value: 'minimo', label: 'Igual o inferior al mínimo' }]} {...form.register('stock')} />
-        <SelectField id="movimiento-tipo" label="Tipo (movimientos)" placeholder="Todos" options={catalogos.tipos?.map(t => ({ value: t.codigo, label: t.nombre }))} error={errors.tipo?.message} {...form.register('tipo')} />
-        <TextField id="movimiento-desde" label="Desde (movimientos)" type="date" error={errors.desde?.message} {...form.register('desde')} />
-        <TextField id="movimiento-hasta" label="Hasta, exclusivo (movimientos)" type="date" error={errors.hastaExclusiva?.message} {...form.register('hastaExclusiva')} />
+        <TextField id="inventario-search" label="Buscar código, repuesto o documento" type="search" maxLength={150} value={draft.search} onChange={e => setDraft({ ...draft, search: e.target.value })} />
+        <SupplySelector resource="bodegas" label="Bodega" id="inventario-bodega" value={draft.idBodega} selected={selected.bodega} options={catalogos.bodegas?.map(b => ({ id: b.idBodega, nombre: b.nombre }))} onSelect={option => { setSelected({ ...selected, bodega: option }); setDraft({ ...draft, idBodega: option ? String(option.id) : '' }) }} />
+        <SupplySelector resource="repuestos" label="Repuesto" id="inventario-repuesto" value={draft.idRepuesto} selected={selected.repuesto} options={catalogos.repuestos?.map(r => ({ id: r.idRepuesto, nombre: `${r.codigo} · ${r.nombre}` }))} onSelect={option => { setSelected({ ...selected, repuesto: option }); setDraft({ ...draft, idRepuesto: option ? String(option.id) : '' }) }} />
+        <SelectField id="inventario-categoria" label="Categoría (existencias)" placeholder="Todas" options={categorias.map(c => ({ value: String(c.idCategoria), label: c.nombre }))} value={draft.idCategoria} onChange={e => setDraft({ ...draft, idCategoria: e.target.value })} />
+        <SelectField id="inventario-stock" label="Situación de existencias" placeholder="Todas" options={[{ value: 'true', label: 'Bajo mínimo' }, { value: 'false', label: 'No bajo mínimo' }]} value={draft.bajoMinimo} onChange={e => setDraft({ ...draft, bajoMinimo: e.target.value })} />
+        <SelectField id="movimiento-tipo" label="Tipo (movimientos)" placeholder="Todos" options={tipos.map(t => ({ value: t.codigo, label: t.nombre }))} value={draft.codigoTipoMovimiento} onChange={e => setDraft({ ...draft, codigoTipoMovimiento: e.target.value })} />
+        <TextField id="movimiento-usuario" label="ID de usuario (movimientos)" inputMode="numeric" value={draft.idUsuario} onChange={e => setDraft({ ...draft, idUsuario: e.target.value })} />
+        <TextField id="movimiento-desde" label="Desde (movimientos)" type="date" value={draft.fechaDesde} onChange={e => setDraft({ ...draft, fechaDesde: e.target.value })} />
+        <TextField id="movimiento-hasta" label="Hasta inclusive (movimientos)" type="date" value={draft.fechaHasta} onChange={e => setDraft({ ...draft, fechaHasta: e.target.value })} />
       </div>
-      <p className="text-sm text-muted-foreground">Filtros sobre filas recibidas, sin solicitar información. Las fechas son días civiles de Guatemala; Hasta no se incluye. La API deberá convertirlos a límites UTC explícitos [Desde, Hasta). No se interpretarán instantes sin zona.</p>
-      <div className="flex flex-wrap gap-3"><Button type="submit">Aplicar filtros a datos recibidos</Button><Button variant="outline" onClick={() => { form.reset(); setFilters(defaults) }}>Limpiar filtros</Button></div>
+      <p className="text-sm text-muted-foreground">Las fechas corresponden a Guatemala. Los filtros se aplican al conjunto completo de resultados.</p>
+      {error && <p role="alert">{error}</p>}
+      <div className="flex gap-3"><Button type="submit">Aplicar filtros</Button><Button type="button" variant="outline" onClick={() => { setDraft(defaults); setFilters(defaults); setSelected({}); setError(''); setStockPage(1); setMovementPage(1) }}>Limpiar filtros</Button></div>
     </form>
-    <section aria-label="Existencias por bodega" className="space-y-3"><h2 className="text-lg font-semibold">Existencias por bodega</h2><ReceivedTable state={stockRows} columns={inventoryColumns} rowKey={r => `${r.idBodega}-${r.idRepuesto}`} caption="Existencias por bodega" /></section>
-    <section aria-label="Movimientos" className="space-y-3"><h2 className="text-lg font-semibold">Movimientos</h2><ReceivedTable state={movementRows} columns={movementColumns} rowKey={r => r.idMovimiento} caption="Movimientos" /></section>
+    <section aria-label="Existencias por bodega" className="space-y-3"><h2 className="text-lg font-semibold">Existencias por bodega</h2>
+      <ReceivedTable state={listState(stock, inventario)} columns={[...inventoryColumns, { title: 'Acciones', cell: (row: InventarioDto) => access.inventoryWrite ? <Button variant="outline" disabled={Boolean(editor)} aria-label={`Mínimo de ${row.codigoRepuesto} en ${row.bodegaNombre}`} onClick={() => setEditor(row)}>Cambiar mínimo</Button> : 'Solo consulta' }]} rowKey={r => `${r.idBodega}-${r.idRepuesto}`} caption="Existencias por bodega" />
+      {stock.isError && <Button variant="outline" onClick={() => void stock.refetch()}>Reintentar inventario</Button>}
+      {!inventario && <SupplyPagination label="existencias" meta={stock.data?.meta} page={stockPage} busy={stock.isFetching} onPage={setStockPage} />}
+    </section>
+    <section aria-label="Movimientos" className="space-y-3"><h2 className="text-lg font-semibold">Movimientos</h2>
+      <ReceivedTable state={listState(movements, movimientos)} columns={movementColumns} rowKey={r => r.idMovimiento} caption="Movimientos" />
+      {movements.isError && <Button variant="outline" onClick={() => void movements.refetch()}>Reintentar movimientos</Button>}
+      {!movimientos && <SupplyPagination label="movimientos" meta={movements.data?.meta} page={movementPage} busy={movements.isFetching} onPage={setMovementPage} />}
+    </section>
   </>
 }

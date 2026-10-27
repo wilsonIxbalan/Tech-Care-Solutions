@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="740" height="280" viewBox="0 0 740 280" role="img" aria-labelledby="title desc">
+  <title id="title">Propuesta C — Ciclo de cuidado</title><desc id="desc">Exploración original no aprobada. Un arco de cuidado envuelve tres nodos de un recorrido de servicio.</desc>
+  <rect width="740" height="280" rx="24" fill="#F4F7FB"/>
+  <path d="M176 119a56 56 0 1 0 0 74" stroke="#0F766E" fill="none" stroke-width="10" stroke-linecap="round"/><path d="m103 163 24-21 33 17" stroke="#0B1628" stroke-width="5" stroke-linecap="round" fill="none"/><g fill="#0F766E" stroke="#F4F7FB" stroke-width="4"><circle cx="103" cy="163" r="10"/><circle cx="127" cy="142" r="10"/><circle cx="160" cy="159" r="10"/></g>
+  <text x="224" y="150" font-family="Inter,Segoe UI,sans-serif" font-weight="600" font-size="42" letter-spacing="-1" fill="#0F172A">Tech Care</text><text x="226" y="185" font-family="Inter,Segoe UI,sans-serif" font-size="18" letter-spacing="6" fill="#0F766E">SOLUTIONS</text>
+  <text x="40" y="40" font-family="Segoe UI,sans-serif" font-size="12" fill="#536379">C / CICLO DE CUIDADO · PROPUESTA NO APROBADA</text>
+</svg>

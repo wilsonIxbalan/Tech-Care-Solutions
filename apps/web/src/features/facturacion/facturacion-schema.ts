@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { optionalText, selection } from '@/lib/draft-schema'
+import { optionalText, requiredText, selection } from '@/lib/draft-schema'
 import { nonNegativeMoneySchema } from '@/lib/money-schema'
 import { moneyToMinor } from '@/lib/decimal-money'
 import type { FacturaResumenDto, OrdenResumenDto } from '@/types/domain'
@@ -7,12 +7,16 @@ import type { FacturaResumenDto, OrdenResumenDto } from '@/types/domain'
 export type OrdenFacturacion = Pick<OrdenResumenDto, 'idOrden' | 'numeroOrden' | 'estado'>
 export interface MetodoPagoOption { idMetodoPago: number; nombre: string; activo: boolean }
 const inheritedText = (max: number) => optionalText(max).transform(value => value || null)
+export const porcentajeImpuestoSchema = nonNegativeMoneySchema('Indica el porcentaje de impuesto.', 'El porcentaje debe estar entre 0 y 100.')
+  .refine(value => { const minor = moneyToMinor(value); return minor !== null && minor <= 10000n }, 'El porcentaje debe estar entre 0 y 100.')
 export function createFacturacionSchema(ordenes?: readonly OrdenFacturacion[]) {
   return z.object({
     idOrden: selection(ordenes?.filter(o => o.estado === 'LISTO').map(o => String(o.idOrden)), 'una orden LISTO'),
     nitFacturacion: inheritedText(20), nombreFacturacion: inheritedText(150), direccionFacturacion: inheritedText(250),
+    porcentajeImpuesto: porcentajeImpuestoSchema.default('12.00'),
   })
 }
+export const anularPagoSchema = z.object({ motivo: requiredText(300) })
 export function admiteBorradorPago(factura: FacturaResumenDto) {
   const saldo = moneyToMinor(factura.saldo)
   return factura.estado === 'EMITIDA' && saldo !== null && saldo > 0n

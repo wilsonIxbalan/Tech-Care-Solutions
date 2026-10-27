@@ -1,10 +1,11 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
 import { Providers } from '@/app/providers'
 import { AppShell } from '@/app/app-shell'
 import { WorkspacePage } from '@/features/workspace/workspace-page'
 import { EmptyState, LoadingState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
+import { PermissionGuard, SessionGuard } from '@/features/auth/session-guard'
 
 const LoginPage = lazy(() =>
   import('@/features/auth/login-page').then((module) => ({
@@ -12,11 +13,11 @@ const LoginPage = lazy(() =>
   })),
 )
 
-const DesignSystemPage = lazy(() =>
+const DesignSystemPage = import.meta.env.DEV ? lazy(() =>
   import('@/features/design-system/design-system-page').then((module) => ({
     default: module.DesignSystemPage,
   })),
-)
+) : () => null
 
 const ClientesPage = lazy(() =>
   import('@/features/clientes/clientes-page').then((module) => ({
@@ -35,6 +36,8 @@ const OrdenesPage = lazy(() =>
     default: module.OrdenesPage,
   })),
 )
+
+const OrdenDetallePage = lazy(() => import('@/features/ordenes/orden-detalle-page').then(module => ({ default: module.OrdenDetallePage })))
 
 const DiagnosticosPage = lazy(() =>
   import('@/features/diagnosticos/diagnosticos-page').then((module) => ({
@@ -65,10 +68,13 @@ export function App() {
             }
           />
 
+          <Route element={<SessionGuard />}>
           <Route element={<AppShell />}>
-            <Route index element={<WorkspacePage />} />
+          <Route element={<PermissionGuard />}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<WorkspacePage />} />
 
-            <Route
+            {import.meta.env.DEV && <Route
               path="kit"
               element={
                 <Suspense
@@ -79,7 +85,7 @@ export function App() {
                   <DesignSystemPage />
                 </Suspense>
               }
-            />
+            />}
 
             <Route
               path="clientes"
@@ -107,6 +113,8 @@ export function App() {
                 </Suspense>
               }
             />
+
+            <Route path="ordenes/:id" element={<Suspense fallback={<LoadingState label="Preparando orden…" />}><OrdenDetallePage /></Suspense>} />
 
             <Route
               path="diagnosticos"
@@ -140,6 +148,8 @@ export function App() {
                 />
               }
             />
+          </Route>
+          </Route>
           </Route>
         </Routes>
       </BrowserRouter>

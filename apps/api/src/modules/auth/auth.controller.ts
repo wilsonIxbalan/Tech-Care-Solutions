@@ -1,6 +1,10 @@
 import { Body, Controller, Get, HttpCode, Post, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiCookieAuth,
+  ApiTags,
+  ApiTooManyRequestsResponse,
+} from '@nestjs/swagger';
 import { CookieOptions, Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto, SessionUser } from './auth.dto';
@@ -22,6 +26,10 @@ export class AuthController {
   }
   @Public()
   @Post('login')
+  @ApiTooManyRequestsResponse({
+    description:
+      'LOGIN_LIMITADO: 20 intentos por identificador cada cinco minutos. Límite local por instancia, no por IP compartida.',
+  })
   @HttpCode(200)
   async login(
     @Body() body: LoginDto,

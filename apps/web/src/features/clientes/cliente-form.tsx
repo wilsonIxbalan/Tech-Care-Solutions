@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Fragment, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import type { ComponentProps } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import type { FieldError } from 'react-hook-form'
@@ -10,6 +10,10 @@ import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { clienteSchema } from '@/features/clientes/cliente-schema'
 import type { ClienteFormValues } from '@/features/clientes/cliente-schema'
+import type { ClienteDto } from '@/types/domain'
+import { useSession } from '@/features/auth/session-context'
+import { clienteBody, useSaveCliente } from './api'
+import { SaveError } from './save-error'
 
 type ClienteFieldProps = ComponentProps<'input'> & {
   id: string
@@ -37,12 +41,20 @@ function ClienteField({ id, label, error, required, ...props }: ClienteFieldProp
   )
 }
 
-export function ClienteForm({ onCancel }: { onCancel: () => void }) {
-  const [message, setMessage] = useState('')
+export function ClienteForm({ cliente, onCancel, onSaved }: { cliente?: ClienteDto; onCancel: () => void; onSaved: () => void }) {
+  const { user } = useSession()
+  const allowed = Boolean(user?.permisos.includes('CLIENTES_GESTIONAR'))
+  const save = useSaveCliente(cliente?.idCliente)
+  const sending = useRef(false)
+  const [estado, setEstado] = useState<ClienteDto['estado']>(cliente?.estado ?? 'ACTIVO')
   const form = useForm<ClienteFormValues>({
     resolver: zodResolver(clienteSchema),
     shouldUnregister: true,
-    defaultValues: {
+    defaultValues: cliente ? {
+      ...cliente, nombres: cliente.nombres ?? '', apellidos: cliente.apellidos ?? '',
+      razonSocial: cliente.razonSocial ?? '', nombreContacto: cliente.nombreContacto ?? '',
+      email: cliente.email ?? '', direccion: cliente.direccion ?? '',
+    } : {
       tipoCliente: 'INDIVIDUAL',
       nombres: '',
       apellidos: '',
@@ -58,17 +70,16 @@ export function ClienteForm({ onCancel }: { onCancel: () => void }) {
 
   function cancel() {
     form.reset()
-    setMessage('')
     onCancel()
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle id="cliente-form-title">Registrar cliente</CardTitle>
+        <CardTitle id="cliente-form-title">{cliente ? 'Editar cliente' : 'Registrar cliente'}</CardTitle>
         <p className="text-sm text-muted-foreground">Los campos con * son obligatorios.</p>
         <p className="text-sm text-muted-foreground">
-          Puedes validar los datos. El guardado está pendiente de conectar la API.
+          Usa CF para consumidor final. Mantén los datos de contacto actualizados.
         </p>
       </CardHeader>
       <CardContent>
@@ -76,16 +87,24 @@ export function ClienteForm({ onCancel }: { onCancel: () => void }) {
           aria-labelledby="cliente-form-title"
           className="space-y-5"
           noValidate
-          onChange={() => setMessage('')}
-          onSubmit={form.handleSubmit(
-            () => setMessage('Los datos son válidos. El cliente aún no se ha guardado: falta conectar la API.'),
-            () => setMessage(''),
-          )}
+          onSubmit={async event => {
+            event.preventDefault()
+            if (!allowed || sending.current) return
+            sending.current = true
+            try {
+              await form.handleSubmit(async values => {
+                try { await save.mutateAsync(clienteBody(values, estado)); onSaved() } catch { /* Preserve values and show server details. */ }
+              })(event)
+            }
+            finally { sending.current = false }
+          }}
         >
+          <fieldset disabled={!allowed || formState.isSubmitting} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="cliente-tipo">Tipo de cliente *</Label>
             <NativeSelect
               id="cliente-tipo"
+              autoFocus
               required
               aria-invalid={Boolean(tipoError)}
               aria-describedby={tipoError ? 'cliente-tipo-error' : undefined}
@@ -170,11 +189,14 @@ export function ClienteForm({ onCancel }: { onCancel: () => void }) {
             />
           </div>
 
-          {message && <p role="status" className="rounded-lg border bg-muted p-3 text-sm">{message}</p>}
+          <div className="space-y-2"><Label htmlFor="cliente-estado">Estado del cliente</Label><NativeSelect id="cliente-estado" value={estado} onChange={event => setEstado(event.target.value as ClienteDto['estado'])}><option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option></NativeSelect></div>
+          </fieldset>
+          <SaveError error={save.error} />
+          {!allowed && <p role="alert">No tienes permiso para gestionar clientes.</p>}
 
           <div className="flex flex-wrap gap-3">
-            <Button type="submit" disabled={formState.isSubmitting}>Validar datos</Button>
-            <Button type="button" variant="outline" onClick={cancel}>Cancelar</Button>
+            <Button type="submit" disabled={!allowed || formState.isSubmitting}>{formState.isSubmitting ? 'Guardando…' : 'Guardar cliente'}</Button>
+            <Button type="button" variant="outline" disabled={formState.isSubmitting} onClick={cancel}>Cancelar</Button>
           </div>
         </form>
       </CardContent>

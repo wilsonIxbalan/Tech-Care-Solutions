@@ -31,6 +31,10 @@ Fuentes técnicas: [rewrites externos Vercel](https://vercel.com/docs/routing/re
 - CORS no sustituye esa validación. Si se accede directamente en desarrollo, origen explícito + credentials=true; nunca `*` con cookies. Autorizar URLs de preview individualmente, no todos los dominios vercel.app.
 - Argon2id para passwords; JWT_SECRET y conexión SQL solo en entorno backend. No registrar passwords, hashes, tokens o Cookie; React escapa texto y no inserta HTML de mensajes.
 - DTO con whitelist; consultas tipadas/parametrizadas, SP para procesos y usuario SQL tc_runtime, no administrador. Actor sale de sesión; los permisos se verifican en cada endpoint.
+- Login admite usuario o correo y rechaza identidades ambiguas. Limite basico en memoria: 20 intentos por identificador cada cinco minutos, mapa acotado y sin confiar en X-Forwarded-For. No sustituye proteccion perimetral frente a ataques distribuidos.
+- Administracion de usuarios: conservar al menos un ADMINISTRADOR activo mediante comprobacion y bloqueo en la misma transaccion. Solo protege operaciones realizadas por esta API; las cuentas SQL de desarrollo siguen siendo cuentas de confianza.
+- Primer administrador: script manual independiente `database/bootstrap/01_admin_inicial.sql`, con hash Argon2id generado localmente. No se ejecuta al iniciar el backend ni forma parte del maestro. Nunca versionar valores privados ni volver a aplicar el maestro a la BD instalada.
+- Revisar dependencias antes de desplegar. Tras parches transitivos de multer y js-yaml siguen pendientes avisos de MSAL (flujo authorization-code, distinto de SQL/password usado aqui) y uuid (v3/v5/v6 con buffers, distinto de v4 usado por ExcelJS). No se han eliminado esos avisos mediante actualizaciones mayores sin validar compatibilidad; no declarar la auditoria de paquetes limpia.
 
 ## Envelope único de error
 

@@ -5,6 +5,7 @@ import * as argon2 from 'argon2';
 import { ApiError } from '../../common/api-error';
 import { AuthRepository } from './auth.repository';
 import { LoginDto } from './auth.dto';
+import { LoginLimiter } from './login-limiter';
 @Injectable()
 export class AuthService {
   private readonly dummyHash = argon2.hash(
@@ -15,8 +16,10 @@ export class AuthService {
     private readonly repository: AuthRepository,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly limiter: LoginLimiter,
   ) {}
   async login(dto: LoginDto) {
+    this.limiter.consume(dto.nombreUsuario);
     const row = await this.repository.credentials(dto.nombreUsuario);
     const hash = row ? String(row.PasswordHash) : await this.dummyHash;
     const valid =

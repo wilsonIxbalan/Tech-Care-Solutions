@@ -21,9 +21,9 @@ export function createEquipoSchema(catalogos: EquipoCatalogos) {
     numeroSerie: z.string().trim()
       .min(1, 'Escribe el número de serie.')
       .max(60, 'El número de serie debe tener como máximo 60 caracteres.'),
-    // SQL permite texto vacío, pero no NULL; EquipoDto admite null.
-    // Se conserva texto en el formulario hasta acordar el contrato de creación.
+    // EquipmentInput exige texto no vacío y no admite null.
     descripcion: z.string().trim()
+      .min(1, 'Escribe la descripción del equipo.')
       .max(300, 'La descripción debe tener como máximo 300 caracteres.'),
   })
 }

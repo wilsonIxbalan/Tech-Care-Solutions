@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ApiError } from '@/lib/api-client'
 import {
   Dialog, DialogClose, DialogContent, DialogDescription,
   DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
@@ -20,8 +21,8 @@ export function ConfirmDialog({ trigger, title, description, confirmLabel = 'Con
     try {
       await onConfirm()
       setOpen(false)
-    } catch {
-      setError('No se confirmó el resultado. Consulta el estado antes de volver a intentar la operación.')
+    } catch (error) {
+      setError(error instanceof ApiError ? error.message : 'No se confirmó el resultado. Consulta el estado antes de volver a intentar la operación.')
     } finally {
       setPending(false)
     }

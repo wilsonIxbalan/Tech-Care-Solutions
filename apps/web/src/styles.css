@@ -47,7 +47,24 @@
   ::selection { background: #c9e8e0; }
 }
 
+@property --avatar-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* Borde decorativo: no representa presencia ni estado de conexion. */
+.avatar-halo {
+  background: conic-gradient(from var(--avatar-angle), var(--primary), #99f6e4, var(--border), var(--primary));
+  animation: avatar-orbit 24s linear infinite;
+}
+
+@keyframes avatar-orbit {
+  to { --avatar-angle: 360deg; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .avatar-halo { animation: none; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
