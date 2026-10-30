@@ -16,10 +16,15 @@ describe('filtros y proyecciones de los doce reportes SQL', () => {
   it.each(reportDefinitions)('$procedure conserva sus parámetros y columnas por conjunto', report => {
     const body = procedures.find(body => body.startsWith(report.procedure))!
     const header = body.split(/\r?\nAS\b/i)[0]
-    expect(report.filters.map(f => f.key)).toEqual([...header.matchAll(/@(\w+)\s+/g)].map(match => match[1]))
-    // Actividad tiene dos SELECT de UNION ALL con la misma proyección; no son dos resultsets.
-    const projection = body.split(/\bUNION ALL\b/i)[0]
-    const sets = [...projection.matchAll(/\bSELECT\s+([\s\S]*?)\s+FROM\b/gi)].map(match => match[1].split(/,(?![^()]*\))/).map(column => column.trim().match(/(?:\bAS\s+)?(\w+)$/i)![1]))
+    const parameters = [...header.matchAll(/@(\w+)\s+/g)].map(match => match[1])
+    const internal = ['Page', 'PageSize', 'Search', 'MaxRows']
+    expect(report.filters.map(f => f.key)).toEqual(parameters.filter(name => !internal.includes(name)))
+    const complete = ['historial-cliente', 'historial-equipo', 'trazabilidad'].includes(report.id)
+    expect(parameters.filter(name => internal.includes(name))).toEqual(complete ? ['MaxRows'] : internal)
+    // Solo SELECT publicos despues de validar el limite; INTO # temporales,
+    // subconsultas de conteo y metadata final no son conjuntos del reporte.
+    const projection = body.slice(body.indexOf('THROW 51710'))
+    const sets = [...projection.matchAll(/\bSELECT\s+([\w.,\s]+?)\s+FROM\s+#\w+\b/gi)].map(match => match[1].split(',').map(column => column.trim().match(/(\w+)$/)![1]))
     expect(report.sets.map(set => [...set.columns])).toEqual(sets)
   })
   it('no trata un filtro booleano vacío como Todos ni un decimal numérico como Money exacto', () => {

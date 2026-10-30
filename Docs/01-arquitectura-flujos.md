@@ -22,6 +22,8 @@ Tres capas y un backend modular, sin microservicios, Redis, crédito, integraci�
 - Módulos: auth/usuarios, clientes/equipos, órdenes/diagnóstico/reparación, inventario, compras/proveedores, facturación/pagos/entrega y reportes/dashboard.
 - Todos los objetos SQL usan **dbo**; los módulos son agrupaciones lógicas, no esquemas ni servicios separados.
 - No importar clases de Nest en React ni módulos del frontend en Nest. Comparten un contrato HTTP, no su ejecución.
+- Diagrama ER como codigo: [techcare-er.mmd](../seguimiento/diseno/techcare-er.mmd), generado desde tablas, FK e indices reales con `pnpm er:build`; validar con `pnpm er:check`. Incluye 33 tablas y 52 FK; PK/UK compuestas y UNIQUE filtrados se documentan como grupos, sin inventar unicidad global ni relaciones derivadas. No interpreta reglas de triggers como cardinalidades estructurales.
+- `pnpm test:scripts` verifica generadores, salvaguardas de semilla y configuracion del proxy sin SQL. La semilla manual esta en `database/semillas/01_datos_demostracion.sql`; no forma parte del maestro ni del inicio. Sus cuentas y operaciones son de demostracion, nunca carga automatica de produccion.
 
 ```mermaid
 flowchart LR
@@ -31,6 +33,20 @@ flowchart LR
 ```
 
 El proxy mantiene un único origen para el navegador; no mueve NestJS a Vercel. En local, Vite debe enviar `/api` a localhost:3000. Configuración y prueba de cookie: documento 04.
+
+## Despliegue previsto: Vercel + Render Node nativo + Azure SQL
+
+La configuracion esta preparada, sin crear recursos ni ejecutar despliegues. `render.yaml` en la raiz describe solamente la API; Azure SQL existente sigue siendo la base. Docker no forma parte de esta ruta: su Dockerfile queda como alternativa opcional y una prueba de arranque Docker no es un requisito del plan actual.
+
+1. **Render:** al realizar el despliegue autorizado, seleccionar la rama acordada y el Blueprint `render.yaml`, runtime **Node**, Root Directory vacio (raiz del repositorio, no `apps/api`). Revisar la region antes de crear el servicio. `plan: free` evita seleccionar implicitamente un plan de pago; sus limites e inactividad pueden producir arranques en frio. `autoDeployTrigger: off` desactiva despliegues automaticos por commits, pero importar/sincronizar un Blueprint puede crear recursos y lanzar el primer deploy: no hacerlo como comprobacion local.
+2. **Build desde la raiz:** `corepack enable && corepack prepare pnpm@10.34.7 --activate && pnpm install --frozen-lockfile --prod=false && pnpm --filter @techcare/api build`. `NODE_VERSION=24` acota la version mayor. Corepack selecciona el pnpm fijado tambien en `packageManager`; no depender de la version pnpm preinstalada del proveedor. `--prod=false` conserva herramientas de compilacion aun con `NODE_ENV=production`. Mantener las dependencias de ejecucion y los scripts autorizados por `onlyBuiltDependencies`, incluido Argon2: su modulo nativo/prebuild debe instalarse para Linux en Render, nunca copiar `node_modules` de Windows ni instalar con `--ignore-scripts`.
+3. **Start desde la raiz:** `node apps/api/dist/main.js`, conservando el directorio de trabajo para las rutas de configuracion. Render proporciona `PORT`; no fijar `PORT` ni `API_PORT` en produccion. Sondeo publico: `/api/v1/health` (liveness sin SQL). Completar entorno y firewall segun documento 04 antes de validar readiness con sesion.
+4. **Vercel:** un proyecto para `apps/web`, preset **Vite**, Node **24.x**, Root Directory **apps/web** y acceso a archivos fuera del Root Directory habilitado para el workspace/lockfile de la raiz. Install Command: `cd ../.. && corepack enable && corepack prepare pnpm@10.34.7 --activate && pnpm install --frozen-lockfile --prod=false`. Build Command: `pnpm --filter @techcare/web build`; Output Directory: `dist` (relativo a `apps/web`). La configuracion de rutas es `apps/web/vercel.json`. No usar `apps/api` como raiz de Render ni la raiz del repositorio como proyecto Vite.
+5. Cuando existan los origenes HTTPS reales, configurar el proxy `/api/:path*` antes del fallback SPA mediante `pnpm deploy:configure-web` y verificar `pnpm deploy:check` (documento 04). El navegador usa `/api/v1`; el destino Render pertenece al rewrite, nunca a un `VITE_API_URL` absoluto. Completar `FRONTEND_ORIGIN` con el origen exacto de Vercel/dominio propio, no un placeholder.
+
+Comprobacion local estatica: `node --test scripts/test/render-native.test.mjs` (tambien incluida en `pnpm test:scripts`). No acredita instalacion Linux de Argon2, disponibilidad Render, conexion Azure ni cookies en produccion; esas comprobaciones corresponden al primer despliegue real.
+
+Referencias: [Blueprint Render](https://render.com/docs/blueprint-spec), [Node en Render](https://render.com/docs/node-version), [runtime nativo](https://render.com/docs/native-runtimes), [monorepos Vercel](https://vercel.com/docs/monorepos).
 
 ## Flujo de una acción
 

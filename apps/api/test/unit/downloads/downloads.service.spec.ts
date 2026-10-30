@@ -9,7 +9,7 @@ describe('DownloadsService sin BD', () => {
   const execute = jest.fn();
   const invoiceDetail = jest.fn();
   const service = new DownloadsService(
-    { execute } as unknown as ReportsRepository,
+    { exportRows: execute } as unknown as ReportsRepository,
     { invoiceDetail } as unknown as ReadRepository,
   );
   const query = (extra: Partial<ReportExportQuery> = {}) => Object.assign(new ReportExportQuery(), { formato: 'csv', conjunto: 1 }, extra);
@@ -18,29 +18,31 @@ describe('DownloadsService sin BD', () => {
   it('exporta todo, no sólo página; limpia formato/conjunto y conserva filtros', async () => {
     execute.mockResolvedValue([[{ IdRepuesto: '0001', Total: 0, Fecha: new Date('2026-10-26T06:00:00Z') }, { IdRepuesto: '0002', Total: 2.3 }]]);
     const result = await service.report('inventario', query({ page: 9, pageSize: 1, idBodega: 3 }));
-    expect(execute).toHaveBeenCalledWith('inventario', { page: 9, pageSize: 1, idBodega: 3 });
+    expect(execute).toHaveBeenCalledWith('inventario', { page: 9, pageSize: 1, idBodega: 3 }, 10000);
     expect(result.buffer.toString()).toContain('"0001","0.00","2026-10-26T06:00:00.000Z"');
     expect(result.buffer.toString()).toContain('"0002","2.30",""');
     expect(result.filename).toBe('inventario-conjunto-1.csv');
   });
 
-  it('aplica search como ReportsService: sólo strings públicas, substring case insensitive es', async () => {
-    execute.mockResolvedValue([[{ Nombre: 'TÉCNICO', Total: 12.3 }, { Nombre: 'Otro', Total: 1 }]]);
+  it('envía search a SQL y conserva los resultados ya filtrados sin filtrar de nuevo', async () => {
+    execute.mockResolvedValue([[{ Nombre: 'TÉCNICO', Total: 12.3 }]]);
     const result = await service.report('actividad-tecnico', query({ search: 'técn' }));
     expect(result.buffer.toString()).toContain('TÉCNICO');
     expect(result.buffer.toString()).not.toContain('Otro');
     const byAmount = await service.report('actividad-tecnico', query({ search: '12.30' }));
     expect(byAmount.buffer.toString()).toContain('TÉCNICO');
+    expect(execute).toHaveBeenCalledWith('actividad-tecnico', expect.objectContaining({ search: '12.30' }), 10000);
   });
 
   it('facturas-saldo conserva pagos sólo de facturas coincidentes sin buscar referencias de pago', async () => {
     execute.mockResolvedValue([
-      [{ IdFactura: 1, ClienteNombre: 'Ana' }, { IdFactura: 2, ClienteNombre: 'Bea' }],
-      [{ IdFactura: 1, Referencia: 'ref-uno' }, { IdFactura: 2, Referencia: 'Ana-en-pago-ajeno' }],
+      [{ IdFactura: 1, ClienteNombre: 'Ana' }],
+      [{ IdFactura: 1, Referencia: 'ref-uno' }],
     ]);
     const result = await service.report('facturas-saldo', query({ search: 'ana', conjunto: 2 }));
     expect(result.buffer.toString()).toContain('ref-uno');
     expect(result.buffer.toString()).not.toContain('pago-ajeno');
+    expect(execute).toHaveBeenCalledWith('facturas-saldo', expect.objectContaining({ search: 'ana' }), 10000);
   });
 
   it('XLSX incluye cada resultset y excluye campos privados por publicRows', async () => {
@@ -72,10 +74,11 @@ describe('DownloadsService sin BD', () => {
     });
   });
 
-  it('aplica límite después de search, sin cortar filas', async () => {
-    execute.mockResolvedValue([Array.from({ length: 10001 }, (_, id) => ({ Nombre: id ? 'otro' : 'buscado' }))]);
+  it('el límite se aplica en SQL después de search; no carga filas descartadas', async () => {
+    execute.mockResolvedValue([[{ Nombre: 'buscado' }]]);
     const result = await service.report('inventario', query({ search: 'buscado' }));
     expect(result.buffer.toString()).toBe('\uFEFF"nombre"\r\n"buscado"\r\n');
+    expect(execute).toHaveBeenCalledWith('inventario', expect.objectContaining({ search: 'buscado' }), 10000);
   });
 
   it('requiere conjunto CSV, rechaza conjunto fuera de rango y selección en XLSX', async () => {

@@ -13,12 +13,15 @@ describe('Confirmación de operaciones de servicio', () => {
     const http = vi.fn(async () => json({ data: { idActividad: 17 } }, 201))
     vi.stubGlobal('fetch', http)
     const saved = vi.fn()
-    renderWithSession(<ServiceForm title="Registrar actividad" path="/reparaciones/4/actividades" schema={schema} fields={fields} onSuccess={saved} />)
+    const { client } = renderWithSession(<ServiceForm title="Registrar actividad" path="/reparaciones/4/actividades" schema={schema} fields={fields} onSuccess={saved} />)
+    const dependentKeys = [['inventario/movimientos', 1], ['facturacion-ordenes', 1], ['facturacion-resumen', 1, 4, '12']]
+    dependentKeys.forEach(key => client.setQueryData(key, 'dato anterior'))
     fireEvent.change(screen.getByLabelText('Descripción de la actividad *'), { target: { value: '  Verificación final  ' } })
     fireEvent.submit(screen.getByRole('form', { name: 'Registrar actividad' }))
     await waitFor(() => expect(saved).toHaveBeenCalledWith({ idActividad: 17 }))
     expect(http).toHaveBeenCalledWith('/api/v1/reparaciones/4/actividades', expect.objectContaining({ method: 'POST', body: '{"descripcion":"Verificación final"}' }))
     expect(screen.getByRole('status')).toHaveTextContent('Operación registrada.')
+    dependentKeys.forEach(key => expect(client.getQueryState(key)?.isInvalidated).toBe(true))
   })
 
   it.each(['red', 'respuesta'] as const)('bloquea reenvío si no se confirmó el resultado por %s', async mode => {

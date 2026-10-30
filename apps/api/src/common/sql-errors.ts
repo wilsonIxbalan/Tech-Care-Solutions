@@ -1,5 +1,6 @@
 // Lista explícita de los THROW de fases 07/08/09. Nunca exponer el texto del motor.
 const groups: Array<[number[], number, string, string]> = [
+  [[51710], 413, 'EXPORTACION_DEMASIADO_GRANDE', 'La exportación supera 10000 filas en total. Ajusta los filtros; no se ha truncado ningún conjunto.'],
   [
     [
       50100, 50300, 50400, 50500, 50602, 50800, 51000, 51103, 51202, 51300,

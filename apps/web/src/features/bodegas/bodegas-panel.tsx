@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { toast } from 'sonner'
+import { invalidateRelatedQueries } from '@/lib/query-invalidation'
 import { Button } from '@/components/ui/button'
 import { SelectField, TextField } from '@/components/shared/form-fields'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
@@ -30,7 +31,7 @@ function BodegaForm({ row, onClose }: { row?: Bodega; onClose: () => void }) {
     try {
       await save.mutateAsync(values)
       toast.success(row ? 'Bodega actualizada.' : 'Bodega creada.')
-      await Promise.all(['bodegas', 'inventario', 'compras'].map(key => client.invalidateQueries({ queryKey: [key] })))
+      await invalidateRelatedQueries(client, 'warehouses')
       onClose()
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : 'No se pudo confirmar el guardado. Consulta el listado antes de repetirlo.')

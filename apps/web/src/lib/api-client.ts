@@ -26,6 +26,11 @@ function isApiError(value: unknown): value is ApiErrorResponse {
 type ApiOptions = RequestInit
 
 const sessionListeners = new Set<() => void>()
+const writeGuards = new Set<() => boolean>()
+export function registerSessionWriteGuard(guard: () => boolean) {
+  writeGuards.add(guard)
+  return () => { writeGuards.delete(guard) }
+}
 export function onSessionInvalid(listener: () => void) {
   sessionListeners.add(listener)
   return () => { sessionListeners.delete(listener) }
@@ -42,6 +47,11 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
     throw new ApiError('La ruta debe ser relativa a la API.', 'CONFIGURACION', 0)
   }
   const { signal, ...init } = options
+  const method = (options.method ?? 'GET').toUpperCase()
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && path !== '/auth/login' && path !== '/auth/logout'
+    && [...writeGuards].some(guard => !guard())) {
+    throw new ApiError('Verifica tu sesión antes de guardar. La operación no se ha enviado.', 'SESION_NO_VERIFICADA', 403)
+  }
   const headers = new Headers(init.headers)
   headers.set('Accept', 'application/json')
   if (init.body !== undefined && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json')

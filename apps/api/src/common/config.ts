@@ -26,6 +26,12 @@ export function validateEnvironment(env: Record<string, unknown>) {
   const dbPort = Number(env.DB_PORT ?? 1433);
   if (!Number.isInteger(dbPort) || dbPort < 1 || dbPort > 65535)
     throw new Error('DB_PORT no es válido.');
+  for (const key of ['DB_CONNECTION_TIMEOUT_MS', 'DB_REQUEST_TIMEOUT_MS']) {
+    if (env[key] === undefined) continue;
+    const timeout = Number(env[key]);
+    if (!Number.isInteger(timeout) || timeout < 1000 || timeout > 120000)
+      throw new Error(`${key} debe ser un entero entre 1000 y 120000 milisegundos.`);
+  }
   if (
     env.NODE_ENV &&
     !['development', 'test', 'production'].includes(String(env.NODE_ENV))

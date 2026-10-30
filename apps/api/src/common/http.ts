@@ -13,6 +13,8 @@ import { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { map } from 'rxjs/operators';
 import { sqlError } from './sql-errors';
+import { httpContext } from './request-context';
+import { databaseUnavailable } from '../database/database-diagnostics';
 
 export function requestContext(req: Request, res: Response, next: () => void) {
   const candidate = req.get('X-Request-Id');
@@ -23,7 +25,7 @@ export function requestContext(req: Request, res: Response, next: () => void) {
   res.setHeader('X-Request-Id', res.locals.requestId as string);
   res.setHeader('Cache-Control', 'private, no-store');
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  next();
+  httpContext.run({ requestId: res.locals.requestId as string }, next);
 }
 @Injectable()
 export class EnvelopeInterceptor implements NestInterceptor {
@@ -86,17 +88,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       if (sql) {
         status = sql.status;
         error = { code: sql.code, message: sql.message };
-      } else if (
-        'code' in exception &&
-        [
-          'ETIMEOUT',
-          'ESOCKET',
-          'ECONNCLOSED',
-          'ENOTOPEN',
-          'ELOGIN',
-          'EINSTLOOKUP',
-        ].includes(String(exception.code))
-      ) {
+      } else if (databaseUnavailable(exception)) {
         status = 503;
         error = {
           code: 'SERVICIO_NO_DISPONIBLE',

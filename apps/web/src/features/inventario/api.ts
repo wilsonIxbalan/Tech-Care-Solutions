@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { invalidateRelatedQueries } from '@/lib/query-invalidation'
 import { useSession } from '@/features/auth/session-context'
 import { ApiError, apiFetch } from '@/lib/api-client'
 import type { ReceivedData } from '@/lib/received-data'
@@ -59,9 +60,7 @@ export function useSupplyMutation<TBody, TResult>(path: string, method: 'POST' |
     onSuccess: () => { toast.success(successMessage) },
     // A lost response may still have committed: invalidate on error as well, never retry a write.
     onSettled: () => {
-      for (const resource of ['proveedores', 'repuestos', 'bodegas', 'compras', 'inventario', 'inventario/movimientos', 'dashboard', 'reportes']) {
-        void client.invalidateQueries({ queryKey: [resource] })
-      }
+      void invalidateRelatedQueries(client, 'supply')
     },
   })
 }

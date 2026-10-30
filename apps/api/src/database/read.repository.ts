@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as sql from 'mssql';
-import { notFound } from '../common/api-error';
+import { invalid, notFound } from '../common/api-error';
 import { dateRange, PageQuery } from '../common/query.dto';
 import {
   DatabaseService,
@@ -224,39 +224,87 @@ export class ReadRepository {
     };
   }
   async orderDetail(id: number, tx?: sql.Transaction) {
-    const order = await this.one('ordenes', id, tx);
-    const repairs = await this.children('reparaciones', 'IdOrden', id, tx);
-    for (const repair of repairs) {
-      repair.actividades = await this.children(
-        'actividades',
-        'IdReparacion',
-        Number(repair.idReparacion),
-        tx,
+    return (await this.orderDetails([id], tx))[0];
+  }
+  async orderDetails(ids: readonly number[], tx?: sql.Transaction) {
+    if (!ids.length) return [];
+    if (ids.some((id) => !Number.isInteger(id) || id <= 0 || id > 2147483647))
+      throw invalid(
+        'ids',
+        'Los IDs deben ser enteros positivos de SQL Server.',
       );
-      repair.repuestos = await this.children(
-        'consumos',
-        'IdReparacion',
-        Number(repair.idReparacion),
-        tx,
-      );
-    }
-    const invoice = (
-      await this.db.query(
-        'SELECT IdFactura FROM dbo.vw_Facturas WHERE IdOrden=@Id;',
-        [int('Id', id)],
-        tx,
-      )
-    ).recordset[0];
-    return {
-      ...order,
-      historial: await this.children('historial', 'IdOrden', id, tx),
-      diagnosticos: await this.children('diagnosticos', 'IdOrden', id, tx),
-      reparaciones: repairs,
-      factura: invoice
-        ? await this.invoiceDetail(Number(invoice.IdFactura), tx)
-        : null,
-      entrega: (await this.children('entregas', 'IdOrden', id, tx))[0] ?? null,
+
+    const orderIds = "SELECT Id FROM OPENJSON(@Ids) WITH (Id int '$')";
+    const repairIds = `SELECT IdReparacion FROM dbo.vw_Reparaciones WHERE IdOrden IN (${orderIds})`;
+    const invoiceIds = `SELECT IdFactura FROM dbo.vw_Facturas WHERE IdOrden IN (${orderIds})`;
+    const child = (
+      name: keyof typeof childReads,
+      column: 'IdOrden' | 'IdReparacion' | 'IdFactura',
+      selection: string,
+    ) => {
+      const [view, columns, order] = childReads[name];
+      return `SELECT ${columns} FROM dbo.${view} WHERE ${column} IN (${selection}) ORDER BY ${order};`;
     };
+    const result = await this.db.query(
+      [
+        `SELECT ${reads.ordenes.columns} FROM dbo.vw_Ordenes WHERE IdOrden IN (${orderIds});`,
+        child('reparaciones', 'IdOrden', orderIds),
+        child('actividades', 'IdReparacion', repairIds),
+        child('consumos', 'IdReparacion', repairIds),
+        child('historial', 'IdOrden', orderIds),
+        child('diagnosticos', 'IdOrden', orderIds),
+        `SELECT ${reads.facturas.columns} FROM dbo.vw_Facturas WHERE IdOrden IN (${orderIds});`,
+        child('detalles', 'IdFactura', invoiceIds),
+        child('pagos', 'IdFactura', invoiceIds),
+        child('entregas', 'IdOrden', orderIds),
+      ].join('\n'),
+      [param('Ids', sql.NVarChar(sql.MAX), JSON.stringify([...new Set(ids)]))],
+      tx,
+    );
+    const sets = (result.recordsets as Row[][]).map(publicRows);
+    const group = (rows: Row[], key: string) => {
+      const groups = new Map<number, Row[]>();
+      for (const row of rows) {
+        const id = Number(row[key]);
+        const entries = groups.get(id);
+        if (entries) entries.push(row);
+        else groups.set(id, [row]);
+      }
+      return groups;
+    };
+    const orders = group(sets[0], 'idOrden');
+    const repairs = group(sets[1], 'idOrden');
+    const activities = group(sets[2], 'idReparacion');
+    const parts = group(sets[3], 'idReparacion');
+    const history = group(sets[4], 'idOrden');
+    const diagnoses = group(sets[5], 'idOrden');
+    const invoices = group(sets[6], 'idOrden');
+    const details = group(sets[7], 'idFactura');
+    const payments = group(sets[8], 'idFactura');
+    const deliveries = group(sets[9], 'idOrden');
+    return ids.map((id) => {
+      const order = orders.get(id)?.[0];
+      if (!order) throw notFound();
+      const invoice = invoices.get(id)?.[0];
+      return {
+        ...order,
+        historial: history.get(id) ?? [],
+        diagnosticos: diagnoses.get(id) ?? [],
+        reparaciones: (repairs.get(id) ?? []).map((repair) => ({
+          ...repair,
+          actividades: activities.get(Number(repair.idReparacion)) ?? [],
+          repuestos: parts.get(Number(repair.idReparacion)) ?? [],
+        })),
+        factura: invoice
+          ? {
+              ...invoice,
+              detalles: details.get(Number(invoice.idFactura)) ?? [],
+              pagos: payments.get(Number(invoice.idFactura)) ?? [],
+            }
+          : null,
+        entrega: deliveries.get(id)?.[0] ?? null,
+      };
+    });
   }
   async repair(id: number, tx?: sql.Transaction) {
     const rows = (

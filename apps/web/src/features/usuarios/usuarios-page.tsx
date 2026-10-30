@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Plus } from 'lucide-react'
 import { toast } from 'sonner'
+import { invalidateRelatedQueries } from '@/lib/query-invalidation'
 import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { SelectField, TextField } from '@/components/shared/form-fields'
@@ -33,7 +34,7 @@ export function UsuariosPage() {
   } })
   const catalogos = useQuery({ queryKey: ['catalogos'], enabled: allowed, queryFn: async ({ signal }) => (await apiFetch<{ roles: { codigo: string; nombre: string }[] }>('/catalogos', { signal })).data })
   const roles = catalogos.data?.roles.map(role => role.codigo).filter((role): role is RoleCode => roleCodes.some(code => code === role)) ?? []
-  const toggle = useMutation({ mutationFn: async (usuario: UsuarioRow) => { await apiFetch<UsuarioRow>(`/usuarios/${usuario.idUsuario}`, { method: 'PATCH', body: JSON.stringify({ activo: !usuario.activo }) }); toast.success(usuario.activo ? 'Usuario desactivado.' : 'Usuario activado.'); await client.invalidateQueries({ queryKey: ['usuarios'] }); if (usuario.idUsuario === user?.idUsuario) await client.invalidateQueries({ queryKey: ['session'] }) } })
+  const toggle = useMutation({ mutationFn: async (usuario: UsuarioRow) => { await apiFetch<UsuarioRow>(`/usuarios/${usuario.idUsuario}`, { method: 'PATCH', body: JSON.stringify({ activo: !usuario.activo }) }); toast.success(usuario.activo ? 'Usuario desactivado.' : 'Usuario activado.'); await invalidateRelatedQueries(client, 'users'); if (usuario.idUsuario === user?.idUsuario) await client.invalidateQueries({ queryKey: ['session'] }) } })
   function closeEditor() { setEditor(null) }
   useEffect(() => { if (!editor) trigger.current?.focus() }, [editor])
   if (!allowed) return <EmptyState title="Acceso restringido" description="Solo administración puede gestionar usuarios y roles." />
@@ -44,7 +45,7 @@ export function UsuariosPage() {
       <div className="grid gap-4 sm:grid-cols-[1fr_12rem_8rem]">
         <TextField id="usuarios-busqueda" label="Buscar usuarios" maxLength={150} placeholder="Nombre, usuario o correo" value={filters.search} onChange={event => setFilters({ ...filters, search: event.target.value, page: 1 })} />
         <SelectField id="usuarios-estado" label="Estado" placeholder="Todos" options={[{ value: 'true', label: 'Activo' }, { value: 'false', label: 'Inactivo' }]} value={filters.activo} onChange={event => setFilters({ ...filters, activo: event.target.value, page: 1 })} />
-        <SelectField id="usuarios-tamano" label="Por página" options={[10, 20, 50].map(size => ({ value: String(size), label: String(size) }))} value={String(filters.pageSize)} onChange={event => setFilters({ ...filters, pageSize: Number(event.target.value), page: 1 })} />
+        <SelectField id="usuarios-tamano" label="Por página" allowEmpty={false} options={[10, 20, 50].map(size => ({ value: String(size), label: String(size) }))} value={String(filters.pageSize)} onChange={event => setFilters({ ...filters, pageSize: Number(event.target.value), page: 1 })} />
       </div>
       {usuarios.isPending ? <LoadingState label="Consultando usuarios…" /> : usuarios.isError ? <ErrorState description={usuarios.error.message} onRetry={() => void usuarios.refetch()} /> : <>
         {usuarios.data.data.length ? <div className="rounded-xl border bg-card"><Table containerLabel="Usuarios"><TableHeader><TableRow>{['Usuario', 'Roles', 'Estado', 'Último acceso', 'Acciones'].map(title => <TableHead key={title}>{title}</TableHead>)}</TableRow></TableHeader><TableBody>{usuarios.data.data.map(usuario => <TableRow key={usuario.idUsuario}>

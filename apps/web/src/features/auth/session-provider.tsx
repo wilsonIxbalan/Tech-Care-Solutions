@@ -1,6 +1,6 @@
-import { useEffect, type PropsWithChildren } from 'react'
+import { useEffect, useLayoutEffect, type PropsWithChildren } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ApiError, onSessionInvalid } from '@/lib/api-client'
+import { ApiError, onSessionInvalid, registerSessionWriteGuard } from '@/lib/api-client'
 import { getCurrentUser, login, logout } from './api'
 import { SessionContext } from './session-context'
 import type { SessionUser } from '@/types/api'
@@ -9,6 +9,11 @@ const sessionKey = ['session'] as const
 
 export function SessionProvider({ children }: PropsWithChildren) {
   const client = useQueryClient()
+  // Check live Query state: refetch must block writes before React renders again.
+  useLayoutEffect(() => registerSessionWriteGuard(() => {
+    const state = client.getQueryState<SessionUser | null>(sessionKey)
+    return Boolean(state?.data && state.status === 'success' && state.fetchStatus === 'idle')
+  }), [client])
   const session = useQuery({
     queryKey: sessionKey,
     queryFn: async ({ signal }) => {
@@ -54,9 +59,10 @@ export function SessionProvider({ children }: PropsWithChildren) {
   return <SessionContext.Provider value={{
     user: session.data ?? null,
     pending: session.isPending,
+    verifying: session.fetchStatus !== 'idle',
     error: session.error,
     refresh: async () => {
-      const result = await session.refetch()
+      const result = await session.refetch({ cancelRefetch: false })
       if (result.data === null) {
         client.removeQueries({ predicate: query => query.queryKey[0] !== 'session' })
         client.getMutationCache().clear()

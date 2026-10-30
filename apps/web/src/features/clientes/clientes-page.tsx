@@ -37,7 +37,7 @@ export function ClientesPage() {
       <div className="grid gap-4 sm:grid-cols-[1fr_10rem_8rem]">
         <TextField id="clientes-busqueda" label="Buscar clientes" type="search" placeholder="Nombre, NIT o teléfono" maxLength={150} value={filters.search} onChange={event => setFilters({ ...filters, search: event.target.value, page: 1 })} />
         <SelectField id="clientes-filtro-estado" label="Estado" placeholder="Todos" options={[{ value: 'ACTIVO', label: 'Activo' }, { value: 'INACTIVO', label: 'Inactivo' }]} value={filters.estado} onChange={event => setFilters({ ...filters, estado: event.target.value, page: 1 })} />
-        <SelectField id="clientes-tamano" label="Por página" options={[10, 20, 50].map(size => ({ value: String(size), label: String(size) }))} value={String(filters.pageSize)} onChange={event => setFilters({ ...filters, pageSize: Number(event.target.value), page: 1 })} />
+        <SelectField id="clientes-tamano" label="Por página" allowEmpty={false} options={[10, 20, 50].map(size => ({ value: String(size), label: String(size) }))} value={String(filters.pageSize)} onChange={event => setFilters({ ...filters, pageSize: Number(event.target.value), page: 1 })} />
       </div>
       {clientes.isPending ? <LoadingState label="Consultando clientes…" /> : clientes.isError ? <ErrorState description={clientes.error.message} onRetry={() => void clientes.refetch()} /> : <>
         {clientes.data.data.length ? <div className="rounded-xl border bg-card"><Table containerLabel="Clientes"><TableHeader><TableRow>{['Cliente', 'NIT', 'Contacto', 'Estado', 'Acciones'].map(title => <TableHead key={title}>{title}</TableHead>)}</TableRow></TableHeader><TableBody>{clientes.data.data.map(cliente => <TableRow key={cliente.idCliente}>

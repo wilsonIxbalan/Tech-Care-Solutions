@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { SlidersHorizontal } from 'lucide-react'
 import { useSession } from '@/features/auth/session-context'
 import { PageHeader } from '@/components/shared/page-header'
 import { SelectField, TextField } from '@/components/shared/form-fields'
 import { ReceivedTable } from '@/components/shared/received-table'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { formatMoney, formatUtcDateTime } from '@/lib/format'
 import { apiFetch } from '@/lib/api-client'
 import { formatCivilDate } from '@/lib/format'
@@ -35,17 +37,23 @@ export function ComprasPage({ catalogos = {}, compras, detalle, detalles }: { ca
   if (!access.purchases) return <EmptyState title="Acceso restringido" description="No tienes permiso para gestionar compras." />
   return <><PageHeader title="Compras" description="Registro de compras y recepción completa en bodega." actions={<Button disabled={creating} onClick={() => setCreating(true)}>Nueva compra</Button>} />
     {creating && <CompraForm catalogos={catalogos} onCancel={() => setCreating(false)} onSaved={id => { setCreating(false); setIdCompra(id) }} />}
-    <section className="space-y-4" aria-label="Listado de compras"><div className="grid gap-4 sm:grid-cols-3">
+    <section className="space-y-4" aria-label="Listado de compras">
+    <div className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">
+      <div className="flex items-center gap-2 border-b pb-3 text-primary"><SlidersHorizontal className="size-4" aria-hidden="true" /><h2 className="text-sm font-semibold">Filtros de compras</h2></div>
+      <div className="grid items-start gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <TextField id="compras-search" label="Buscar compras" type="search" maxLength={150} value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value, page: 1 })} />
       <SelectField id="compras-estado" label="Estado de compra" placeholder="Todos" options={['PENDIENTE', 'RECIBIDA', 'ANULADA'].map(value => ({ value, label: value }))} value={filters.estado} onChange={e => setFilters({ ...filters, estado: e.target.value, page: 1 })} />
-      <SupplySelector resource="proveedores" id="compras-proveedor" label="Proveedor" value={filters.idProveedor} selected={selected.proveedor} onSelect={option => { setSelected({ ...selected, proveedor: option }); setFilters({ ...filters, idProveedor: option ? String(option.id) : '', page: 1 }) }} />
-      <SupplySelector resource="bodegas" id="compras-bodega" label="Bodega destino" value={filters.idBodegaDestino} selected={selected.bodega} onSelect={option => { setSelected({ ...selected, bodega: option }); setFilters({ ...filters, idBodegaDestino: option ? String(option.id) : '', page: 1 }) }} />
       <TextField id="compras-desde" label="Fecha desde" type="date" value={filters.fechaDesde} onChange={e => setFilters({ ...filters, fechaDesde: e.target.value, page: 1 })} />
       <TextField id="compras-hasta" label="Fecha hasta (inclusive)" type="date" value={filters.fechaHasta} onChange={e => setFilters({ ...filters, fechaHasta: e.target.value, page: 1 })} />
+      </div>
+      <div className="grid items-start gap-4 lg:grid-cols-2" aria-label="Filtros de proveedor y bodega">
+        <SupplySelector resource="proveedores" id="compras-proveedor" label="Proveedor" value={filters.idProveedor} selected={selected.proveedor} onSelect={option => { setSelected({ ...selected, proveedor: option }); setFilters({ ...filters, idProveedor: option ? String(option.id) : '', page: 1 }) }} />
+        <SupplySelector resource="bodegas" id="compras-bodega" label="Bodega destino" value={filters.idBodegaDestino} selected={selected.bodega} onSelect={option => { setSelected({ ...selected, bodega: option }); setFilters({ ...filters, idBodegaDestino: option ? String(option.id) : '', page: 1 }) }} />
+      </div>
     </div>
     {!datesValid ? <p role="alert">Indica un intervalo de fechas válido.</p> : <><ReceivedTable state={listState(query, compras)} caption="Compras" rowKey={c => c.idCompra} columns={[
       { title: 'Compra', cell: c => c.numeroCompra }, { title: 'Proveedor', cell: c => c.proveedorNombre }, { title: 'Bodega', cell: c => c.bodegaNombre },
-      { title: 'Fecha (UTC)', cell: c => formatUtcDateTime(c.fechaCompra) }, { title: 'Estado', cell: c => c.estado }, { title: 'Total del servidor (Q)', cell: c => formatMoney(c.total) },
+      { title: 'Fecha (UTC)', cell: c => formatUtcDateTime(c.fechaCompra) }, { title: 'Estado', cell: c => <Badge className={c.estado === 'PENDIENTE' ? 'border-amber-300 bg-amber-50 text-amber-900' : c.estado === 'RECIBIDA' ? 'border-teal-300 bg-teal-50 text-teal-900' : 'border-red-300 bg-red-50 text-red-800'}>{c.estado}</Badge> }, { title: 'Total (Q)', cell: c => formatMoney(c.total) },
       { title: 'Acciones', cell: c => <Button variant="outline" onClick={() => setIdCompra(c.idCompra)} aria-label={`Ver ${c.numeroCompra}`}>Ver detalle</Button> },
     ]} />
     {query.isError && <Button variant="outline" onClick={() => void query.refetch()}>Reintentar consulta</Button>}

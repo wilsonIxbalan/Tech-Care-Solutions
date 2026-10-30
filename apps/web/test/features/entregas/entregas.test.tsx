@@ -58,7 +58,8 @@ describe('entregas reales', () => {
     expect(posts).toHaveLength(1)
     expect(posts[0][0]).toBe('/api/v1/ordenes/21/entrega')
     expect(JSON.parse(String(posts[0][1]?.body))).toEqual({ nombreRecibe: 'Receptor', documentoRecibe: null, observaciones: null })
-    expect(invalidations).toHaveBeenCalledWith({ queryKey: ['caja'] })
+    expect(invalidations).toHaveBeenCalledWith({ queryKey: ['facturas'] })
+    expect(invalidations).toHaveBeenCalledWith({ queryKey: ['facturacion-ordenes'] })
     expect(invalidations).toHaveBeenCalledWith({ queryKey: ['dashboard'] })
   })
   it.each([400, 409])('conserva receptor y documento al fallar con %s sin reintentar', async status => {

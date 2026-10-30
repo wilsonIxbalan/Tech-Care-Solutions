@@ -54,7 +54,7 @@ function FacturacionWorkspace({ canInvoice, canPay }: { canInvoice: boolean; can
           <TextField id="facturas-cliente" label="ID de cliente" inputMode="numeric" value={draft.idCliente} onChange={event => update('idCliente', event.target.value)} />
           <TextField id="facturas-desde" label="Fecha desde" type="date" value={draft.fechaDesde} onChange={event => update('fechaDesde', event.target.value)} />
           <TextField id="facturas-hasta" label="Fecha hasta" type="date" min={draft.fechaDesde || undefined} value={draft.fechaHasta} onChange={event => update('fechaHasta', event.target.value)} />
-          <SelectField id="facturas-tamano" label="Por página" options={[10, 20, 50].map(value => ({ value: String(value), label: String(value) }))} value={String(draft.pageSize)} onChange={event => update('pageSize', Number(event.target.value))} />
+          <SelectField id="facturas-tamano" label="Por página" allowEmpty={false} options={[10, 20, 50].map(value => ({ value: String(value), label: String(value) }))} value={String(draft.pageSize)} onChange={event => update('pageSize', Number(event.target.value))} />
         </div>
         {filterError && <p role="alert" className="text-sm text-destructive">{filterError}</p>}
         <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => { setDraft(initialFilters); setFilters(initialFilters); setFilterError('') }}>Limpiar filtros</Button><Button type="submit">Aplicar filtros</Button></div>

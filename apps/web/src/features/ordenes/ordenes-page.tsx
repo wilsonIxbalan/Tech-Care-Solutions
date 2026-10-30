@@ -4,6 +4,8 @@ import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { TextField, SelectField } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { StatusBadge } from '@/components/shared/status-badge'
 import { useSession } from '@/features/auth/session-context'
 import { formatUtcDateTime } from '@/lib/format'
 import type { OrdenCatalogos } from './orden-catalogos'
@@ -29,7 +31,9 @@ export function OrdenList({ initialState = '', title = 'Órdenes' }: { initialSt
     </div>
     {catalogos.isError && <ErrorState description={catalogos.error.message} onRetry={() => void catalogos.refetch()} />}
     {orders.isPending ? <LoadingState label="Consultando órdenes…" /> : orders.isError ? <ErrorState description={orders.error.message} onRetry={() => void orders.refetch()} /> : <>
-      {!orders.data.data.length ? <EmptyState title="Sin órdenes" description="No hay órdenes que coincidan con estos filtros." /> : <div className="overflow-x-auto"><table className="w-full text-left text-sm"><caption className="sr-only">{title}</caption><thead><tr>{['Orden', 'Cliente', 'Equipo', 'Estado', 'Prioridad', 'Ingreso'].map(h => <th key={h} className="p-2">{h}</th>)}</tr></thead><tbody>{orders.data.data.map(o => <tr key={o.idOrden} className="border-t"><td className="p-2"><Link className="underline" to={`/ordenes/${o.idOrden}`}>{o.numeroOrden}</Link></td><td className="p-2">{o.clienteNombre}</td><td className="p-2">{o.numeroSerie}</td><td className="p-2">{o.estado}</td><td className="p-2">{o.prioridad}</td><td className="p-2">{formatUtcDateTime(o.fechaIngreso)}</td></tr>)}</tbody></table></div>}
+      {!orders.data.data.length ? <EmptyState title="Sin órdenes" description="No hay órdenes que coincidan con estos filtros." /> : <Table containerLabel={title}><caption className="sr-only">{title}</caption><TableHeader><TableRow>{['Orden', 'Cliente', 'Equipo', 'Estado', 'Prioridad', 'Ingreso'].map(h => <TableHead key={h}>{h}</TableHead>)}</TableRow></TableHeader><TableBody>{orders.data.data.map(o => <TableRow key={o.idOrden}>
+        <TableCell><Link className="rounded-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" to={`/ordenes/${o.idOrden}`}>{o.numeroOrden}</Link></TableCell><TableCell>{o.clienteNombre}</TableCell><TableCell>{o.numeroSerie}</TableCell><TableCell><StatusBadge state={o.estado} /></TableCell><TableCell>{o.prioridad}</TableCell><TableCell>{formatUtcDateTime(o.fechaIngreso)}</TableCell>
+      </TableRow>)}</TableBody></Table>}
       <div className="flex items-center gap-3"><Button variant="outline" disabled={filters.page <= 1 || orders.isFetching} onClick={() => setFilters({ ...filters, page: filters.page - 1 })}>Anterior</Button><span>Página {filters.page} de {Math.max(1, orders.data.meta?.totalPages ?? 1)} · {orders.data.meta?.total ?? orders.data.data.length} órdenes</span><Button variant="outline" disabled={filters.page >= (orders.data.meta?.totalPages ?? 1) || orders.isFetching} onClick={() => setFilters({ ...filters, page: filters.page + 1 })}>Siguiente</Button></div>
     </>}
   </section>

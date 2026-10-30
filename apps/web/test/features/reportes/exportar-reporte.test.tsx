@@ -56,6 +56,6 @@ describe('exportación de reportes', () => {
     expect(alert).toHaveTextContent(status === 413 ? 'máximo 10000' : 'Sin permiso')
     expect(alert).toHaveTextContent('export-error')
     expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(within(screen.getByLabelText('Conjunto para CSV *')).getAllByRole('option')).toHaveLength(2)
+    expect(within(screen.getByLabelText('Conjunto para CSV *')).getAllByRole('option')).toHaveLength(1)
   })
 })

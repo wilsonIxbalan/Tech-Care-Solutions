@@ -40,7 +40,7 @@ export function EquiposPage() {
       <div className="grid gap-4 sm:grid-cols-[1fr_10rem_8rem]">
         <TextField id="equipos-busqueda" label="Buscar equipos" type="search" placeholder="Número de serie o modelo" maxLength={150} value={filters.search} onChange={event => setFilters({ ...filters, search: event.target.value, page: 1 })} />
         <SelectField id="equipos-filtro-estado" label="Estado" placeholder="Todos" options={['ACTIVO', 'INACTIVO', 'BAJA'].map(value => ({ value, label: value }))} value={filters.estado} onChange={event => setFilters({ ...filters, estado: event.target.value, page: 1 })} />
-        <SelectField id="equipos-tamano" label="Por página" options={[10, 20, 50].map(size => ({ value: String(size), label: String(size) }))} value={String(filters.pageSize)} onChange={event => setFilters({ ...filters, pageSize: Number(event.target.value), page: 1 })} />
+        <SelectField id="equipos-tamano" label="Por página" allowEmpty={false} options={[10, 20, 50].map(size => ({ value: String(size), label: String(size) }))} value={String(filters.pageSize)} onChange={event => setFilters({ ...filters, pageSize: Number(event.target.value), page: 1 })} />
       </div>
       {!editor && <ClienteSelector id="equipos-filtro-cliente" selected={cliente} onSelect={selected => { setCliente(selected); setFilters({ ...filters, page: 1 }) }} />}
       {equipos.isPending ? <LoadingState label="Consultando equipos…" /> : equipos.isError ? <ErrorState description={equipos.error.message} onRetry={() => void equipos.refetch()} /> : <>

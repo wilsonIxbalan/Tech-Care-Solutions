@@ -3,6 +3,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { invalidateRelatedQueries } from '@/lib/query-invalidation'
 import { SelectField, TextField } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
 import { ApiError, apiFetch } from '@/lib/api-client'
@@ -23,7 +24,7 @@ export function UsuarioForm({ usuario, roles, onCancel, onSaved }: { usuario?: U
       await save.mutateAsync(value)
       form.reset()
       toast.success(usuario ? 'Usuario actualizado.' : 'Usuario creado.')
-      await client.invalidateQueries({ queryKey: ['usuarios'] })
+      await invalidateRelatedQueries(client, 'users')
       if (usuario) await client.invalidateQueries({ queryKey: ['session'] })
       onSaved()
     } catch (error) {

@@ -6,8 +6,9 @@ export class ApiError extends HttpException {
     code: string,
     message: string,
     details?: Record<string, string[]>,
+    cause?: unknown,
   ) {
-    super({ code, message, ...(details ? { details } : {}) }, status);
+    super({ code, message, ...(details ? { details } : {}) }, status, { cause });
   }
 }
 export const notFound = () =>

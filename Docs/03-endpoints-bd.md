@@ -66,6 +66,15 @@ Historial cliente/equipo: {cliente|equipo,ordenes:[]}; preservar cabecera sin ó
 
 Historiales y trazabilidad se consultan por sus identificadores/fechas especificos, sin `search` textual. Ese parametro se rechaza en lugar de ignorarse o recortar por separado padres e hijos. La misma validacion aplica al JSON y a las exportaciones.
 
+### Paginacion SQL y actualizacion de una base instalada
+
+- Nueve listados usan `@Page`, `@PageSize` y `@Search` opcionales en los SP. El filtro textual es substring literal Unicode, sin comodines, insensible a mayusculas pero sensible a acentos; busca strings publicas, decimales con dos lugares y fechas ISO. Se aplica antes del conteo y de `OFFSET/FETCH`. El ultimo resultset contiene `TotalRows`, que Nest convierte a `meta` sin filtrar ni paginar otra vez en memoria.
+- Facturas/saldos pagina cabeceras y conserva todos los pagos de los padres de esa pagina. Los tres recursos completos (historial-cliente, historial-equipo, trazabilidad) no cortan relaciones ni anaden metadata de pagina.
+- Exportaciones usan `@MaxRows=10000`, sin `@Page`: SQL comprueba la suma de filas de todos los conjuntos filtrados antes de devolver datos. El error 51710 se traduce a 413 `EXPORTACION_DEMASIADO_GRANDE`. No se elimina el limite global al elegir un solo conjunto CSV. La API mantiene una comprobacion defensiva adicional.
+- La materializacion temporal y el conteo permanecen en SQL; no se transfiere el resultado completo a Node para paginarlo o detectar el exceso de una exportacion. Esto no elimina el costo de escanear/ordenar en SQL ni sustituye medir planes, indices y tempdb con volumen real.
+- **Base ya instalada:** aplicar manualmente [02_reportes_paginados.sql](../database/migraciones/02_reportes_paginados.sql), despues del respaldo y con permisos para alterar procedimientos. Solo actualiza doce definiciones en una transaccion, conservando tablas, datos y permisos de los objetos existentes. No ejecutar el maestro ni fase 06. No forma parte del arranque/build de la API.
+- Generar/verificar el archivo con `pnpm sql:reports:build` / `pnpm sql:reports:check`, sin ejecutar SQL. Las instalaciones nuevas reciben las mismas definiciones por el maestro regenerado. La API nueva requiere estas firmas: si los SP siguen antiguos devuelve 503 seguro solicitando la actualizacion, sin volver a cargar todos los datos como fallback. Las pruebas aisladas y el analisis sintactico no certifican ejecucion real en Azure.
+
 ## Descargas aprobadas
 
 - `GET /reportes/<slug>/exportar?formato=csv&conjunto=1` o `?formato=xlsx` (sin conjunto), con los mismos filtros de negocio HTTP. CSV exige un conjunto valido; XLSX incluye todos los conjuntos.
