@@ -1,0 +1,14 @@
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    init: true
+    env_file:
+      - .env
+    environment:
+      PORT: '3000'
+    ports:
+      - '127.0.0.1:${API_PORT:-3000}:3000'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

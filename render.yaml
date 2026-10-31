@@ -1,0 +1,40 @@
+# Preparacion local: importar este Blueprint crearia el servicio y su primer deploy.
+# rootDir omitido intencionalmente: build y start usan la raiz del monorepo.
+services:
+  - type: web
+    name: techcare-api
+    runtime: node
+    plan: free
+    autoDeployTrigger: off
+    buildCommand: corepack enable && corepack prepare pnpm@10.34.7 --activate && pnpm install --frozen-lockfile --prod=false && pnpm --filter @techcare/api build
+    startCommand: node apps/api/dist/main.js
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 1h
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: DB_SERVER
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_PORT
+        value: "1433"
+      - key: DB_ENCRYPT
+        value: "true"
+      - key: DB_TRUST_SERVER_CERTIFICATE
+        value: "false"
+      - key: DB_CONNECTION_TIMEOUT_MS
+        value: "60000"
+      - key: DB_REQUEST_TIMEOUT_MS
+        value: "60000"

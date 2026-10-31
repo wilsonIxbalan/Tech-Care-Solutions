@@ -30,8 +30,11 @@ export interface SessionUser {
 }
 
 export interface LoginResponse {
-  accessToken: string
-  tokenType: 'Bearer'
   expiresIn: number
   usuario: SessionUser
+}
+
+export interface LoginInput {
+  nombreUsuario: string
+  password: string
 }

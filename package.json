@@ -5,6 +5,7 @@
   "packageManager": "pnpm@10.34.7",
   "engines": { "node": ">=24 <25" },
   "scripts": {
+    "dev:api": "pnpm --filter @techcare/api start:dev",
     "dev:web": "pnpm --filter @techcare/web dev",
     "build": "pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",
@@ -12,6 +13,13 @@
     "test": "pnpm -r --if-present test",
     "check:structure": "node scripts/check-structure.mjs",
     "sql:build": "node scripts/build-sql.mjs",
-    "sql:check": "node scripts/build-sql.mjs --check"
+    "sql:check": "node scripts/build-sql.mjs --check",
+    "er:build": "node scripts/build-er.mjs",
+    "er:check": "node scripts/build-er.mjs --check",
+    "test:scripts": "node --test scripts/test/*.test.mjs",
+    "deploy:configure-web": "node scripts/configure-web-proxy.mjs",
+    "deploy:check": "node scripts/configure-web-proxy.mjs --check",
+    "sql:reports:build": "node scripts/build-report-migration.mjs",
+    "sql:reports:check": "node scripts/build-report-migration.mjs --check"
   }
 }

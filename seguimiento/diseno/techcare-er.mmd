@@ -1,0 +1,472 @@
+%% Generado por node scripts/build-er.mjs; no editar manualmente.
+%% Fuentes: database/fases/01_tablas.sql, 02_relaciones.sql, 03_indices_secuencias_tipos.sql.
+%% PK/UK compuestas: las marcas son miembros de una clave, no unicidad individual; ver grupos.
+%% UNIQUE filtrado se documenta como grupo, sin marca UK global.
+%% Cardinalidades estructurales: NULL permite cero padres; todo padre permite cero hijos.
+%% CHECK, triggers y reglas de negocio no aumentan los minimos; expresiones AS no inferidas.
+%% Linea solida: FK incluida en PK hija; punteada: relacion no identificadora.
+%% Tipos DECIMAL(p,s) se escriben DECIMAL_p_s para compatibilidad Mermaid.
+erDiagram
+    Rol {
+        %% PRIMARY KEY PK_Rol (IdRol)
+        %% UNIQUE UQ_Rol_Codigo (Codigo)
+        INT IdRol PK "NOT NULL"
+        VARCHAR(30) Codigo UK "NOT NULL"
+        VARCHAR(60) Nombre "NOT NULL"
+        VARCHAR(200) Descripcion "NULL"
+        BIT Activo "NOT NULL"
+    }
+    Permiso {
+        %% PRIMARY KEY PK_Permiso (IdPermiso)
+        %% UNIQUE UQ_Permiso_Codigo (Codigo)
+        INT IdPermiso PK "NOT NULL"
+        VARCHAR(40) Codigo UK "NOT NULL"
+        VARCHAR(200) Descripcion "NOT NULL"
+    }
+    RolPermiso {
+        %% PRIMARY KEY PK_RolPermiso (IdRol, IdPermiso)
+        INT IdRol PK,FK "NOT NULL"
+        INT IdPermiso PK,FK "NOT NULL"
+    }
+    Usuario {
+        %% PRIMARY KEY PK_Usuario (IdUsuario)
+        %% UNIQUE UQ_Usuario_Nombre (NombreUsuario)
+        %% UNIQUE UQ_Usuario_Email (Email)
+        INT IdUsuario PK "NOT NULL"
+        VARCHAR(50) NombreUsuario UK "NOT NULL"
+        VARCHAR(255) PasswordHash "NOT NULL"
+        VARCHAR(150) NombreCompleto "NOT NULL"
+        VARCHAR(120) Email UK "NOT NULL"
+        VARCHAR(20) Telefono "NULL"
+        BIT Activo "NOT NULL"
+        TINYINT IntentosFallidos "NOT NULL"
+        DATETIME2(0) FechaCreacion "NOT NULL"
+        DATETIME2(0) UltimoAcceso "NULL"
+    }
+    UsuarioRol {
+        %% PRIMARY KEY PK_UsuarioRol (IdUsuario, IdRol)
+        INT IdUsuario PK,FK "NOT NULL"
+        INT IdRol PK,FK "NOT NULL"
+        DATETIME2(0) FechaAsignacion "NOT NULL"
+    }
+    Cliente {
+        %% PRIMARY KEY PK_Cliente (IdCliente)
+        %% UNIQUE UX_Cliente_NIT (NIT) WHERE NIT <> 'CF'
+        INT IdCliente PK "NOT NULL"
+        VARCHAR(12) TipoCliente "NOT NULL"
+        VARCHAR(20) NIT "NOT NULL"
+        VARCHAR(100) Nombres "NULL"
+        VARCHAR(100) Apellidos "NULL"
+        VARCHAR(150) RazonSocial "NULL"
+        VARCHAR(120) NombreContacto "NULL"
+        VARCHAR(20) Telefono "NOT NULL"
+        VARCHAR(120) Email "NULL"
+        VARCHAR(250) Direccion "NULL"
+        VARCHAR(10) Estado "NOT NULL"
+        DATETIME2(0) FechaRegistro "NOT NULL"
+        %% NombreMostrar AS (CASE WHEN TipoCliente = 'EMPRESARIAL' THEN RazonSocial ELSE Nombres + ' ' + Apellidos END)
+        computed NombreMostrar "COMPUTADA; tipo y nullability no inferidos"
+    }
+    TipoEquipo {
+        %% PRIMARY KEY PK_TipoEquipo (IdTipoEquipo)
+        %% UNIQUE UQ_TipoEquipo_Nombre (Nombre)
+        INT IdTipoEquipo PK "NOT NULL"
+        VARCHAR(60) Nombre UK "NOT NULL"
+    }
+    Marca {
+        %% PRIMARY KEY PK_Marca (IdMarca)
+        %% UNIQUE UQ_Marca_Nombre (Nombre)
+        INT IdMarca PK "NOT NULL"
+        VARCHAR(60) Nombre UK "NOT NULL"
+    }
+    Equipo {
+        %% PRIMARY KEY PK_Equipo (IdEquipo)
+        %% UNIQUE UQ_Equipo_Serie (NumeroSerie)
+        INT IdEquipo PK "NOT NULL"
+        INT IdCliente FK "NOT NULL"
+        INT IdTipoEquipo FK "NOT NULL"
+        INT IdMarca FK "NOT NULL"
+        VARCHAR(80) Modelo "NOT NULL"
+        VARCHAR(60) NumeroSerie UK "NOT NULL"
+        VARCHAR(300) Descripcion "NOT NULL"
+        VARCHAR(10) Estado "NOT NULL"
+        DATETIME2(0) FechaRegistro "NOT NULL"
+    }
+    EstadoOrden {
+        %% PRIMARY KEY PK_EstadoOrden (IdEstadoOrden)
+        %% UNIQUE UQ_EstadoOrden_Codigo (Codigo)
+        INT IdEstadoOrden PK "NOT NULL"
+        VARCHAR(30) Codigo UK "NOT NULL"
+        VARCHAR(60) Nombre "NOT NULL"
+        TINYINT Orden "NOT NULL"
+        BIT EsFinal "NOT NULL"
+    }
+    TransicionEstadoOrden {
+        %% PRIMARY KEY PK_TransicionEstadoOrden (IdEstadoOrigen, IdEstadoDestino)
+        INT IdEstadoOrigen PK,FK "NOT NULL"
+        INT IdEstadoDestino PK,FK "NOT NULL"
+    }
+    Prioridad {
+        %% PRIMARY KEY PK_Prioridad (IdPrioridad)
+        %% UNIQUE UQ_Prioridad_Codigo (Codigo)
+        INT IdPrioridad PK "NOT NULL"
+        VARCHAR(20) Codigo UK "NOT NULL"
+        VARCHAR(40) Nombre "NOT NULL"
+        TINYINT Nivel "NOT NULL"
+    }
+    OrdenServicio {
+        %% PRIMARY KEY PK_OrdenServicio (IdOrden)
+        %% UNIQUE UQ_OrdenServicio_Numero (NumeroOrden)
+        INT IdOrden PK "NOT NULL"
+        VARCHAR(20) NumeroOrden UK "NOT NULL"
+        INT IdEquipo FK "NOT NULL"
+        INT IdUsuarioRecepcion FK "NOT NULL"
+        DATETIME2(0) FechaIngreso "NOT NULL"
+        VARCHAR(1000) ProblemaReportado "NOT NULL"
+        INT IdPrioridad FK "NOT NULL"
+        INT IdEstadoOrden FK "NOT NULL"
+        DATE FechaEstimada "NULL"
+        VARCHAR(500) Observaciones "NULL"
+    }
+    HistorialEstadoOrden {
+        %% PRIMARY KEY PK_HistorialEstadoOrden (IdHistorial)
+        %% UNIQUE UX_Historial_Inicial (IdOrden) WHERE IdEstadoAnterior IS NULL
+        INT IdHistorial PK "NOT NULL"
+        INT IdOrden FK "NOT NULL"
+        INT IdEstadoAnterior FK "NULL"
+        INT IdEstadoNuevo FK "NOT NULL"
+        DATETIME2(0) FechaCambio "NOT NULL"
+        INT IdUsuario FK "NOT NULL"
+        VARCHAR(500) Observacion "NULL"
+    }
+    Diagnostico {
+        %% PRIMARY KEY PK_Diagnostico (IdDiagnostico)
+        %% UNIQUE UX_Diagnostico_Activo (IdOrden) WHERE Estado = 'ACTIVO'
+        INT IdDiagnostico PK "NOT NULL"
+        INT IdOrden FK "NOT NULL"
+        INT IdTecnico FK "NOT NULL"
+        DATETIME2(0) FechaDiagnostico "NOT NULL"
+        VARCHAR(1000) Descripcion "NOT NULL"
+        DECIMAL_12_2 CostoManoObraEstimado "NOT NULL"
+        VARCHAR(10) Estado "NOT NULL"
+    }
+    Reparacion {
+        %% PRIMARY KEY PK_Reparacion (IdReparacion)
+        INT IdReparacion PK "NOT NULL"
+        INT IdDiagnostico FK "NOT NULL"
+        INT IdTecnico FK "NOT NULL"
+        DATETIME2(0) FechaInicio "NOT NULL"
+        DATETIME2(0) FechaFin "NULL"
+        VARCHAR(1000) Descripcion "NOT NULL"
+        DECIMAL_12_2 CostoManoObra "NOT NULL"
+        VARCHAR(12) Estado "NOT NULL"
+    }
+    ActividadReparacion {
+        %% PRIMARY KEY PK_ActividadReparacion (IdActividad)
+        INT IdActividad PK "NOT NULL"
+        INT IdReparacion FK "NOT NULL"
+        INT IdTecnico FK "NOT NULL"
+        VARCHAR(500) Descripcion "NOT NULL"
+        DATETIME2(0) FechaActividad "NOT NULL"
+        DECIMAL_5_2 HorasInvertidas "NOT NULL"
+    }
+    CategoriaRepuesto {
+        %% PRIMARY KEY PK_CategoriaRepuesto (IdCategoria)
+        %% UNIQUE UQ_CategoriaRepuesto_Nombre (Nombre)
+        INT IdCategoria PK "NOT NULL"
+        VARCHAR(80) Nombre UK "NOT NULL"
+        VARCHAR(200) Descripcion "NULL"
+    }
+    Repuesto {
+        %% PRIMARY KEY PK_Repuesto (IdRepuesto)
+        %% UNIQUE UQ_Repuesto_Codigo (Codigo)
+        INT IdRepuesto PK "NOT NULL"
+        INT IdCategoria FK "NOT NULL"
+        VARCHAR(30) Codigo UK "NOT NULL"
+        VARCHAR(120) Nombre "NOT NULL"
+        VARCHAR(300) Descripcion "NULL"
+        DECIMAL_12_2 PrecioCompraReferencia "NOT NULL"
+        DECIMAL_12_2 PrecioVenta "NOT NULL"
+        VARCHAR(10) Estado "NOT NULL"
+    }
+    Bodega {
+        %% PRIMARY KEY PK_Bodega (IdBodega)
+        %% UNIQUE UQ_Bodega_Codigo (Codigo)
+        INT IdBodega PK "NOT NULL"
+        VARCHAR(20) Codigo UK "NOT NULL"
+        VARCHAR(80) Nombre "NOT NULL"
+        VARCHAR(200) Ubicacion "NULL"
+        VARCHAR(10) Estado "NOT NULL"
+    }
+    InventarioBodega {
+        %% PRIMARY KEY PK_InventarioBodega (IdBodega, IdRepuesto)
+        INT IdBodega PK,FK "NOT NULL"
+        INT IdRepuesto PK,FK "NOT NULL"
+        INT Existencia "NOT NULL"
+        INT StockMinimo "NOT NULL"
+        DATETIME2(0) FechaUltimoMovimiento "NULL"
+    }
+    TipoMovimiento {
+        %% PRIMARY KEY PK_TipoMovimiento (IdTipoMovimiento)
+        %% UNIQUE UQ_TipoMovimiento_Codigo (Codigo)
+        INT IdTipoMovimiento PK "NOT NULL"
+        VARCHAR(30) Codigo UK "NOT NULL"
+        VARCHAR(80) Nombre "NOT NULL"
+        CHAR(1) Naturaleza "NOT NULL"
+    }
+    Proveedor {
+        %% PRIMARY KEY PK_Proveedor (IdProveedor)
+        %% UNIQUE UQ_Proveedor_NIT (NIT)
+        INT IdProveedor PK "NOT NULL"
+        VARCHAR(20) NIT UK "NOT NULL"
+        VARCHAR(150) Nombre "NOT NULL"
+        VARCHAR(120) NombreContacto "NULL"
+        VARCHAR(20) Telefono "NOT NULL"
+        VARCHAR(120) Email "NULL"
+        VARCHAR(250) Direccion "NULL"
+        VARCHAR(10) Estado "NOT NULL"
+    }
+    Compra {
+        %% PRIMARY KEY PK_Compra (IdCompra)
+        %% UNIQUE UQ_Compra_Numero (NumeroCompra)
+        INT IdCompra PK "NOT NULL"
+        VARCHAR(20) NumeroCompra UK "NOT NULL"
+        INT IdProveedor FK "NOT NULL"
+        INT IdBodegaDestino FK "NOT NULL"
+        INT IdUsuarioRegistro FK "NOT NULL"
+        DATETIME2(0) FechaCompra "NOT NULL"
+        DATETIME2(0) FechaRecepcion "NULL"
+        INT IdUsuarioRecepcion FK "NULL"
+        VARCHAR(40) NumeroDocumentoProveedor "NULL"
+        VARCHAR(10) Estado "NOT NULL"
+        VARCHAR(500) Observaciones "NULL"
+    }
+    DetalleCompra {
+        %% PRIMARY KEY PK_DetalleCompra (IdDetalleCompra)
+        %% UNIQUE UQ_DetalleCompra_Linea (IdCompra, IdRepuesto)
+        INT IdDetalleCompra PK "NOT NULL"
+        INT IdCompra FK,UK "NOT NULL"
+        INT IdRepuesto FK,UK "NOT NULL"
+        INT Cantidad "NOT NULL"
+        DECIMAL_12_2 CostoUnitario "NOT NULL"
+        %% Subtotal AS (CONVERT(DECIMAL(14,2), Cantidad * CostoUnitario))
+        computed Subtotal "COMPUTADA; tipo y nullability no inferidos"
+    }
+    RepuestoReparacion {
+        %% PRIMARY KEY PK_RepuestoReparacion (IdRepuestoReparacion)
+        INT IdRepuestoReparacion PK "NOT NULL"
+        INT IdReparacion FK "NOT NULL"
+        INT IdBodega FK "NOT NULL"
+        INT IdRepuesto FK "NOT NULL"
+        INT Cantidad "NOT NULL"
+        DECIMAL_12_2 PrecioCostoUnitario "NOT NULL"
+        DECIMAL_12_2 PrecioVentaUnitario "NOT NULL"
+        %% Subtotal AS (CONVERT(DECIMAL(14,2), Cantidad * PrecioVentaUnitario))
+        computed Subtotal "COMPUTADA; tipo y nullability no inferidos"
+        DATETIME2(0) FechaAsignacion "NOT NULL"
+        INT IdUsuario FK "NOT NULL"
+        VARCHAR(10) Estado "NOT NULL"
+    }
+    MovimientoInventario {
+        %% PRIMARY KEY PK_MovimientoInventario (IdMovimiento)
+        %% UNIQUE UX_Movimiento_Compra (IdDetalleCompra) WHERE IdDetalleCompra IS NOT NULL
+        %% UNIQUE UX_Movimiento_Consumo (IdRepuestoReparacion) WHERE IdRepuestoReparacion IS NOT NULL
+        INT IdMovimiento PK "NOT NULL"
+        INT IdBodega FK "NOT NULL"
+        INT IdRepuesto FK "NOT NULL"
+        INT IdTipoMovimiento FK "NOT NULL"
+        INT Cantidad "NOT NULL"
+        DATETIME2(0) FechaMovimiento "NOT NULL"
+        INT IdUsuario FK "NOT NULL"
+        VARCHAR(12) DocumentoOrigen "NOT NULL"
+        INT IdDetalleCompra FK "NULL"
+        INT IdRepuestoReparacion FK "NULL"
+        VARCHAR(300) Observacion "NULL"
+        INT ExistenciaResultante "NOT NULL"
+    }
+    MetodoPago {
+        %% PRIMARY KEY PK_MetodoPago (IdMetodoPago)
+        %% UNIQUE UQ_MetodoPago_Codigo (Codigo)
+        INT IdMetodoPago PK "NOT NULL"
+        VARCHAR(20) Codigo UK "NOT NULL"
+        VARCHAR(60) Nombre "NOT NULL"
+        BIT Activo "NOT NULL"
+    }
+    Factura {
+        %% PRIMARY KEY PK_Factura (IdFactura)
+        %% UNIQUE UQ_Factura_Numero (NumeroFactura)
+        %% UNIQUE UQ_Factura_Orden (IdOrden)
+        INT IdFactura PK "NOT NULL"
+        VARCHAR(20) NumeroFactura UK "NOT NULL"
+        INT IdOrden FK,UK "NOT NULL"
+        INT IdUsuario FK "NOT NULL"
+        VARCHAR(20) NITFacturacion "NOT NULL"
+        VARCHAR(150) NombreFacturacion "NOT NULL"
+        VARCHAR(250) DireccionFacturacion "NULL"
+        DATETIME2(0) FechaFactura "NOT NULL"
+        DECIMAL_12_2 SubtotalManoObra "NOT NULL"
+        DECIMAL_12_2 SubtotalRepuestos "NOT NULL"
+        DECIMAL_5_2 PorcentajeImpuesto "NOT NULL"
+        %% Subtotal AS (SubtotalManoObra + SubtotalRepuestos)
+        computed Subtotal "COMPUTADA; tipo y nullability no inferidos"
+        %% Impuesto AS (CONVERT(DECIMAL(12,2),ROUND((SubtotalManoObra + SubtotalRepuestos)*PorcentajeImpuesto/100.0,2)))
+        computed Impuesto "COMPUTADA; tipo y nullability no inferidos"
+        %% Total AS (SubtotalManoObra + SubtotalRepuestos + CONVERT(DECIMAL(12,2),ROUND((SubtotalManoObra + SubtotalRepuestos)*PorcentajeImpuesto/100.0,2)))
+        computed Total "COMPUTADA; tipo y nullability no inferidos"
+        VARCHAR(10) Estado "NOT NULL"
+    }
+    DetalleFactura {
+        %% PRIMARY KEY PK_DetalleFactura (IdDetalleFactura)
+        %% UNIQUE UX_Factura_ManoObra (IdFactura, IdReparacion) WHERE IdReparacion IS NOT NULL
+        %% UNIQUE UX_Factura_Consumo (IdFactura, IdRepuestoReparacion) WHERE IdRepuestoReparacion IS NOT NULL
+        INT IdDetalleFactura PK "NOT NULL"
+        INT IdFactura FK "NOT NULL"
+        VARCHAR(12) TipoLinea "NOT NULL"
+        INT IdReparacion FK "NULL"
+        INT IdRepuestoReparacion FK "NULL"
+        VARCHAR(250) Descripcion "NOT NULL"
+        DECIMAL_10_2 Cantidad "NOT NULL"
+        DECIMAL_12_2 PrecioUnitario "NOT NULL"
+        %% Subtotal AS (CONVERT(DECIMAL(14,2),Cantidad*PrecioUnitario))
+        computed Subtotal "COMPUTADA; tipo y nullability no inferidos"
+    }
+    Pago {
+        %% PRIMARY KEY PK_Pago (IdPago)
+        INT IdPago PK "NOT NULL"
+        INT IdFactura FK "NOT NULL"
+        INT IdMetodoPago FK "NOT NULL"
+        DECIMAL_12_2 Monto "NOT NULL"
+        DATETIME2(0) FechaPago "NOT NULL"
+        VARCHAR(60) Referencia "NULL"
+        INT IdUsuario FK "NOT NULL"
+        VARCHAR(10) Estado "NOT NULL"
+        VARCHAR(300) MotivoAnulacion "NULL"
+    }
+    Entrega {
+        %% PRIMARY KEY PK_Entrega (IdEntrega)
+        %% UNIQUE UQ_Entrega_Orden (IdOrden)
+        INT IdEntrega PK "NOT NULL"
+        INT IdOrden FK,UK "NOT NULL"
+        INT IdUsuarioEntrega FK "NOT NULL"
+        VARCHAR(150) NombreRecibe "NOT NULL"
+        VARCHAR(30) DocumentoRecibe "NULL"
+        DATETIME2(0) FechaEntrega "NOT NULL"
+        VARCHAR(500) Observaciones "NULL"
+    }
+    AuditoriaPrecioRepuesto {
+        %% PRIMARY KEY PK_AuditoriaPrecioRepuesto (IdAuditoria)
+        INT IdAuditoria PK "NOT NULL"
+        INT IdRepuesto FK "NOT NULL"
+        DECIMAL_12_2 PrecioCompraAnterior "NOT NULL"
+        DECIMAL_12_2 PrecioCompraNuevo "NOT NULL"
+        DECIMAL_12_2 PrecioVentaAnterior "NOT NULL"
+        DECIMAL_12_2 PrecioVentaNuevo "NOT NULL"
+        DATETIME2(0) FechaCambio "NOT NULL"
+        SYSNAME UsuarioBD "NOT NULL"
+        INT IdUsuarioApp FK "NULL"
+    }
+
+    %% FK_RolPermiso_Rol: (IdRol) -> (IdRol); ON DELETE CASCADE
+    Rol ||--o{ RolPermiso : "FK_RolPermiso_Rol"
+    %% FK_RolPermiso_Permiso: (IdPermiso) -> (IdPermiso); ON DELETE CASCADE
+    Permiso ||--o{ RolPermiso : "FK_RolPermiso_Permiso"
+    %% FK_UsuarioRol_Usuario: (IdUsuario) -> (IdUsuario); ON DELETE CASCADE
+    Usuario ||--o{ UsuarioRol : "FK_UsuarioRol_Usuario"
+    %% FK_UsuarioRol_Rol: (IdRol) -> (IdRol); ON DELETE NO ACTION
+    Rol ||--o{ UsuarioRol : "FK_UsuarioRol_Rol"
+    %% FK_Equipo_Cliente: (IdCliente) -> (IdCliente); ON DELETE NO ACTION
+    Cliente ||..o{ Equipo : "FK_Equipo_Cliente"
+    %% FK_Equipo_Tipo: (IdTipoEquipo) -> (IdTipoEquipo); ON DELETE NO ACTION
+    TipoEquipo ||..o{ Equipo : "FK_Equipo_Tipo"
+    %% FK_Equipo_Marca: (IdMarca) -> (IdMarca); ON DELETE NO ACTION
+    Marca ||..o{ Equipo : "FK_Equipo_Marca"
+    %% FK_Transicion_Origen: (IdEstadoOrigen) -> (IdEstadoOrden); ON DELETE NO ACTION
+    EstadoOrden ||--o{ TransicionEstadoOrden : "FK_Transicion_Origen"
+    %% FK_Transicion_Destino: (IdEstadoDestino) -> (IdEstadoOrden); ON DELETE NO ACTION
+    EstadoOrden ||--o{ TransicionEstadoOrden : "FK_Transicion_Destino"
+    %% FK_Orden_Equipo: (IdEquipo) -> (IdEquipo); ON DELETE NO ACTION
+    Equipo ||..o{ OrdenServicio : "FK_Orden_Equipo"
+    %% FK_Orden_Recepcion: (IdUsuarioRecepcion) -> (IdUsuario); ON DELETE NO ACTION
+    Usuario ||..o{ OrdenServicio : "FK_Orden_Recepcion"
+    %% FK_Orden_Prioridad: (IdPrioridad) -> (IdPrioridad); ON DELETE NO ACTION
+    Prioridad ||..o{ OrdenServicio : "FK_Orden_Prioridad"
+    %% FK_Orden_Estado: (IdEstadoOrden) -> (IdEstadoOrden); ON DELETE NO ACTION
+    EstadoOrden ||..o{ OrdenServicio : "FK_Orden_Estado"
+    %% FK_Historial_Orden: (IdOrden) -> (IdOrden); ON DELETE NO ACTION
+    OrdenServicio ||..o{ HistorialEstadoOrden : "FK_Historial_Orden"
+    %% FK_Historial_Anterior: (IdEstadoAnterior) -> (IdEstadoOrden); ON DELETE NO ACTION
+    EstadoOrden |o..o{ HistorialEstadoOrden : "FK_Historial_Anterior"
+    %% FK_Historial_Nuevo: (IdEstadoNuevo) -> (IdEstadoOrden); ON DELETE NO ACTION
+    EstadoOrden ||..o{ HistorialEstadoOrden : "FK_Historial_Nuevo"
+    %% FK_Historial_Usuario: (IdUsuario) -> (IdUsuario); ON DELETE NO ACTION
+    Usuario ||..o{ HistorialEstadoOrden : "FK_Historial_Usuario"
+    %% FK_Diagnostico_Orden: (IdOrden) -> (IdOrden); ON DELETE NO ACTION
+    OrdenServicio ||..o{ Diagnostico : "FK_Diagnostico_Orden"
+    %% FK_Diagnostico_Tecnico: (IdTecnico) -> (IdUsuario); ON DELETE NO ACTION
+    Usuario ||..o{ Diagnostico : "FK_Diagnostico_Tecnico"
+    %% FK_Reparacion_Diagnostico: (IdDiagnostico) -> (IdDiagnostico); ON DELETE NO ACTION
+    Diagnostico ||..o{ Reparacion : "FK_Reparacion_Diagnostico"
+    %% FK_Reparacion_Tecnico: (IdTecnico) -> (IdUsuario); ON DELETE NO ACTION
+    Usuario ||..o{ Reparacion : "FK_Reparacion_Tecnico"
+    %% FK_Actividad_Reparacion: (IdReparacion) -> (IdReparacion); ON DELETE NO ACTION
+    Reparacion ||..o{ ActividadReparacion : "FK_Actividad_Reparacion"
+    %% FK_Actividad_Tecnico: (IdTecnico) -> (IdUsuario); ON DELETE NO ACTION
+    Usuario ||..o{ ActividadReparacion : "FK_Actividad_Tecnico"
+    %% FK_Repuesto_Categoria: (IdCategoria) -> (IdCategoria); ON DELETE NO ACTION
+    CategoriaRepuesto ||..o{ Repuesto : "FK_Repuesto_Categoria"
+    %% FK_Inventario_Bodega: (IdBodega) -> (IdBodega); ON DELETE NO ACTION
+    Bodega ||--o{ InventarioBodega : "FK_Inventario_Bodega"
+    %% FK_Inventario_Repuesto: (IdRepuesto) -> (IdRepuesto); ON DELETE NO ACTION
+    Repuesto ||--o{ InventarioBodega : "FK_Inventario_Repuesto"
+    %% FK_Compra_Proveedor: (IdProveedor) -> (IdProveedor); ON DELETE NO ACTION
+    Proveedor ||..o{ Compra : "FK_Compra_Proveedor"
+    %% FK_Compra_Bodega: (IdBodegaDestino) -> (IdBodega); ON DELETE NO ACTION
+    Bodega ||..o{ Compra : "FK_Compra_Bodega"
+    %% FK_Compra_Registro: (IdUsuarioRegistro) -> (IdUsuario); ON DELETE NO ACTION
+    Usuario ||..o{ Compra : "FK_Compra_Registro"
+    %% FK_Compra_Recepcion: (IdUsuarioRecepcion) -> (IdUsuario); ON DELETE NO ACTION
+    Usuario |o..o{ Compra : "FK_Compra_Recepcion"
+    %% FK_DetalleCompra_Compra: (IdCompra) -> (IdCompra); ON DELETE NO ACTION
+    Compra ||..o{ DetalleCompra : "FK_DetalleCompra_Compra"
+    %% FK_DetalleCompra_Repuesto: (IdRepuesto) -> (IdRepuesto); ON DELETE NO ACTION
+    Repuesto ||..o{ DetalleCompra : "FK_DetalleCompra_Repuesto"
+    %% FK_Consumo_Reparacion: (IdReparacion) -> (IdReparacion); ON DELETE NO ACTION
+    Reparacion ||..o{ RepuestoReparacion : "FK_Consumo_Reparacion"
+    %% FK_Consumo_Inventario: (IdBodega, IdRepuesto) -> (IdBodega, IdRepuesto); ON DELETE NO ACTION
+    InventarioBodega ||..o{ RepuestoReparacion : "FK_Consumo_Inventario"
+    %% FK_Consumo_Usuario: (IdUsuario) -> (IdUsuario); ON DELETE NO ACTION
+    Usuario ||..o{ RepuestoReparacion : "FK_Consumo_Usuario"
+    %% FK_Movimiento_Inventario: (IdBodega, IdRepuesto) -> (IdBodega, IdRepuesto); ON DELETE NO ACTION
+    InventarioBodega ||..o{ MovimientoInventario : "FK_Movimiento_Inventario"
+    %% FK_Movimiento_Tipo: (IdTipoMovimiento) -> (IdTipoMovimiento); ON DELETE NO ACTION
+    TipoMovimiento ||..o{ MovimientoInventario : "FK_Movimiento_Tipo"
+    %% FK_Movimiento_Usuario: (IdUsuario) -> (IdUsuario); ON DELETE NO ACTION
+    Usuario ||..o{ MovimientoInventario : "FK_Movimiento_Usuario"
+    %% FK_Movimiento_Compra: (IdDetalleCompra) -> (IdDetalleCompra); ON DELETE NO ACTION
+    DetalleCompra |o..o| MovimientoInventario : "FK_Movimiento_Compra"
+    %% FK_Movimiento_Consumo: (IdRepuestoReparacion) -> (IdRepuestoReparacion); ON DELETE NO ACTION
+    RepuestoReparacion |o..o| MovimientoInventario : "FK_Movimiento_Consumo"
+    %% FK_Factura_Orden: (IdOrden) -> (IdOrden); ON DELETE NO ACTION
+    OrdenServicio ||..o| Factura : "FK_Factura_Orden"
+    %% FK_Factura_Usuario: (IdUsuario) -> (IdUsuario); ON DELETE NO ACTION
+    Usuario ||..o{ Factura : "FK_Factura_Usuario"
+    %% FK_DetalleFactura_Factura: (IdFactura) -> (IdFactura); ON DELETE NO ACTION
+    Factura ||..o{ DetalleFactura : "FK_DetalleFactura_Factura"
+    %% FK_DetalleFactura_Reparacion: (IdReparacion) -> (IdReparacion); ON DELETE NO ACTION
+    Reparacion |o..o{ DetalleFactura : "FK_DetalleFactura_Reparacion"
+    %% FK_DetalleFactura_Consumo: (IdRepuestoReparacion) -> (IdRepuestoReparacion); ON DELETE NO ACTION
+    RepuestoReparacion |o..o{ DetalleFactura : "FK_DetalleFactura_Consumo"
+    %% FK_Pago_Factura: (IdFactura) -> (IdFactura); ON DELETE NO ACTION
+    Factura ||..o{ Pago : "FK_Pago_Factura"
+    %% FK_Pago_Metodo: (IdMetodoPago) -> (IdMetodoPago); ON DELETE NO ACTION
+    MetodoPago ||..o{ Pago : "FK_Pago_Metodo"
+    %% FK_Pago_Usuario: (IdUsuario) -> (IdUsuario); ON DELETE NO ACTION
+    Usuario ||..o{ Pago : "FK_Pago_Usuario"
+    %% FK_Entrega_Orden: (IdOrden) -> (IdOrden); ON DELETE NO ACTION
+    OrdenServicio ||..o| Entrega : "FK_Entrega_Orden"
+    %% FK_Entrega_Usuario: (IdUsuarioEntrega) -> (IdUsuario); ON DELETE NO ACTION
+    Usuario ||..o{ Entrega : "FK_Entrega_Usuario"
+    %% FK_Auditoria_Repuesto: (IdRepuesto) -> (IdRepuesto); ON DELETE NO ACTION
+    Repuesto ||..o{ AuditoriaPrecioRepuesto : "FK_Auditoria_Repuesto"
+    %% FK_Auditoria_Usuario: (IdUsuarioApp) -> (IdUsuario); ON DELETE NO ACTION
+    Usuario |o..o{ AuditoriaPrecioRepuesto : "FK_Auditoria_Usuario"
