@@ -36,7 +36,7 @@ async function walk(dir) {
         console.error(`Las pruebas y fixtures deben estar fuera de src: ${name}`); failures++
       }
       if (name.startsWith('database/') && !name.endsWith('.sql')) { console.error(`database solo admite scripts SQL: ${name}`); failures++ }
-      if (name.endsWith('.md') && !name.startsWith('seguimiento/') && name !== 'apps/web/THIRD_PARTY_NOTICES.md' && !sharedDocs.has(name)) {
+      if (name.endsWith('.md') && !name.startsWith('seguimiento/') && name !== 'README.md' && name !== 'apps/web/THIRD_PARTY_NOTICES.md' && !sharedDocs.has(name)) {
         console.error(`Markdown no previsto en el repositorio: ${name}`); failures++
       }
       if (/^(?:package-lock\.json|yarn\.lock)$/.test(entry.name)) { console.error(`Usar solo pnpm: ${name}`); failures++ }
