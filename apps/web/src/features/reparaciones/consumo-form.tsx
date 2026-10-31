@@ -11,7 +11,7 @@ export function ConsumoForm({ idReparacion, onCancel }: { idReparacion: number; 
   const schema = z.object({ cantidad: cantidadConsumoSchema.refine(cantidad => Boolean(stock && Number.isSafeInteger(stock.existencia) && stock.existencia >= cantidad), 'La cantidad supera la existencia consultada o el stock no es verificable.') })
   return <ServiceForm title="Consumir repuesto" path={`/reparaciones/${idReparacion}/repuestos`} schema={schema} confirm submitLabel="Registrar consumo" onCancel={onCancel} blocked={!stock}
     onSuccess={data => { setResultStock(data.existenciaResultante as number); setStock(null) }}
-    fields={[{ name: 'cantidad', label: 'Cantidad', required: true, inputMode: 'numeric' }]}
+    fields={[{ name: 'cantidad', label: 'Cantidad', required: true, inputMode: 'numeric', maxLength: 10, placeholder: '1' }]}
     body={values => ({ idBodega: stock?.idBodega, idRepuesto: stock?.idRepuesto, cantidad: values.cantidad })}>
     <ApiSelector<InventarioDto> path="/inventario" label="Existencia" selected={stock} valueOf={s => `${s.idBodega}-${s.idRepuesto}`} labelOf={s => `${s.bodegaNombre} · ${s.codigoRepuesto} · ${s.repuestoNombre} · Existencia: ${s.existencia}`} onSelect={setStock} />
     {stock && <p>Existencia consultada: {stock.existencia}. La disponibilidad se comprueba al registrar el consumo; se conserva el precio aplicado en ese momento.</p>}

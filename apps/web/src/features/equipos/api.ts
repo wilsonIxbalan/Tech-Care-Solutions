@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { invalidateRelatedQueries } from '@/lib/query-invalidation'
 import { useSession } from '@/features/auth/session-context'
 import { listQuery } from '@/features/clientes/api'
@@ -10,7 +10,7 @@ import type { EquipoFormValues } from './equipo-schema'
 export const equiposReadPermissions = ['EQUIPOS_GESTIONAR', 'ORDENES_CREAR', 'DIAGNOSTICO_REGISTRAR', 'REPARACION_GESTIONAR', 'FACTURAR', 'ENTREGAR_ORDEN', 'REPORTES_VER']
 export function useEquipos(filters: ClienteFilters & { idCliente?: number }) {
   const { user } = useSession()
-  return useQuery({ queryKey: ['equipos', user?.idUsuario, filters], retry: false,
+  return useQuery({ queryKey: ['equipos', user?.idUsuario, filters], placeholderData: keepPreviousData, retry: false,
     enabled: Boolean(user?.permisos.some(permission => equiposReadPermissions.includes(permission))),
     queryFn: ({ signal }) => apiFetch<EquipoDto[]>(`/equipos?${listQuery(filters)}`, { signal }),
   })

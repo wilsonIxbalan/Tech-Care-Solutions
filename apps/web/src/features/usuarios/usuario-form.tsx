@@ -10,6 +10,7 @@ import { ApiError, apiFetch } from '@/lib/api-client'
 import { roleLabels } from '@/features/auth/roles'
 import { createUsuarioSchema, usuarioPayload, type UsuarioValues, type UsuarioRow } from './usuario-model'
 import type { RoleCode } from '@/types/api'
+import { RequiredMark } from '@/components/ui/label'
 
 export function UsuarioForm({ usuario, roles, onCancel, onSaved }: { usuario?: UsuarioRow; roles: RoleCode[]; onCancel: () => void; onSaved: () => void }) {
   const form = useForm<UsuarioValues>({ resolver: zodResolver(createUsuarioSchema(Boolean(usuario))), defaultValues: { nombreUsuario: usuario?.nombreUsuario ?? '', nombreCompleto: usuario?.nombreCompleto ?? '', email: usuario?.email ?? '', telefono: usuario?.telefono ?? '', activo: usuario?.activo === false ? '0' : '1', password: '', roles: usuario?.roles ?? [] } })
@@ -40,14 +41,14 @@ export function UsuarioForm({ usuario, roles, onCancel, onSaved }: { usuario?: U
   })}>
     <fieldset disabled={isSubmitting} className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField id="usuario-nombre" label="Nombre de usuario" required maxLength={50} autoComplete="off" autoCapitalize="none" autoFocus error={errors.nombreUsuario?.message} {...form.register('nombreUsuario')} />
-        <TextField id="usuario-completo" label="Nombre completo" required maxLength={150} error={errors.nombreCompleto?.message} {...form.register('nombreCompleto')} />
-        <TextField id="usuario-email" label="Correo electrónico" required type="email" maxLength={120} error={errors.email?.message} {...form.register('email')} />
-        <TextField id="usuario-telefono" label="Teléfono" type="tel" maxLength={20} error={errors.telefono?.message} {...form.register('telefono')} />
+        <TextField id="usuario-nombre" placeholder="jperez" label="Nombre de usuario" required maxLength={50} autoComplete="off" autoCapitalize="none" autoFocus error={errors.nombreUsuario?.message} {...form.register('nombreUsuario')} />
+        <TextField id="usuario-completo" placeholder="Juan Pérez" autoComplete="name" label="Nombre completo" required maxLength={150} error={errors.nombreCompleto?.message} {...form.register('nombreCompleto')} />
+        <TextField id="usuario-email" placeholder="nombre@empresa.com" autoComplete="email" label="Correo electrónico" required type="email" maxLength={120} error={errors.email?.message} {...form.register('email')} />
+        <TextField id="usuario-telefono" inputMode="tel" placeholder="5555 1234" autoComplete="tel" label="Teléfono" type="tel" maxLength={20} error={errors.telefono?.message} {...form.register('telefono')} />
         <SelectField id="usuario-activo" label="Estado" required options={[{ value: '1', label: 'Activo' }, { value: '0', label: 'Inactivo' }]} error={errors.activo?.message} {...form.register('activo')} />
-        <TextField id="usuario-password" label={usuario ? 'Nueva contraseña' : 'Contraseña inicial'} required={!usuario} type="password" autoComplete="new-password" maxLength={128} help={usuario ? 'Deja vacío para conservarla. Entre 12 y 128 caracteres al cambiarla.' : 'Entre 12 y 128 caracteres.'} error={errors.password?.message} {...form.register('password')} />
+        <TextField id="usuario-password" placeholder="Mínimo 12 caracteres" label={usuario ? 'Nueva contraseña' : 'Contraseña inicial'} required={!usuario} type="password" autoComplete="new-password" maxLength={128} help={usuario ? 'Deja vacío para conservarla. Entre 12 y 128 caracteres al cambiarla.' : 'Entre 12 y 128 caracteres.'} error={errors.password?.message} {...form.register('password')} />
       </div>
-      <fieldset aria-describedby={errors.roles ? 'usuario-roles-error' : undefined} className="space-y-3"><legend className="mb-3 text-sm font-medium">Roles *</legend><div className="flex flex-wrap gap-3">{roles.map(role => <label key={role} className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm"><input type="checkbox" className="size-4 accent-primary focus-visible:outline-2 focus-visible:outline-primary" value={role} checked={selectedRoles.includes(role)} aria-invalid={Boolean(errors.roles)} {...form.register('roles')} />{roleLabels[role]}</label>)}</div>{errors.roles && <p id="usuario-roles-error" role="alert" className="text-xs text-destructive">{errors.roles.message}</p>}</fieldset>
+      <fieldset aria-describedby={errors.roles ? 'usuario-roles-error' : undefined} className="space-y-3"><legend className="mb-3 text-sm font-medium">Roles <RequiredMark /></legend><div className="flex flex-wrap gap-3">{roles.map(role => <label key={role} className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm"><input type="checkbox" className="size-4 accent-primary focus-visible:outline-2 focus-visible:outline-primary" value={role} checked={selectedRoles.includes(role)} aria-invalid={Boolean(errors.roles)} {...form.register('roles')} />{roleLabels[role]}</label>)}</div>{errors.roles && <p id="usuario-roles-error" role="alert" className="text-xs text-destructive">{errors.roles.message}</p>}</fieldset>
     </fieldset>
     {message && <p role="alert" className="rounded-lg border border-destructive/20 p-3 text-sm text-destructive">{message}</p>}
     <div className="flex justify-end gap-3"><Button type="button" variant="outline" disabled={isSubmitting} onClick={onCancel}>Cancelar</Button><Button type="submit" disabled={isSubmitting || !roles.length}>{isSubmitting ? 'Guardando…' : usuario ? 'Guardar cambios' : 'Crear usuario'}</Button></div>

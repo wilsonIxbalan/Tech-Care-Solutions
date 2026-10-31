@@ -5,7 +5,7 @@ import type { RepuestoRow } from '@/features/repuestos/repuesto-model'
 export { adminUser, json, renderWithSession } from '../../support/session'
 import { json } from '../../support/session'
 
-export const proveedor: ProveedorRow = { idProveedor: 101, nombre: 'Proveedor remoto', nit: '123', telefono: '22223333', nombreContacto: null, email: null, direccion: null, estado: 'ACTIVO' }
+export const proveedor: ProveedorRow = { idProveedor: 101, nombre: 'Proveedor remoto', nit: '123-6', telefono: '22223333', nombreContacto: null, email: null, direccion: null, estado: 'ACTIVO' }
 export const repuesto: RepuestoRow = { idRepuesto: 202, idCategoria: 1, codigo: 'R202', nombre: 'Repuesto remoto', descripcion: null, precioCompraReferencia: '0.10', precioVenta: '0.20', estado: 'ACTIVO' }
 export const bodega = { idBodega: 303, nombre: 'Bodega central', codigo: 'BC', estado: 'ACTIVA' as const }
 export const categoria = { idCategoria: 1, nombre: 'Componentes' }

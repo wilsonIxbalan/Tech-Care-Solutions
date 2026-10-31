@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Label, RequiredMark } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Separator } from '@/components/ui/separator'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -82,8 +82,8 @@ export function DesignSystemPage() {
         <div className="grid gap-5 xl:grid-cols-2">
           <Card><CardHeader><CardTitle>Patrón de captura</CardTitle><CardDescription>Ejemplo con React Hook Form + Zod. No guarda información.</CardDescription></CardHeader><CardContent>
             <form onSubmit={form.handleSubmit(submitExample)} className="space-y-5" noValidate>
-              <div className="space-y-2"><Label htmlFor="example-name">Nombre de referencia <span className="text-destructive">*</span></Label><Input id="example-name" placeholder="Escribe un nombre de prueba" autoComplete="off" aria-required="true" aria-invalid={Boolean(form.formState.errors.nombre)} aria-describedby={form.formState.errors.nombre ? 'name-error' : undefined} {...form.register('nombre')} />{form.formState.errors.nombre && <p id="name-error" role="alert" className="text-xs text-destructive">{form.formState.errors.nombre.message}</p>}</div>
-              <div className="space-y-2"><Label htmlFor="example-email">Correo de prueba <span className="text-destructive">*</span></Label><Input id="example-email" type="email" placeholder="ejemplo@correo.test" autoComplete="off" aria-required="true" aria-invalid={Boolean(form.formState.errors.email)} aria-describedby={form.formState.errors.email ? 'email-error' : undefined} {...form.register('email')} />{form.formState.errors.email && <p id="email-error" role="alert" className="text-xs text-destructive">{form.formState.errors.email.message}</p>}</div>
+              <div className="space-y-2"><Label htmlFor="example-name">Nombre de referencia <RequiredMark /></Label><Input id="example-name" placeholder="Escribe un nombre de prueba" autoComplete="off" aria-required="true" aria-invalid={Boolean(form.formState.errors.nombre)} aria-describedby={form.formState.errors.nombre ? 'name-error' : undefined} {...form.register('nombre')} />{form.formState.errors.nombre && <p id="name-error" role="alert" className="text-xs text-destructive">{form.formState.errors.nombre.message}</p>}</div>
+              <div className="space-y-2"><Label htmlFor="example-email">Correo de prueba <RequiredMark /></Label><Input id="example-email" type="email" placeholder="ejemplo@correo.test" autoComplete="off" aria-required="true" aria-invalid={Boolean(form.formState.errors.email)} aria-describedby={form.formState.errors.email ? 'email-error' : undefined} {...form.register('email')} />{form.formState.errors.email && <p id="email-error" role="alert" className="text-xs text-destructive">{form.formState.errors.email.message}</p>}</div>
               <div className="flex items-center justify-between gap-3 border-t pt-4"><p className="text-[11px] text-muted-foreground">Los datos del ejemplo permanecen en esta página.</p><Button type="submit" size="sm">Validar ejemplo <ArrowRight /></Button></div>
             </form>
           </CardContent></Card>

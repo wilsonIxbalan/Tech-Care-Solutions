@@ -39,8 +39,8 @@ export function PagoForm({ facturas, metodos, onCancel, onSaved, enabled = true 
     <fieldset disabled={write.isPending} className="grid gap-4 sm:grid-cols-2">
       <SelectField id="pago-factura" label="Factura" required options={disponibles.map(f => ({ value: String(f.idFactura), label: `${f.numeroFactura} · ${formatMoney(f.saldo)}` }))} error={errors.idFactura?.message} help="Selecciona la factura que recibirá el pago." {...form.register('idFactura')} />
       <SelectField id="pago-metodo" label="Método de pago" required options={activos.map(m => ({ value: String(m.idMetodoPago), label: m.nombre }))} help={activos.length ? 'Solo métodos activos.' : 'No hay métodos de pago activos disponibles.'} error={errors.idMetodoPago?.message} {...form.register('idMetodoPago')} />
-      <TextField id="pago-monto" label="Monto" required inputMode="decimal" help="Mayor que cero y hasta dos decimales. Se admiten pagos parciales." error={errors.monto?.message} {...form.register('monto')} />
-      <TextField id="pago-referencia" label="Referencia" maxLength={60} error={errors.referencia?.message} {...form.register('referencia')} />
+      <TextField id="pago-monto" placeholder="0.00" autoComplete="off" label="Monto" required inputMode="decimal" help="Mayor que cero y hasta dos decimales. Se admiten pagos parciales." error={errors.monto?.message} {...form.register('monto')} />
+      <TextField id="pago-referencia" placeholder="Núm. de boleta, cheque o transacción" autoComplete="off" label="Referencia" maxLength={60} error={errors.referencia?.message} {...form.register('referencia')} />
     </fieldset>
     {factura && <p className="text-sm">Saldo: {formatMoney(factura.saldo)}</p>}
     <BillingError error={write.error} />

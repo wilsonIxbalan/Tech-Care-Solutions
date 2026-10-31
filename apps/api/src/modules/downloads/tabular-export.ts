@@ -1,5 +1,6 @@
 import { Workbook } from 'exceljs';
 import { Row } from '../../database/database.service';
+import { guatemalaInstant } from '../../common/business-time';
 
 export interface ExportSet {
   name?: string;
@@ -11,13 +12,21 @@ export interface ExportSet {
 // persisted amounts, leading zeroes, long IDs or ISO dates.
 export function cellText(value: unknown): string {
   if (value === null || value === undefined) return '';
-  if (value instanceof Date) return value.toISOString();
+  if (value instanceof Date) return guatemalaInstant(value);
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
 }
 
+function exportCell(value: unknown, column: string): string {
+  if (/^fecha/i.test(column) && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
+    const instant = new Date(value);
+    if (!Number.isNaN(instant.getTime())) return guatemalaInstant(instant);
+  }
+  return cellText(value);
+}
+
 function csvCell(value: unknown, column: string): string {
-  let text = cellText(value);
+  let text = exportCell(value, column);
   const officialNumber =
     /^(?:costo|precio|subtotal|total|saldo|impuesto|monto|porcentaje|horas|cantidad)/i.test(
       column,
@@ -49,7 +58,7 @@ export async function xlsxBuffer(sets: ExportSet[]): Promise<Buffer> {
     sheet.columns = set.columns.map((key) => ({ key, width: 24 }));
     sheet.addRow(set.columns);
     for (const row of set.rows)
-      sheet.addRow(set.columns.map((column) => cellText(row[column])));
+      sheet.addRow(set.columns.map((column) => exportCell(row[column], column)));
     sheet.eachRow((row, rowNumber) => {
       row.font = { name: 'Arial', size: 10, bold: rowNumber === 1 };
       row.eachCell((cell) => {

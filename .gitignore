@@ -23,6 +23,32 @@ playwright-report/
 test-results/
 .artifacts/
 
+# Salidas de compilación, cachés y archivos temporales en cualquier paquete.
+build/
+out/
+.cache/
+.turbo/
+.parcel-cache/
+.pnpm-store/
+.nyc_output/
+tmp/
+.tmp/
+.temp/
+*.tmp
+*.swp
+*.swo
+*.pid
+*.pid.lock
+
+# Configuración personal y credenciales locales.
+.idea/
+.codex/
+.aws/
+*.pem
+*.key
+*.p12
+*.publishsettings
+
 # Guías, referencias y configuraciones personales NO pertenecen al repo.
 /docs/
 /analisis

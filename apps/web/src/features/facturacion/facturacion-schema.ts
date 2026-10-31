@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { nitMessage, validNit } from '@/lib/client-validation'
 import { optionalText, requiredText, selection } from '@/lib/draft-schema'
 import { nonNegativeMoneySchema } from '@/lib/money-schema'
 import { moneyToMinor } from '@/lib/decimal-money'
@@ -12,7 +13,7 @@ export const porcentajeImpuestoSchema = nonNegativeMoneySchema('Indica el porcen
 export function createFacturacionSchema(ordenes?: readonly OrdenFacturacion[]) {
   return z.object({
     idOrden: selection(ordenes?.filter(o => o.estado === 'LISTO').map(o => String(o.idOrden)), 'una orden LISTO'),
-    nitFacturacion: inheritedText(20), nombreFacturacion: inheritedText(150), direccionFacturacion: inheritedText(250),
+    nitFacturacion: inheritedText(20).refine(value => value === null || validNit(value), nitMessage).transform(value => value === null ? null : value.toUpperCase()), nombreFacturacion: inheritedText(150), direccionFacturacion: inheritedText(250),
     porcentajeImpuesto: porcentajeImpuestoSchema.default('12.00'),
   })
 }

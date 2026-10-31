@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { invalidateRelatedQueries } from '@/lib/query-invalidation'
 import { useSession } from '@/features/auth/session-context'
 import { apiFetch } from '@/lib/api-client'
@@ -20,7 +20,7 @@ export function useClientes(filters: ClienteFilters, enabled = true) {
   const { user } = useSession()
   const allowed = Boolean(user?.permisos.some(permission => clientesReadPermissions.includes(permission)))
   return useQuery({
-    queryKey: ['clientes', user?.idUsuario, filters], enabled: allowed && enabled, retry: false,
+    queryKey: ['clientes', user?.idUsuario, filters], placeholderData: keepPreviousData, enabled: allowed && enabled, retry: false,
     queryFn: ({ signal }) => apiFetch<ClienteDto[]>(`/clientes?${listQuery(filters)}`, { signal }),
   })
 }

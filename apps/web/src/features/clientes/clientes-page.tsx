@@ -10,13 +10,16 @@ import { useSession } from '@/features/auth/session-context'
 import { ClienteForm } from './cliente-form'
 import { clientesReadPermissions, useClientes } from './api'
 import type { ClienteDto } from '@/types/domain'
+import { useDebouncedValue } from '@/lib/use-debounced-value'
+import { PermissionNotice } from '@/components/shared/permission-notice'
 
 export function ClientesPage() {
   const { user } = useSession()
   const allowed = Boolean(user?.permisos.some(permission => clientesReadPermissions.includes(permission)))
   const manage = Boolean(user?.permisos.includes('CLIENTES_GESTIONAR'))
   const [filters, setFilters] = useState({ search: '', estado: '', page: 1, pageSize: DEFAULT_PAGE_SIZE })
-  const clientes = useClientes(filters)
+  const search = useDebouncedValue(filters.search)
+  const clientes = useClientes({ ...filters, search })
   const [editor, setEditor] = useState<ClienteDto | 'new' | null>(null)
   const [message, setMessage] = useState('')
   const trigger = useRef<HTMLButtonElement | null>(null)
@@ -32,11 +35,12 @@ export function ClientesPage() {
   if (!allowed) return <EmptyState title="Acceso restringido" description="No tienes permiso para consultar clientes." />
   return <>
     <PageHeader eyebrow="TechCare / Recepción" title="Clientes" description="Datos de contacto y facturación de clientes individuales y empresariales." actions={manage && <Button ref={newButton} disabled={Boolean(editor)} onClick={event => { trigger.current = event.currentTarget; setMessage(''); setEditor('new') }}>Nuevo cliente</Button>} />
+    <PermissionNotice permission="CLIENTES_GESTIONAR" action="registrar o editar clientes" />
     {editor && manage && <ClienteForm key={editor === 'new' ? 'new' : editor.idCliente} cliente={editor === 'new' ? undefined : editor} onCancel={closeEditor} onSaved={() => { closeEditor(); setMessage('Cliente guardado correctamente.') }} />}
     {message && <p role="status" className="rounded-lg border bg-accent p-3 text-sm">{message}</p>}
     <section aria-label="Listado de clientes" className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-[1fr_10rem_8rem]">
-        <TextField id="clientes-busqueda" label="Buscar clientes" type="search" placeholder="Nombre, NIT o teléfono" maxLength={150} value={filters.search} onChange={event => setFilters({ ...filters, search: event.target.value, page: 1 })} />
+        <TextField id="clientes-busqueda" label="Buscar clientes" type="search" placeholder="Buscar por nombre, NIT, teléfono o correo…" maxLength={150} value={filters.search} onChange={event => setFilters({ ...filters, search: event.target.value, page: 1 })} />
         <SelectField id="clientes-filtro-estado" label="Estado" placeholder="Todos" options={[{ value: 'ACTIVO', label: 'Activo' }, { value: 'INACTIVO', label: 'Inactivo' }]} value={filters.estado} onChange={event => setFilters({ ...filters, estado: event.target.value, page: 1 })} />
         <SelectField id="clientes-tamano" label="Por página" allowEmpty={false} options={[5, 10, 20, 50].map(size => ({ value: String(size), label: String(size) }))} value={String(filters.pageSize)} onChange={event => setFilters({ ...filters, pageSize: Number(event.target.value), page: 1 })} />
       </div>

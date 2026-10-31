@@ -31,9 +31,9 @@ export function AjusteForm({ onCancel, onSaved }: { onCancel: () => void; onSave
         <SupplySelector resource="bodegas" label="Bodega del ajuste" id="ajuste-bodega" required active disabled={blocked} value={values.idBodega ?? ''} selected={selected.bodega} error={errors.idBodega?.message} onSelect={option => { setSelected({ ...selected, bodega: option }); form.setValue('idBodega', option ? String(option.id) : '', { shouldValidate: true }) }} />
         <SupplySelector resource="repuestos" label="Repuesto del ajuste" id="ajuste-repuesto" required active disabled={blocked} value={values.idRepuesto ?? ''} selected={selected.repuesto} error={errors.idRepuesto?.message} onSelect={option => { setSelected({ ...selected, repuesto: option }); form.setValue('idRepuesto', option ? String(option.id) : '', { shouldValidate: true }) }} />
         <SelectField id="ajuste-tipo" label="Tipo de ajuste" required options={[{ value: 'AJUSTE_ENTRADA', label: 'Entrada' }, { value: 'AJUSTE_SALIDA', label: 'Salida' }]} error={errors.codigoTipoMovimiento?.message} {...form.register('codigoTipoMovimiento')} />
-        <TextField id="ajuste-cantidad" label="Cantidad del ajuste" required inputMode="numeric" help="Cantidad positiva; selecciona entrada o salida. No es la existencia final." error={errors.cantidad?.message} {...form.register('cantidad')} />
+        <TextField id="ajuste-cantidad" placeholder="1" autoComplete="off" label="Cantidad del ajuste" required inputMode="numeric" help="Cantidad positiva; selecciona entrada o salida. No es la existencia final." error={errors.cantidad?.message} {...form.register('cantidad')} />
       </div>
-      <AreaField id="ajuste-observacion" label="Motivo del ajuste" required maxLength={300} error={errors.observacion?.message} {...form.register('observacion')} />
+      <AreaField id="ajuste-observacion" placeholder="Motivo del ajuste (conteo físico, merma, etc.)" label="Motivo del ajuste" required maxLength={300} error={errors.observacion?.message} {...form.register('observacion')} />
     </fieldset>
     <SupplyError error={save.error} />
     <div className="flex gap-3"><Button type="submit" disabled={blocked}>{form.formState.isSubmitting ? 'Registrando…' : 'Registrar ajuste'}</Button><Button type="button" variant="outline" disabled={form.formState.isSubmitting} onClick={onCancel}>Cerrar</Button></div>
@@ -54,7 +54,7 @@ export function MinimoForm({ row, onCancel, onSaved }: { row: InventarioDto; onC
     finally { sending.current = false }
   }}>
     <p>{row.bodegaNombre} · {row.codigoRepuesto} · {row.repuestoNombre}</p>
-    <TextField id="stock-minimo" label="Stock mínimo" required inputMode="numeric" disabled={blocked} help="Permite cero. No modifica existencias ni genera movimientos." error={form.formState.errors.stockMinimo?.message} {...form.register('stockMinimo')} />
+    <TextField id="stock-minimo" placeholder="0" autoComplete="off" label="Stock mínimo" required inputMode="numeric" disabled={blocked} help="Permite cero. No modifica existencias ni genera movimientos." error={form.formState.errors.stockMinimo?.message} {...form.register('stockMinimo')} />
     <SupplyError error={save.error} />
     <div className="flex gap-3"><Button type="submit" disabled={blocked}>{form.formState.isSubmitting ? 'Guardando…' : 'Guardar mínimo'}</Button><Button type="button" variant="outline" disabled={form.formState.isSubmitting} onClick={onCancel}>Cerrar</Button></div>
   </form>

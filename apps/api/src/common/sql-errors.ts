@@ -1,5 +1,6 @@
 // Lista explícita de los THROW de fases 07/08/09. Nunca exponer el texto del motor.
 const groups: Array<[number[], number, string, string]> = [
+  [[50205], 400, 'VALIDACION', 'La fecha estimada de entrega es anterior al día actual en Guatemala. Selecciona hoy o una fecha posterior.'],
   [[51710], 413, 'EXPORTACION_DEMASIADO_GRANDE', 'La exportación supera 10000 filas en total. Ajusta los filtros; no se ha truncado ningún conjunto.'],
   [
     [
@@ -22,7 +23,7 @@ const groups: Array<[number[], number, string, string]> = [
   ],
   [
     [
-      50102, 50203, 50204, 50205, 50303, 50304, 50403, 50404, 50600, 50703,
+      50102, 50203, 50204, 50303, 50304, 50403, 50404, 50600, 50703,
       50704, 50900, 50901, 50902, 50903, 51004, 51100, 51200, 51302, 51403,
       51500, 51601, 51700,
     ],

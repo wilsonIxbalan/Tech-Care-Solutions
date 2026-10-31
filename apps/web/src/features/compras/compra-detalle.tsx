@@ -1,13 +1,13 @@
 import { ReceivedTable } from '@/components/shared/received-table'
-import { formatMoney, formatUtcDateTime } from '@/lib/format'
+import { formatMoney, formatGuatemalaDateTime } from '@/lib/format'
 import type { CompraDetalleDto } from '@/types/domain'
 
 export function CompraDetalle({ compra }: { compra: CompraDetalleDto }) {
   const fields = [
     ['Compra', compra.numeroCompra], ['Estado', compra.estado], ['Proveedor', compra.proveedorNombre],
     ['Bodega destino', compra.bodegaNombre], ['Documento del proveedor', compra.numeroDocumentoProveedor ?? '—'],
-    ['Registro (UTC)', formatUtcDateTime(compra.fechaCompra)], ['Responsable de registro (ID recibido)', String(compra.idUsuarioRegistro)],
-    ['Recepción (UTC)', formatUtcDateTime(compra.fechaRecepcion)], ['Responsable de recepción (ID recibido)', compra.idUsuarioRecepcion === null ? '—' : String(compra.idUsuarioRecepcion)],
+    ['Registro (Guatemala)', formatGuatemalaDateTime(compra.fechaCompra)], ['Responsable de registro (ID recibido)', String(compra.idUsuarioRegistro)],
+    ['Recepción (Guatemala)', formatGuatemalaDateTime(compra.fechaRecepcion)], ['Responsable de recepción (ID recibido)', compra.idUsuarioRecepcion === null ? '—' : String(compra.idUsuarioRecepcion)],
     ['Observaciones', compra.observaciones ?? '—'], ['Total del servidor', formatMoney(compra.total)],
   ]
   return <div className="space-y-4 rounded-xl border p-4">

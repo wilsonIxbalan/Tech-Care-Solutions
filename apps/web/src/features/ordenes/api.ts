@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSession } from '@/features/auth/session-context'
 import { ApiError, apiFetch } from '@/lib/api-client'
 import { z } from 'zod'
@@ -18,7 +18,7 @@ export function serviceQuery(filters: Record<string, string | number | undefined
 }
 export function useOrdenes(filters: Record<string, string | number | undefined>, enabled = true) {
   const { user } = useSession()
-  return useQuery({ queryKey: ['ordenes', user?.idUsuario, filters], retry: false,
+  return useQuery({ queryKey: ['ordenes', user?.idUsuario, filters], placeholderData: keepPreviousData, retry: false,
     enabled: enabled && Boolean(user?.permisos.some(permission => orderReadPermissions.includes(permission))),
     queryFn: ({ signal }) => apiFetch<OrdenResumenDto[]>(`/ordenes?${serviceQuery(filters)}`, { signal }),
   })

@@ -20,7 +20,8 @@ export function createEquipoSchema(catalogos: EquipoCatalogos) {
       .max(80, 'El modelo debe tener como máximo 80 caracteres.'),
     numeroSerie: z.string().trim()
       .min(1, 'Escribe el número de serie.')
-      .max(60, 'El número de serie debe tener como máximo 60 caracteres.'),
+      .max(60, 'El número de serie debe tener como máximo 60 caracteres.')
+      .regex(/^[A-Za-z0-9._/-]+$/, 'El número de serie solo admite letras, números, punto, guion, guion bajo y barra, sin espacios.'),
     // EquipmentInput exige texto no vacío y no admite null.
     descripcion: z.string().trim()
       .min(1, 'Escribe la descripción del equipo.')

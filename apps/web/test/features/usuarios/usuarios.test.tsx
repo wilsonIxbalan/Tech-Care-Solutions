@@ -5,7 +5,7 @@ import { createAsignacionSchema, createUsuarioSchema, usuarioPayload } from '@/f
 import type { RolRow, UsuarioRow } from '@/features/usuarios/usuario-model'
 import { adminUser, json, renderWithSession } from '../../support/session'
 
-const usuarios: UsuarioRow[] = [1, 2].map(idUsuario => ({ idUsuario, nombreUsuario: `prueba${idUsuario}`, nombreCompleto: `Usuario de prueba ${idUsuario}`, email: `prueba${idUsuario}@example.com`, telefono: null, activo: idUsuario === 1, roles: ['TECNICO'], fechaCreacion: '2026-10-22T12:00:00Z', ultimoAcceso: null }))
+const usuarios: UsuarioRow[] = [1, 2].map(idUsuario => ({ idUsuario, nombreUsuario: `prueba${idUsuario}`, nombreCompleto: `Usuario de prueba ${idUsuario === 1 ? 'Uno' : 'Dos'}`, email: `prueba${idUsuario}@example.com`, telefono: null, activo: idUsuario === 1, roles: ['TECNICO'], fechaCreacion: '2026-10-22T12:00:00Z', ultimoAcceso: null }))
 const roles: RolRow[] = [{ idRol: 3, codigo: 'TECNICO', nombre: 'Técnico', descripcion: null, activo: true }]
 const valid = { nombreUsuario: 'prueba', nombreCompleto: 'Nombre de prueba', email: 'prueba@example.com', telefono: '', activo: '1', password: ' clave segura ', roles: ['TECNICO'] }
 
@@ -46,7 +46,7 @@ describe('administración de usuarios', () => {
   })
   it('consulta lista con búsqueda, filtros y paginación en servidor', async () => {
     renderWithSession(<UsuariosPage />)
-    expect(await screen.findByText('Usuario de prueba 1')).toBeVisible()
+    expect(await screen.findByText('Usuario de prueba Uno')).toBeVisible()
     fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }))
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining('page=2'), expect.anything()))
     fireEvent.change(screen.getByLabelText('Buscar usuarios'), { target: { value: 'prueba' } })
@@ -87,7 +87,7 @@ describe('administración de usuarios', () => {
   it('edita perfil y roles omitiendo password vacío, permite cambiarla explícitamente', async () => {
     renderWithSession(<UsuariosPage />)
     fireEvent.click(await screen.findByRole('button', { name: 'Editar prueba2' }))
-    expect(screen.getByLabelText('Nombre completo *')).toHaveValue('Usuario de prueba 2')
+    expect(screen.getByLabelText('Nombre completo *')).toHaveValue('Usuario de prueba Dos')
     expect(screen.getByLabelText('Nueva contraseña')).toHaveValue('')
     fireEvent.click(screen.getByRole('checkbox', { name: 'Caja' }))
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))

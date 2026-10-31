@@ -6,13 +6,13 @@ import { adminUser, errorResponse, json, list, mockSupply, proveedor, renderWith
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 function fill() {
-  for (const [label, value] of [['NIT *', ' 123 '], ['Nombre *', ' Nuevo proveedor '], ['Teléfono *', '22223333']]) fireEvent.change(screen.getByLabelText(label), { target: { value } })
+  for (const [label, value] of [['NIT *', ' 123-6 '], ['Nombre *', ' Nuevo proveedor '], ['Teléfono *', '22223333']]) fireEvent.change(screen.getByLabelText(label), { target: { value } })
 }
 describe('proveedores HTTP', () => {
   it('valida obligatorios, longitudes y email opcional', () => {
-    const valid = { nit: 'Prueba', nombre: 'Proveedor', telefono: 'Texto', nombreContacto: '', email: '', direccion: '' }
+    const valid = { nit: '123-6', nombre: 'Proveedor', telefono: '2222-3333', nombreContacto: '', email: '', direccion: '' }
     expect(proveedorSchema.safeParse(valid).success).toBe(true)
-    for (const patch of [{ nit: ' ' }, { nombre: ' ' }, { telefono: '1'.repeat(21) }, { email: 'inválido' }]) expect(proveedorSchema.safeParse({ ...valid, ...patch }).success).toBe(false)
+    for (const patch of [{ nit: ' ' }, { nit: 'CF' }, { nit: '123-7' }, { telefono: 'Texto' }, { nombre: ' ' }, { telefono: '1'.repeat(21) }, { email: 'inválido' }]) expect(proveedorSchema.safeParse({ ...valid, ...patch }).success).toBe(false)
   })
   it('consulta y pagina en servidor; buscar o filtrar reinicia página', async () => {
     const http = mockSupply(url => url.pathname.endsWith('/proveedores') ? json(list([proveedor], Number(url.searchParams.get('page')), 3)) : undefined)
@@ -30,7 +30,7 @@ describe('proveedores HTTP', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Nuevo proveedor' })); fill()
     fireEvent.submit(screen.getByRole('form', { name: 'Registrar proveedor' }))
     await waitFor(() => expect(writes(http)).toHaveLength(1))
-    expect(JSON.parse(String(writes(http)[0][1]?.body))).toEqual({ nit: '123', nombre: 'Nuevo proveedor', telefono: '22223333', nombreContacto: null, email: null, direccion: null, estado: 'ACTIVO' })
+    expect(JSON.parse(String(writes(http)[0][1]?.body))).toEqual({ nit: '123-6', nombre: 'Nuevo proveedor', telefono: '22223333', nombreContacto: null, email: null, direccion: null, estado: 'ACTIVO' })
     await waitFor(() => expect(screen.queryByRole('form')).not.toBeInTheDocument())
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['dashboard'] })
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['proveedores'] })

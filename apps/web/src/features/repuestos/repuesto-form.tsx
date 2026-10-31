@@ -29,12 +29,12 @@ export function RepuestoForm({ categorias, onCancel, repuesto, onSaved }: { cate
     <fieldset disabled={blocked} className="space-y-4">
     <div className="grid gap-4 sm:grid-cols-2">
       <SelectField id="repuesto-categoria" label="Categoría" required options={categorias?.map(c => ({ value: String(c.idCategoria), label: c.nombre }))} error={errors.idCategoria?.message} {...form.register('idCategoria')} />
-      <TextField id="repuesto-codigo" label="Código" required readOnly={Boolean(repuesto)} help={repuesto ? 'El código no puede modificarse.' : undefined} maxLength={30} error={errors.codigo?.message} {...form.register('codigo')} />
-      <TextField id="repuesto-nombre" label="Nombre" required maxLength={120} error={errors.nombre?.message} {...form.register('nombre')} />
-      <TextField id="repuesto-compra" label="Precio de compra de referencia" required inputMode="decimal" help="Punto decimal, hasta dos decimales. Se permite cero." error={errors.precioCompraReferencia?.message} {...form.register('precioCompraReferencia')} />
-      <TextField id="repuesto-venta" label="Precio de venta" required inputMode="decimal" help="Punto decimal, hasta dos decimales. Se permite cero." error={errors.precioVenta?.message} {...form.register('precioVenta')} />
+      <TextField id="repuesto-codigo" placeholder="RAM-DDR4-8G" autoComplete="off" autoCapitalize="characters" label="Código" required readOnly={Boolean(repuesto)} help={repuesto ? 'El código no puede modificarse.' : undefined} maxLength={30} error={errors.codigo?.message} {...form.register('codigo')} />
+      <TextField id="repuesto-nombre" placeholder="Memoria RAM DDR4 8 GB" autoComplete="off" label="Nombre" required maxLength={120} error={errors.nombre?.message} {...form.register('nombre')} />
+      <TextField id="repuesto-compra" placeholder="0.00" autoComplete="off" label="Precio de compra de referencia" required inputMode="decimal" help="Punto decimal, hasta dos decimales. Se permite cero." error={errors.precioCompraReferencia?.message} {...form.register('precioCompraReferencia')} />
+      <TextField id="repuesto-venta" placeholder="0.00" autoComplete="off" label="Precio de venta" required inputMode="decimal" help="Punto decimal, hasta dos decimales. Se permite cero." error={errors.precioVenta?.message} {...form.register('precioVenta')} />
     </div>
-    <AreaField id="repuesto-descripcion" label="Descripción" maxLength={300} error={errors.descripcion?.message} {...form.register('descripcion')} />
+    <AreaField id="repuesto-descripcion" placeholder="Compatibilidad o detalles (opcional)" label="Descripción" maxLength={300} error={errors.descripcion?.message} {...form.register('descripcion')} />
     <SelectField id="repuesto-estado" label="Estado del repuesto" value={estado} options={['ACTIVO', 'INACTIVO'].map(value => ({ value, label: value }))} onChange={e => setEstado(e.target.value as RepuestoRow['estado'])} />
     </fieldset>
     <p className="text-sm text-muted-foreground">Usa un código único para cada repuesto. Los cambios del catálogo no modifican existencias.</p>

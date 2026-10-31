@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { invalidateRelatedQueries } from '@/lib/query-invalidation'
 import { useSession } from '@/features/auth/session-context'
@@ -25,7 +25,7 @@ export function useSupplyAccess() {
 export function useSupplyList<T>(resource: string, filters: ListFilters, enabled = true) {
   const { user } = useSession()
   const permissions = resource === 'proveedores' ? supplierReadPermissions : resource === 'compras' ? ['COMPRAS_GESTIONAR'] : stockReadPermissions
-  return useQuery({ queryKey: [resource, user?.idUsuario, filters], retry: false,
+  return useQuery({ queryKey: [resource, user?.idUsuario, filters], placeholderData: keepPreviousData, retry: false,
     enabled: enabled && Boolean(user?.permisos.some(p => permissions.includes(p))),
     queryFn: async ({ signal }) => {
       const response = await apiFetch<T[]>(`/${resource}?${queryString(filters)}`, { signal })

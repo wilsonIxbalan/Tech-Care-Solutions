@@ -54,3 +54,11 @@ describe('validación de Equipos', () => {
     })).toEqual({ ...values, idCliente: 11, idTipoEquipo: 7, idMarca: 23 })
   })
 })
+
+describe('numeroSerie sin espacios', () => {
+  it('rechaza espacios y acepta separadores comunes', () => {
+    const schema = createEquipoSchema(catalogos)
+    expect(schema.safeParse({ ...values, numeroSerie: 'AB 12' }).success).toBe(false)
+    expect(schema.safeParse({ ...values, numeroSerie: ' SN-12/34.A_5 ' }).success).toBe(true)
+  })
+})

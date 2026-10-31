@@ -12,6 +12,8 @@ import { ClienteSelector } from './cliente-selector'
 import type { ClienteOption } from './cliente-selector'
 import { equiposReadPermissions, useEquipos } from './api'
 import type { EquipoDto } from '@/types/domain'
+import { useDebouncedValue } from '@/lib/use-debounced-value'
+import { PermissionNotice } from '@/components/shared/permission-notice'
 
 export function EquiposPage() {
   const { user } = useSession()
@@ -19,7 +21,8 @@ export function EquiposPage() {
   const manage = Boolean(user?.permisos.includes('EQUIPOS_GESTIONAR'))
   const [filters, setFilters] = useState({ search: '', estado: '', page: 1, pageSize: DEFAULT_PAGE_SIZE })
   const [cliente, setCliente] = useState<ClienteOption | null>(null)
-  const equipos = useEquipos({ ...filters, idCliente: cliente?.idCliente })
+  const search = useDebouncedValue(filters.search)
+  const equipos = useEquipos({ ...filters, search, idCliente: cliente?.idCliente })
   const [editor, setEditor] = useState<EquipoDto | 'new' | null>(null)
   const [message, setMessage] = useState('')
   const trigger = useRef<HTMLButtonElement | null>(null)
@@ -35,11 +38,12 @@ export function EquiposPage() {
   if (!allowed) return <EmptyState title="Acceso restringido" description="No tienes permiso para consultar equipos." />
   return <>
     <PageHeader eyebrow="TechCare / Recepción" title="Equipos" description="Consulta por serie o modelo y mantén los datos de cada equipo y su propietario." actions={manage && <Button ref={newButton} disabled={Boolean(editor)} onClick={event => { trigger.current = event.currentTarget; setMessage(''); setEditor('new') }}>Nuevo equipo</Button>} />
+    <PermissionNotice permission="EQUIPOS_GESTIONAR" action="registrar o editar equipos" />
     {editor && manage && <EquipoForm key={editor === 'new' ? 'new' : editor.idEquipo} equipo={editor === 'new' ? undefined : editor} onCancel={closeEditor} onSaved={() => { closeEditor(); setMessage('Equipo guardado correctamente.') }} />}
     {message && <p role="status" className="rounded-lg border bg-accent p-3 text-sm">{message}</p>}
     <section aria-label="Listado de equipos" className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-[1fr_10rem_8rem]">
-        <TextField id="equipos-busqueda" label="Buscar equipos" type="search" placeholder="Número de serie o modelo" maxLength={150} value={filters.search} onChange={event => setFilters({ ...filters, search: event.target.value, page: 1 })} />
+        <TextField id="equipos-busqueda" label="Buscar equipos" type="search" placeholder="Buscar por número de serie o modelo…" maxLength={150} value={filters.search} onChange={event => setFilters({ ...filters, search: event.target.value, page: 1 })} />
         <SelectField id="equipos-filtro-estado" label="Estado" placeholder="Todos" options={['ACTIVO', 'INACTIVO', 'BAJA'].map(value => ({ value, label: value }))} value={filters.estado} onChange={event => setFilters({ ...filters, estado: event.target.value, page: 1 })} />
         <SelectField id="equipos-tamano" label="Por página" allowEmpty={false} options={[5, 10, 20, 50].map(size => ({ value: String(size), label: String(size) }))} value={String(filters.pageSize)} onChange={event => setFilters({ ...filters, pageSize: Number(event.target.value), page: 1 })} />
       </div>

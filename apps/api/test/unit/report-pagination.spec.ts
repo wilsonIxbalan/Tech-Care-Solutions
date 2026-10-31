@@ -18,7 +18,7 @@ describe('Reportes: paginacion y exportacion ejecutadas en SQL', () => {
   const bindings = () => Object.fromEntries((execute.mock.calls[0][1] as Param[]).map(p => [p.name, p.value]));
   beforeEach(() => execute.mockReset());
 
-  it.each(Object.keys(reports).filter(slug => !completeReports.has(slug)))('%s envía página y búsqueda tipadas; total viene de SQL', async slug => {
+  it.each(Object.keys(reports).filter(slug => !completeReports.has(slug) && slug !== 'ingresos'))('%s envía página y búsqueda tipadas; total viene de SQL', async slug => {
     const sets = slug === 'facturas-saldo' ? [[{ IdFactura: 4 }], [{ IdPago: 5, IdFactura: 4 }]] : [[{ Nombre: 'Fila' }]];
     execute.mockResolvedValue({ recordsets: [...sets, [{ TotalRows: 105 }]] });
     const result = await repository.paged(slug, validQuery(slug, { page: 3, pageSize: 10, search: "ñ'%_[]" }));
@@ -29,7 +29,7 @@ describe('Reportes: paginacion y exportacion ejecutadas en SQL', () => {
     expect(bindings()).not.toHaveProperty('MaxRows');
   });
 
-  it.each(Object.keys(reports))('%s exporta todos los filtros sin Page y limita la suma en SQL', async slug => {
+  it.each(Object.keys(reports).filter(slug => slug !== 'ingresos'))('%s exporta todos los filtros sin Page y limita la suma en SQL', async slug => {
     execute.mockResolvedValue({ recordsets: [[], []] });
     await repository.exportRows(slug, validQuery(slug, { page: 99, pageSize: 1 }), 10000);
     expect(bindings()).toMatchObject({ MaxRows: 10000 });

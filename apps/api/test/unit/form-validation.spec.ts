@@ -1,6 +1,6 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { ClientInput, EquipmentInput, PartInput, SupplierInput, WarehouseInput, UserInput } from '../../src/modules/masters/masters.dto';
+import { ClientInput, ClientPatch, EquipmentInput, PartInput, SupplierInput, WarehouseInput, UserInput } from '../../src/modules/masters/masters.dto';
 import { OrderInput, DiagnosisInput, RepairInput, ActivityInput, StateInput, DeliveryInput } from '../../src/modules/service/service.dto';
 import { PurchaseInput } from '../../src/modules/purchasing/purchasing.dto';
 import { InvoiceInput, PaymentInput, CancelPaymentInput } from '../../src/modules/billing/billing.dto';
@@ -9,7 +9,7 @@ import { LoginDto } from '../../src/modules/auth/auth.dto';
 
 const boundaries: Array<[new () => object, string, number]> = [
   [ClientInput, 'nombres', 100], [ClientInput, 'apellidos', 100], [ClientInput, 'razonSocial', 150],
-  [ClientInput, 'nombreContacto', 120], [ClientInput, 'direccion', 250], [ClientInput, 'nit', 20], [ClientInput, 'telefono', 20],
+  [ClientInput, 'nombreContacto', 120], [ClientInput, 'direccion', 250],
   [EquipmentInput, 'modelo', 80], [EquipmentInput, 'numeroSerie', 60], [EquipmentInput, 'descripcion', 300],
   [PartInput, 'codigo', 30], [PartInput, 'nombre', 120], [PartInput, 'descripcion', 300],
   [SupplierInput, 'nombre', 150], [SupplierInput, 'nombreContacto', 120], [SupplierInput, 'direccion', 250],
@@ -17,12 +17,46 @@ const boundaries: Array<[new () => object, string, number]> = [
   [UserInput, 'nombreUsuario', 50], [UserInput, 'nombreCompleto', 150],
   [OrderInput, 'problemaReportado', 1000], [OrderInput, 'observaciones', 500],
   [DiagnosisInput, 'descripcion', 1000], [RepairInput, 'descripcion', 1000], [ActivityInput, 'descripcion', 500],
-  [StateInput, 'observacion', 500], [DeliveryInput, 'nombreRecibe', 150], [DeliveryInput, 'documentoRecibe', 30],
+  [StateInput, 'observacion', 500], [DeliveryInput, 'nombreRecibe', 150],
   [DeliveryInput, 'observaciones', 500], [PurchaseInput, 'numeroDocumentoProveedor', 40], [PurchaseInput, 'observaciones', 500],
-  [InvoiceInput, 'nitFacturacion', 20], [InvoiceInput, 'nombreFacturacion', 150], [InvoiceInput, 'direccionFacturacion', 250],
+  [InvoiceInput, 'nombreFacturacion', 150], [InvoiceInput, 'direccionFacturacion', 250],
   [PaymentInput, 'referencia', 60], [CancelPaymentInput, 'motivo', 300], [AdjustmentInput, 'observacion', 300],
 ];
 describe('Formularios: limites del servidor y mensajes en español (sin SQL)', () => {
+  it.each([ClientInput, ClientPatch])('valida NIT y teléfono también en edición: %p', async Type => {
+    for (const nit of ['CF', '1234567-9', '1000002-K']) {
+      const errors = await validate(plainToInstance(Type, { nit, telefono: '+502 2222-3333' }));
+      expect(errors.filter(error => ['nit', 'telefono'].includes(error.property))).toEqual([]);
+    }
+    for (const nit of ['1234567-5', '000000-0', 'NIT', null]) {
+      expect((await validate(plainToInstance(Type, { nit }))).some(error => error.property === 'nit')).toBe(true);
+    }
+    for (const telefono of ['telefono', '12345678', '2222333', '222233333', '+50322223333', null]) {
+      expect((await validate(plainToInstance(Type, { telefono }))).some(error => error.property === 'telefono')).toBe(true);
+    }
+    expect(plainToInstance(Type, { nit: ' cf ' }).nit).toBe('CF');
+  });
+  it('proveedor y usuario validan NIT y teléfono como cliente', async () => {
+    const ok = await validate(plainToInstance(SupplierInput, { nit: '1234567-9', telefono: '+502 2222-3333' }));
+    expect(ok.filter(e => ['nit', 'telefono'].includes(e.property))).toEqual([]);
+    const bad = await validate(plainToInstance(SupplierInput, { nit: '1234567-5', telefono: '12345678' }));
+    expect(bad.map(e => e.property)).toEqual(expect.arrayContaining(['nit', 'telefono']));
+    expect((await validate(plainToInstance(UserInput, { telefono: '12345678' }))).some(e => e.property === 'telefono')).toBe(true);
+    for (const telefono of [undefined, null, '2222-3333'])
+      expect((await validate(plainToInstance(UserInput, { telefono }))).some(e => e.property === 'telefono')).toBe(false);
+  });
+  it('entrega valida DPI de 13 dígitos y nombre sin números', async () => {
+    const ok = await validate(plainToInstance(DeliveryInput, { nombreRecibe: "María-José O'Connor", documentoRecibe: '2345 67890 1234' }));
+    expect(ok.filter(e => ['nombreRecibe', 'documentoRecibe'].includes(e.property))).toEqual([]);
+    expect((await validate(plainToInstance(DeliveryInput, { nombreRecibe: 'Ana', documentoRecibe: null }))).length).toBe(0);
+    const bad = await validate(plainToInstance(DeliveryInput, { nombreRecibe: 'Ana 2', documentoRecibe: '12345' }));
+    expect(bad.map(e => e.property)).toEqual(expect.arrayContaining(['nombreRecibe', 'documentoRecibe']));
+  });
+  it('factura valida el NIT cuando se envía', async () => {
+    expect((await validate(plainToInstance(InvoiceInput, { nitFacturacion: 'cf' }))).some(e => e.property === 'nitFacturacion')).toBe(false);
+    expect((await validate(plainToInstance(InvoiceInput, { nitFacturacion: null }))).some(e => e.property === 'nitFacturacion')).toBe(false);
+    expect((await validate(plainToInstance(InvoiceInput, { nitFacturacion: '1234567-5' }))).some(e => e.property === 'nitFacturacion')).toBe(true);
+  });
   it.each(boundaries)('%p.%s acepta su limite %i y rechaza un caracter adicional', async (Type, field, max) => {
     const accepted = await validate(plainToInstance(Type, { [field]: 'a'.repeat(max) }));
     expect(accepted.find(error => error.property === field)).toBeUndefined();

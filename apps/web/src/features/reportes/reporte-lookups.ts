@@ -47,13 +47,13 @@ const lookupFields: Record<RemoteReportCatalog, { id: string; label: string; det
   proveedores: { id: 'idProveedor', label: 'nombre', detail: 'nit' },
 }
 
-export async function getReportLookup(catalog: RemoteReportCatalog, search: string, page: number, signal: AbortSignal): Promise<{ options: ReportOption[]; meta: NonNullable<ApiResponse<unknown>['meta']> }> {
-  const params = new URLSearchParams({ page: String(page), pageSize: '20' })
+export async function getReportLookup(catalog: RemoteReportCatalog, search: string, page: number, signal: AbortSignal, pageSize = 20): Promise<{ options: ReportOption[]; meta: NonNullable<ApiResponse<unknown>['meta']> }> {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
   if (search) params.set('search', search)
   const response = await apiFetch<unknown>(`/${catalog}?${params}`, { signal })
   const meta = response.meta
   if (!Array.isArray(response.data) || !meta || ![meta.page, meta.pageSize, meta.total, meta.totalPages].every(Number.isInteger)
-    || meta.page !== page || meta.pageSize !== 20 || meta.total < 0 || meta.totalPages < 0) return invalid()
+    || meta.page !== page || meta.pageSize !== pageSize || meta.total < 0 || meta.totalPages < 0) return invalid()
   const fields = lookupFields[catalog]
   const options = response.data.map(row => {
     if (!object(row) || !Number.isInteger(row[fields.id]) || Number(row[fields.id]) <= 0 || typeof row[fields.label] !== 'string') return invalid()

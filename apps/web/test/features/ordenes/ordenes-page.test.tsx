@@ -10,13 +10,14 @@ import { catalogos, orden, list, urlOf, failure, tecnico, factura } from './serv
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 const cliente = { idCliente: 11, nombreMostrar: 'Cliente seleccionado', estado: 'ACTIVO' }
 const equipo = { idEquipo: 41, idCliente: 11, modelo: 'Modelo de prueba', numeroSerie: 'SERIE-0041', estado: 'ACTIVO' }
+const more = (url: URL, rows: unknown[]) => { const size = Number(url.searchParams.get('pageSize')); return json({ data: size > 10 ? rows : [], meta: { page: 1, pageSize: size, total: 25, totalPages: 3 } }) }
 function mockCreation(post: (body: unknown) => Response | Promise<Response>) {
   const fetcher = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = urlOf(input)
     if (init?.method === 'POST') return post(JSON.parse(String(init.body)))
     if (url.pathname.endsWith('/catalogos')) return json({ data: catalogos })
-    if (url.pathname.endsWith('/clientes')) return list(url.searchParams.get('page') === '2' ? [cliente] : [], Number(url.searchParams.get('page')), 2)
-    if (url.pathname.endsWith('/equipos')) return list(url.searchParams.get('page') === '2' ? [equipo] : [], Number(url.searchParams.get('page')), 2)
+    if (url.pathname.endsWith('/clientes')) return more(url, [cliente])
+    if (url.pathname.endsWith('/equipos')) return more(url, [equipo])
     throw new Error(`Unexpected request: ${input}`)
   })
   vi.stubGlobal('fetch', fetcher)
@@ -24,18 +25,31 @@ function mockCreation(post: (body: unknown) => Response | Promise<Response>) {
 }
 async function fillCreation() {
   await screen.findByRole('option', { name: 'Urgente' })
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Cliente: siguientes' })).toBeEnabled())
-  fireEvent.click(screen.getByRole('button', { name: 'Cliente: siguientes' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Cargar más resultados' }))
   await screen.findByRole('option', { name: 'Cliente seleccionado' })
-  fireEvent.change(screen.getByLabelText('Cliente *'), { target: { value: '11' } })
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Equipo: siguientes' })).toBeEnabled())
-  fireEvent.click(screen.getByRole('button', { name: 'Equipo: siguientes' }))
+  fireEvent.keyDown(screen.getByLabelText('Cliente *'), { key: 'ArrowDown' })
+  fireEvent.keyDown(screen.getByLabelText('Cliente *'), { key: 'Enter' })
+  fireEvent.click(await screen.findByRole('button', { name: 'Cargar más resultados' }))
   await screen.findByRole('option', { name: /SERIE-0041/ })
-  fireEvent.change(screen.getByLabelText('Equipo *'), { target: { value: '41' } })
+  fireEvent.click(screen.getByRole('option', { name: /SERIE-0041/ }))
   fireEvent.change(screen.getByLabelText('Prioridad *'), { target: { value: '7' } })
   fireEvent.change(screen.getByLabelText('Problema reportado *'), { target: { value: '  No enciende  ' } })
 }
 describe('órdenes conectadas', () => {
+  it('usa un solo campo por selector y avisa al elegir una fecha pasada sin enviar la orden', async () => {
+    const fetcher = mockCreation(() => json({ data: {} }, 201))
+    renderWithSession(<OrdenForm onCancel={vi.fn()} />)
+    await fillCreation()
+    expect(screen.getAllByRole('combobox', { name: 'Cliente' })).toHaveLength(1)
+    expect(screen.getAllByRole('combobox', { name: 'Equipo' })).toHaveLength(1)
+    expect(screen.queryByLabelText('Buscar equipo')).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Fecha estimada'), { target: { value: '2000-01-01' } })
+    expect(await screen.findByText(/No puedes agendar la entrega para 2000-01-01/)).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar orden' }))
+    expect(fetcher.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(0)
+    fireEvent.change(screen.getByLabelText('Equipo *'), { target: { value: 'equipo escrito sin seleccionar' } })
+    expect(await screen.findByText('Selecciona un equipo activo del cliente.')).toBeVisible()
+  })
   it('consulta filtros y páginas remotas y enlaza el detalle sin datos ficticios', async () => {
     const fetcher = vi.fn((input: RequestInfo | URL) => urlOf(input).pathname.endsWith('/catalogos') ? json({ data: catalogos }) : list([orden], Number(urlOf(input).searchParams.get('page')), 2))
     vi.stubGlobal('fetch', fetcher)
@@ -47,6 +61,14 @@ describe('órdenes conectadas', () => {
     await waitFor(() => expect(fetcher.mock.calls.some(([input]) => urlOf(input).searchParams.get('estado') === 'REPARACION' && urlOf(input).searchParams.get('page') === '1')).toBe(true))
     fireEvent.change(screen.getByLabelText('Buscar orden'), { target: { value: 'SERIE' } })
     await waitFor(() => expect(fetcher.mock.calls.some(([input]) => urlOf(input).searchParams.get('search') === 'SERIE')).toBe(true))
+  })
+  it('no marca error al elegir cliente y equipo activos (valida con la selección vigente)', async () => {
+    mockCreation(() => json({ data: { idOrden: 21, numeroOrden: 'OS-0021', estado: 'RECIBIDO' } }, 201))
+    renderWithSession(<OrdenForm onCancel={vi.fn()} />)
+    await fillCreation()
+    await waitFor(() => expect(screen.getByLabelText('Equipo *')).toHaveValue('SERIE-0041 · Modelo de prueba'))
+    expect(screen.queryByText('Selecciona un cliente activo del catálogo disponible.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Selecciona un equipo activo del cliente.')).not.toBeInTheDocument()
   })
   it('crea OrdenInput con selección en segunda página, JSON y sin actor ni estado; protege doble submit', async () => {
     let resolve!: (response: Response) => void
@@ -74,7 +96,7 @@ describe('órdenes conectadas', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Registrar orden' }))
     await screen.findByText(status === 400 ? 'Revisa los campos.' : 'El estado ha cambiado.')
     expect(screen.getByLabelText('Problema reportado *')).toHaveValue('  No enciende  ')
-    expect(screen.getByLabelText('Equipo *')).toHaveValue('41')
+    expect(screen.getByLabelText('Equipo *')).toHaveValue('SERIE-0041 · Modelo de prueba')
     if (status === 400) expect(screen.getByLabelText('Problema reportado *')).toHaveAccessibleDescription('Máximo 1000 caracteres. Describe la falla.')
     expect(fetcher.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(1)
   })

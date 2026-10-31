@@ -36,24 +36,29 @@ describe('compras HTTP', () => {
     await waitFor(() => expect(http.mock.calls.filter(([url]) => String(url).endsWith('/compras/404')).length).toBeGreaterThan(1))
     expect(writes(http)).toHaveLength(1)
   })
-  it('selectores remotos incluyen búsqueda/paginación para proveedores, bodegas y repuestos', async () => {
-    const http = mockSupply(url => ['/proveedores', '/bodegas', '/repuestos'].some(path => url.pathname.endsWith(path)) ? json(list(url.pathname.endsWith('/proveedores') ? [proveedor] : url.pathname.endsWith('/bodegas') ? [bodega] : [repuesto], Number(url.searchParams.get('page')), 3)) : undefined)
+  it('selectores remotos incluyen búsqueda y carga de más resultados para proveedores, bodegas y repuestos', async () => {
+    const http = mockSupply(url => ['/proveedores', '/bodegas', '/repuestos'].some(path => url.pathname.endsWith(path)) ? json({ data: [url.pathname.endsWith('/proveedores') ? proveedor : url.pathname.endsWith('/bodegas') ? bodega : repuesto], meta: { page: 1, pageSize: Number(url.searchParams.get('pageSize')), total: 25, totalPages: 3 } }) : undefined)
     renderWithSession(<CompraForm catalogos={{}} onCancel={() => {}} />)
     await screen.findByRole('option', { name: 'Proveedor remoto' })
-    for (const [label, resource] of [['proveedor', 'proveedores'], ['bodega destino', 'bodegas'], ['repuesto de línea 1', 'repuestos']]) {
-      fireEvent.click(screen.getByRole('button', { name: `Siguiente ${label}` }))
-      await waitFor(() => expect(http.mock.calls.some(([url]) => String(url).includes(`/${resource}?`) && String(url).includes('page=2') && String(url).includes('estado=ACTIV'))).toBe(true))
-      fireEvent.change(screen.getByLabelText(`Buscar ${label}`), { target: { value: 'remoto' } })
+    const resources = ['proveedores', 'bodegas', 'repuestos']
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Cargar más resultados' })).toHaveLength(3))
+    for (const resource of resources) {
+      fireEvent.click(screen.getAllByRole('button', { name: 'Cargar más resultados' })[0])
+      await waitFor(() => expect(http.mock.calls.some(([url]) => String(url).includes(`/${resource}?`) && String(url).includes('pageSize=30') && String(url).includes('estado=ACTIV'))).toBe(true))
+    }
+    for (const [label, resource] of [['Proveedor', 'proveedores'], ['Bodega destino', 'bodegas'], ['Repuesto de línea 1', 'repuestos']]) {
+      fireEvent.change(screen.getByLabelText(`${label} *`), { target: { value: 'remoto' } })
       await waitFor(() => expect(http.mock.calls.some(([url]) => String(url).includes(`/${resource}?`) && String(url).includes('search=remoto') && String(url).includes('page=1'))).toBe(true))
     }
   })
   it('conserva selección aunque cambie la página o búsqueda del selector', async () => {
-    mockSupply(url => url.pathname.endsWith('/proveedores') ? json(list(url.searchParams.get('search') ? [] : [proveedor])) : undefined)
+    const http = mockSupply(url => url.pathname.endsWith('/proveedores') ? json(list(url.searchParams.get('search') ? [] : [proveedor])) : undefined)
     // A controlled selection remains available when the new page has no matching option.
     renderWithSession(<SupplySelector resource="proveedores" label="Proveedor" id="select-proveedor" value="101" selected={{ id: 101, nombre: proveedor.nombre }} onSelect={() => {}} />)
     await screen.findByRole('option', { name: proveedor.nombre })
-    fireEvent.change(screen.getByLabelText('Buscar proveedor'), { target: { value: 'otro' } })
-    await waitFor(() => expect(screen.getByLabelText('Proveedor')).toHaveValue('101'))
+    fireEvent.change(screen.getByLabelText('Proveedor'), { target: { value: 'otro' } })
+    await waitFor(() => expect(http.mock.calls.some(([url]) => String(url).includes('search=otro'))).toBe(true))
+    expect(screen.getByLabelText('Proveedor')).toHaveValue(proveedor.nombre)
     expect(screen.getByRole('option', { name: proveedor.nombre })).toBeInTheDocument()
   })
   it('recepción confirmada envía {} una sola vez, invalida stock/movimientos/compras/dashboard', async () => {
@@ -103,7 +108,7 @@ describe('compras HTTP', () => {
   })
   it('detalle mantiene valores históricos del servidor sin catálogo ni totales calculados', () => {
     renderWithSession(<CompraDetalle compra={compra} />)
-    expect(screen.getByText('Recepción (UTC)').nextElementSibling).toHaveTextContent('—')
+    expect(screen.getByText('Recepción (Guatemala)').nextElementSibling).toHaveTextContent('—')
     expect(screen.getByText('Documento del proveedor').nextElementSibling).toHaveTextContent('—')
     expect(screen.getByRole('table')).toHaveTextContent('Q 9.99')
     expect(screen.getByRole('table')).toHaveTextContent('Q 19.98')
