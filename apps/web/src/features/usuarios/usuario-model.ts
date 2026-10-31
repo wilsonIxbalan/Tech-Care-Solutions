@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { optionalText, requiredText, selection } from '@/lib/draft-schema'
+import { phoneMessage, phonePattern } from '@/lib/client-validation'
+import { optionalText, personName, requiredText, selection } from '@/lib/draft-schema'
 import { roleCodes } from '@/features/auth/roles'
 import type { RoleCode } from '@/types/api'
 
@@ -7,7 +8,7 @@ import type { RoleCode } from '@/types/api'
 export interface UsuarioRow { idUsuario: number; nombreUsuario: string; nombreCompleto: string; email: string; telefono: string | null; activo: boolean; roles: RoleCode[]; fechaCreacion: string; ultimoAcceso: string | null }
 export interface RolRow { idRol: number; codigo: string; nombre: string; descripcion: string | null; activo: boolean; permisos?: readonly { codigo: string; descripcion: string }[] }
 export interface AsignacionRow { idUsuario: number; idRol: number; fechaAsignacion: string }
-export const usuarioSchema = z.object({ nombreUsuario: requiredText(50).refine(value => !value.includes('@'), 'El nombre de usuario no puede contener @.'), nombreCompleto: requiredText(150), email: requiredText(120).pipe(z.email('Escribe un correo válido.')), telefono: optionalText(20), activo: z.enum(['1', '0']), password: z.string(), roles: z.array(z.enum(roleCodes)).min(1, 'Selecciona al menos un rol.').refine(values => new Set(values).size === values.length, 'No repitas roles.') })
+export const usuarioSchema = z.object({ nombreUsuario: requiredText(50).refine(value => !value.includes('@'), 'El nombre de usuario no puede contener @.').refine(value => value.includes('@') || /^[A-Za-z0-9._-]+$/.test(value), 'Usa solo letras, números, punto, guion o guion bajo, sin espacios.'), nombreCompleto: personName(150), email: requiredText(120).pipe(z.email('Escribe un correo válido.')), telefono: optionalText(20).refine(value => value === '' || phonePattern.test(value), phoneMessage), activo: z.enum(['1', '0']), password: z.string(), roles: z.array(z.enum(roleCodes)).min(1, 'Selecciona al menos un rol.').refine(values => new Set(values).size === values.length, 'No repitas roles.') })
 export function createUsuarioSchema(editing = false) {
   return usuarioSchema.superRefine((value, ctx) => {
     if ((!editing || value.password !== '') && (value.password.length < 12 || value.password.length > 128)) {

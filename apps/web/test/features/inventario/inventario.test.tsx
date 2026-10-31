@@ -10,7 +10,9 @@ afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 async function fillAdjustment() {
   await screen.findByRole('option', { name: /Bodega central/ })
   await screen.findByRole('option', { name: /Repuesto remoto/ })
-  for (const [label, value] of [['Bodega del ajuste *', '303'], ['Repuesto del ajuste *', '202'], ['Cantidad del ajuste *', '4'], ['Motivo del ajuste *', ' Conteo físico ']]) fireEvent.change(screen.getByLabelText(label), { target: { value } })
+  fireEvent.click(screen.getByRole('option', { name: /Bodega central/ }))
+  fireEvent.click(screen.getByRole('option', { name: /Repuesto remoto/ }))
+  for (const [label, value] of [['Cantidad del ajuste *', '4'], ['Motivo del ajuste *', ' Conteo físico ']]) fireEvent.change(screen.getByLabelText(label), { target: { value } })
 }
 describe('inventario HTTP', () => {
   it('solo admite ajustes con cantidad positiva SQL y motivo; mínimo permite cero', () => {

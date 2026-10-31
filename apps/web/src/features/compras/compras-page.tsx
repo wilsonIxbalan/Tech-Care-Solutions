@@ -21,6 +21,7 @@ import { CompraForm } from './compra-form'
 import { CompraDetalle } from './compra-detalle'
 import { RecibirCompra } from './recibir-compra'
 import type { CompraCatalogos } from './compra-schema'
+import { useDebouncedValue } from '@/lib/use-debounced-value'
 
 export function ComprasPage({ catalogos = {}, compras, detalle, detalles }: { catalogos?: CompraCatalogos; compras?: ReceivedData<CompraResumenDto>; detalle?: CompraDetalleDto; detalles?: ReceivedData<CompraDetalleDto> }) {
   const { user } = useSession()
@@ -30,7 +31,8 @@ export function ComprasPage({ catalogos = {}, compras, detalle, detalles }: { ca
   const [selected, setSelected] = useState<{ proveedor?: SupplyOption; bodega?: SupplyOption }>({})
   const [filters, setFilters] = useState({ search: '', estado: '', idProveedor: '', idBodegaDestino: '', fechaDesde: '', fechaHasta: '', page: 1, pageSize: DEFAULT_PAGE_SIZE })
   const datesValid = (!filters.fechaDesde || formatCivilDate(filters.fechaDesde) !== '—') && (!filters.fechaHasta || formatCivilDate(filters.fechaHasta) !== '—') && (!filters.fechaDesde || !filters.fechaHasta || filters.fechaDesde <= filters.fechaHasta)
-  const query = useSupplyList<CompraResumenDto>('compras', filters, compras === undefined && datesValid)
+  const search = useDebouncedValue(filters.search)
+  const query = useSupplyList<CompraResumenDto>('compras', { ...filters, search }, compras === undefined && datesValid)
   const detailQuery = useQuery({ queryKey: ['compras', 'detalle', user?.idUsuario, idCompra], retry: false, enabled: access.purchases && idCompra > 0 && !detalle && !detalles,
     queryFn: ({ signal }) => apiFetch<CompraDetalleDto>(`/compras/${idCompra}`, { signal }),
   })
@@ -42,7 +44,7 @@ export function ComprasPage({ catalogos = {}, compras, detalle, detalles }: { ca
     <div className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">
       <div className="flex items-center gap-2 border-b pb-3 text-primary"><SlidersHorizontal className="size-4" aria-hidden="true" /><h2 className="text-sm font-semibold">Filtros de compras</h2></div>
       <div className="grid items-start gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <TextField id="compras-search" label="Buscar compras" type="search" maxLength={150} value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value, page: 1 })} />
+      <TextField id="compras-search" label="Buscar compras" type="search" placeholder="Buscar por número de compra, proveedor o documento…" maxLength={150} value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value, page: 1 })} />
       <SelectField id="compras-estado" label="Estado de compra" placeholder="Todos" options={['PENDIENTE', 'RECIBIDA', 'ANULADA'].map(value => ({ value, label: value }))} value={filters.estado} onChange={e => setFilters({ ...filters, estado: e.target.value, page: 1 })} />
       <TextField id="compras-desde" label="Fecha desde" type="date" value={filters.fechaDesde} onChange={e => setFilters({ ...filters, fechaDesde: e.target.value, page: 1 })} />
       <TextField id="compras-hasta" label="Fecha hasta (inclusive)" type="date" value={filters.fechaHasta} onChange={e => setFilters({ ...filters, fechaHasta: e.target.value, page: 1 })} />

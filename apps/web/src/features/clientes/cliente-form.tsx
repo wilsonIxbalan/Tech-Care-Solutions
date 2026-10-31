@@ -4,7 +4,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { TextField } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
+import { Label, RequiredMark } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { clienteSchema } from '@/features/clientes/cliente-schema'
 import type { ClienteFormValues } from '@/features/clientes/cliente-schema'
@@ -73,7 +73,7 @@ export function ClienteForm({ cliente, onCancel, onSaved }: { cliente?: ClienteD
         >
           <fieldset disabled={!allowed || formState.isSubmitting} className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="cliente-tipo">Tipo de cliente *</Label>
+            <Label htmlFor="cliente-tipo">Tipo de cliente <RequiredMark /></Label>
             <NativeSelect
               id="cliente-tipo"
               autoFocus
@@ -93,6 +93,7 @@ export function ClienteForm({ cliente, onCancel, onSaved }: { cliente?: ClienteD
               <Fragment key="individual">
                 <TextField
                   id="cliente-nombres"
+                  placeholder="María José"
                   label="Nombres"
                   autoComplete="given-name"
                   required
@@ -102,6 +103,7 @@ export function ClienteForm({ cliente, onCancel, onSaved }: { cliente?: ClienteD
                 />
                 <TextField
                   id="cliente-apellidos"
+                  placeholder="López Pérez"
                   label="Apellidos"
                   autoComplete="family-name"
                   required
@@ -114,6 +116,7 @@ export function ClienteForm({ cliente, onCancel, onSaved }: { cliente?: ClienteD
               <Fragment key="empresarial">
                 <TextField
                   id="cliente-razon-social"
+                  placeholder="Tecnologías del Sur, S.A."
                   label="Razón social"
                   autoComplete="organization"
                   required
@@ -123,6 +126,8 @@ export function ClienteForm({ cliente, onCancel, onSaved }: { cliente?: ClienteD
                 />
                 <TextField
                   id="cliente-contacto"
+                  placeholder="Nombre de la persona de contacto"
+                  autoComplete="name"
                   label="Nombre de contacto"
                   maxLength={120}
                   error={form.getFieldState('nombreContacto', formState).error?.message}
@@ -156,6 +161,7 @@ export function ClienteForm({ cliente, onCancel, onSaved }: { cliente?: ClienteD
             />
             <TextField
               id="cliente-email"
+              placeholder="nombre@empresa.com"
               label="Correo electrónico"
               type="email"
               autoComplete="email"
@@ -165,6 +171,7 @@ export function ClienteForm({ cliente, onCancel, onSaved }: { cliente?: ClienteD
             />
             <TextField
               id="cliente-direccion"
+              placeholder="Calle, zona, municipio"
               label="Dirección"
               autoComplete="street-address"
               maxLength={250}

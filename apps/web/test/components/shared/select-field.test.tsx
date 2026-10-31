@@ -23,7 +23,7 @@ describe('SelectField: valores vacios segun el uso', () => {
   })
   it('una selección obligatoria conserva indicacion inicial pero no permite elegirla', () => {
     render(<SelectField id="required" label="Proveedor" required value="" options={options} onChange={() => {}} />)
-    const select = screen.getByRole('combobox', { name: 'Proveedor *' }) as HTMLSelectElement
+    const select = screen.getByRole('combobox', { name: 'Proveedor' }) as HTMLSelectElement
     const placeholder = select.querySelector('option[value=""]') as HTMLOptionElement
     expect(placeholder.disabled).toBe(true)
     expect(placeholder.hidden).toBe(true)

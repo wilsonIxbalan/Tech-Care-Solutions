@@ -9,7 +9,7 @@ import { useServiceMutation } from './api'
 
 export interface ServiceField {
   name: string; label: string; kind?: 'area' | 'select' | 'date'; required?: boolean; maxLength?: number
-  help?: string; options?: { value: string; label: string }[]; inputMode?: 'decimal' | 'numeric'
+  help?: string; placeholder?: string; autoComplete?: string; options?: { value: string; label: string }[]; inputMode?: 'decimal' | 'numeric'
 }
 function unconfirmedResult(error: Error | null) {
   return error instanceof ApiError && (error.status === 0 || error.status >= 500 || error.code === 'RESPUESTA_INVALIDA')
@@ -59,10 +59,10 @@ export function ServiceForm<T extends FieldValues>({ title, path, schema, fields
     <h3 className="font-semibold">{title}</h3>
     <fieldset disabled={mutation.isPending} className="space-y-4" onChange={() => { setConfirmation(false); setSaved(false) }}>
       {fields.map(field => {
-        const props = { id: `${title}-${field.name}`, label: field.label, required: field.required, help: field.help, error: form.formState.errors[field.name]?.message as string | undefined, ...form.register(field.name as Path<T>) }
+        const props = { id: `${title}-${field.name}`, label: field.label, required: field.required, help: field.help, placeholder: field.placeholder, error: form.formState.errors[field.name]?.message as string | undefined, ...form.register(field.name as Path<T>) }
         return field.kind === 'area' ? <AreaField key={field.name} {...props} maxLength={field.maxLength} />
           : field.kind === 'select' ? <SelectField key={field.name} {...props} options={field.options ?? []} />
-            : <TextField key={field.name} {...props} type={field.kind === 'date' ? 'date' : 'text'} inputMode={field.inputMode} maxLength={field.maxLength} />
+            : <TextField key={field.name} {...props} type={field.kind === 'date' ? 'date' : 'text'} inputMode={field.inputMode} maxLength={field.maxLength} autoComplete={field.autoComplete ?? "off"} />
       })}
       {children}
     </fieldset>

@@ -21,6 +21,6 @@ export function permiteBorradorEntrega(orden: OrdenEntrega) {
 export function createEntregaSchema(ordenes?: readonly OrdenEntrega[]) {
   return z.object({
     idOrden: selection(ordenes?.filter(permiteBorradorEntrega).map(o => String(o.idOrden)), 'una orden con estado, factura y saldo verificables'),
-    nombreRecibe: requiredText(150), documentoRecibe: optionalText(30), observaciones: optionalText(500),
+    nombreRecibe: requiredText(150).regex(/^\p{L}[\p{L} '.-]*$/u, 'El nombre solo puede tener letras, espacios, apóstrofo, punto y guion.'), documentoRecibe: optionalText(30).refine(value => value === '' || /^\d{13}$/.test(value.replace(/\s/g, '')), 'El DPI debe tener 13 dígitos (se permiten espacios).'), observaciones: optionalText(500),
   })
 }

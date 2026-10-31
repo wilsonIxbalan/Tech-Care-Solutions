@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as sql from 'mssql';
 import { ApiError, invalid, notFound } from '../../common/api-error';
 import { databaseDiagnostics } from '../../database/database-diagnostics';
+import { guatemalaYearMonth } from '../../common/business-time';
 import { dateRange, orderStates, ReportQuery } from '../../common/query.dto';
 import {
   DatabaseService,
@@ -67,6 +68,40 @@ export const reports = {
   trazabilidad: { procedure: 'usp_ReporteTrazabilidad', keys: ['idOrden'] },
 } as const;
 export const completeReports = new Set(['historial-cliente', 'historial-equipo', 'trazabilidad']);
+
+interface IngresoMes {
+  Anio: number; Mes: number; CantidadFacturas: number;
+  TotalManoObra: bigint; TotalRepuestos: bigint; Subtotal: bigint; Impuesto: bigint; Total: bigint;
+}
+/** DECIMAL(12,2) llega como number o string: pasa a centavos enteros para sumar sin error de coma flotante. */
+function toCents(value: unknown): bigint {
+  if (value === null || value === undefined) return 0n;
+  return BigInt(Math.round(Number(value) * 100));
+}
+/** Texto equivalente a CAST(x AS DECIMAL(38,2)) del SP, para la búsqueda. */
+function centsText(cents: bigint): string {
+  const abs = cents < 0n ? -cents : cents;
+  return `${cents < 0n ? '-' : ''}${abs / 100n}.${String(abs % 100n).padStart(2, '0')}`;
+}
+export function aggregateIngresos(invoices: Row[]): IngresoMes[] {
+  const months = new Map<number, IngresoMes>();
+  for (const invoice of invoices) {
+    const { anio, mes } = guatemalaYearMonth(new Date(invoice.FechaFactura as Date));
+    const key = anio * 12 + mes;
+    let m = months.get(key);
+    if (!m) {
+      m = { Anio: anio, Mes: mes, CantidadFacturas: 0, TotalManoObra: 0n, TotalRepuestos: 0n, Subtotal: 0n, Impuesto: 0n, Total: 0n };
+      months.set(key, m);
+    }
+    m.CantidadFacturas += 1;
+    m.TotalManoObra += toCents(invoice.SubtotalManoObra);
+    m.TotalRepuestos += toCents(invoice.SubtotalRepuestos);
+    m.Subtotal += toCents(invoice.Subtotal);
+    m.Impuesto += toCents(invoice.Impuesto);
+    m.Total += toCents(invoice.Total);
+  }
+  return [...months.entries()].sort((a, b) => a[0] - b[0]).map(([, m]) => m);
+}
 
 @Injectable()
 export class ReportsRepository {
@@ -165,6 +200,7 @@ export class ReportsRepository {
           ),
         );
     }
+    if (slug === 'ingresos') return this.ingresos(query, range, controls);
     if (!completeReports.has(slug) && query.search !== undefined)
       params.push(param('Search', sql.NVarChar(150), query.search));
     try {
@@ -177,6 +213,44 @@ export class ReportsRepository {
           'Los reportes necesitan actualizar sus procedimientos SQL. Contacta a administración.', undefined, error);
       throw error;
     }
+  }
+  /** Ingresos por mes de Guatemala: agrupa en TS porque FechaFactura se guarda en UTC. */
+  private async ingresos(
+    query: ReportQuery,
+    range: { desde: Date | null; hasta: Date | null },
+    controls: Param[],
+  ): Promise<Row[][]> {
+    const control = (name: string) => controls.find((p) => p.name === name)?.value as number | null | undefined;
+    const page = control('Page');
+    const pageSize = control('PageSize') ?? 20;
+    const maxRows = control('MaxRows');
+    const result = await this.db.query(
+      `SELECT FechaFactura,SubtotalManoObra,SubtotalRepuestos,Subtotal,Impuesto,Total FROM dbo.vw_Facturas
+ WHERE Estado<>'ANULADA' AND (@IdCliente IS NULL OR IdCliente=@IdCliente)
+ AND (@Desde IS NULL OR FechaFactura>=@Desde) AND (@HastaExclusiva IS NULL OR FechaFactura<@HastaExclusiva);`,
+      [
+        int('IdCliente', query.idCliente),
+        param('Desde', sql.DateTime2(0), range.desde),
+        param('HastaExclusiva', sql.DateTime2(0), range.hasta),
+      ],
+    );
+    let rows = aggregateIngresos(result.recordset);
+    if (query.search !== undefined) {
+      const needle = query.search.toLowerCase();
+      rows = rows.filter((r) => [r.TotalManoObra, r.TotalRepuestos, r.Subtotal, r.Impuesto, r.Total]
+        .some((cents) => centsText(cents).includes(needle)));
+    }
+    if (maxRows != null && rows.length > maxRows)
+      throw new ApiError(413, 'EXPORTACION_DEMASIADO_GRANDE',
+        'La exportación supera 10000 filas en total. Ajusta los filtros; no se ha truncado ningún conjunto.');
+    const total = rows.length;
+    const slice = page == null ? rows : rows.slice((page - 1) * pageSize, page * pageSize);
+    const data: Row[] = slice.map((r) => ({
+      Anio: r.Anio, Mes: r.Mes, CantidadFacturas: String(r.CantidadFacturas),
+      TotalManoObra: Number(r.TotalManoObra) / 100, TotalRepuestos: Number(r.TotalRepuestos) / 100,
+      Subtotal: Number(r.Subtotal) / 100, Impuesto: Number(r.Impuesto) / 100, Total: Number(r.Total) / 100,
+    }));
+    return page == null ? [data] : [data, [{ TotalRows: String(total) }]];
   }
   async orderMovements(id: number) {
     return (

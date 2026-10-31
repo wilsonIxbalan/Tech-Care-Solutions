@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { SelectField, TextField } from '@/components/shared/form-fields'
-import { ErrorState, LoadingState } from '@/components/shared/states'
+import { SelectField } from '@/components/shared/form-fields'
+import { SearchSelect } from '@/components/shared/search-select'
+import { useDebouncedValue } from '@/lib/use-debounced-value'
+import { ErrorState } from '@/components/shared/states'
 import { ApiError } from '@/lib/api-client'
 import type { ApiResponse } from '@/types/api'
 import { ambiguousResult, useSupplyList } from './api'
@@ -29,15 +31,24 @@ export function SupplySelector({ resource, label, id, value, selected, onSelect,
   selected?: SupplyOption; onSelect: (option: SupplyOption | undefined) => void; error?: string
   active?: boolean; required?: boolean; disabled?: boolean; options?: readonly SupplyOption[]
 }) {
-  const [filters, setFilters] = useState({ search: '', page: 1, pageSize: 10 })
-  const query = useSupplyList<Record<string, unknown>>(resource, { ...filters, estado: active ? resource === 'bodegas' ? 'ACTIVA' : 'ACTIVO' : undefined }, !disabled && options === undefined)
+  const [search, setSearch] = useState('')
+  const [pageSize, setPageSize] = useState(10)
+  const debounced = useDebouncedValue(search.trim())
+  const query = useSupplyList<Record<string, unknown>>(resource, { search: debounced, page: 1, pageSize, estado: active ? resource === 'bodegas' ? 'ACTIVA' : 'ACTIVO' : undefined }, !disabled && options === undefined)
   const key = resource === 'repuestos' ? 'idRepuesto' : resource === 'bodegas' ? 'idBodega' : 'idProveedor'
   const rows = options ?? query.data?.data.map(row => ({ id: Number(row[key]), nombre: `${row.codigo ? `${row.codigo} · ` : ''}${String(row.nombre)}` })) ?? []
   const persistent = selected && !rows.some(row => row.id === selected.id) ? [selected] : []
   const available = [...persistent, ...rows]
-  return <div className="space-y-3 rounded-lg border p-3">
-    {options === undefined && <TextField id={`${id}-search`} label={`Buscar ${label.toLocaleLowerCase()}`} type="search" maxLength={150} disabled={disabled} value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value, page: 1 })} />}
+  if (options !== undefined) return <div className="space-y-3 rounded-lg border p-3">
     <SelectField id={id} label={label} value={value} required={required} disabled={disabled} options={available.map(row => ({ value: String(row.id), label: row.nombre }))} placeholder={required ? 'Selecciona una opción' : 'Todos'} error={error} onChange={e => onSelect(available.find(row => String(row.id) === e.target.value))} />
-    {options === undefined && !disabled && (query.isPending ? <LoadingState label={`Consultando ${label.toLowerCase()}…`} /> : query.isError ? <ErrorState description={query.error.message} onRetry={() => void query.refetch()} /> : <SupplyPagination label={label.toLowerCase()} page={filters.page} meta={query.data.meta} busy={query.isFetching} onPage={page => setFilters({ ...filters, page })} />)}
+  </div>
+  const current = value ? selected ?? available.find(row => String(row.id) === value) ?? null : null
+  return <div className="space-y-3 rounded-lg border p-3">
+    <SearchSelect id={id} label={label} required={required} disabled={disabled} error={error} selected={current} rows={available}
+      valueOf={row => row.id} labelOf={row => row.nombre} search={search} placeholder={`Busca ${label.toLocaleLowerCase('es')} por nombre o código…`}
+      loading={!disabled && (query.isFetching || search.trim() !== debounced)}
+      hasMore={(query.data?.meta?.total ?? 0) > pageSize && pageSize < 100} onLoadMore={() => setPageSize(size => Math.min(100, size + 20))}
+      onSearch={text => { setSearch(text); setPageSize(10) }} onSelect={row => onSelect(row ?? undefined)} />
+    {!disabled && query.isError && <ErrorState description={query.error.message} onRetry={() => void query.refetch()} />}
   </div>
 }

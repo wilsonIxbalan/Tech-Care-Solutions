@@ -13,17 +13,20 @@ import { formatGuatemalaDateTime } from '@/lib/format'
 import type { OrdenCatalogos } from './orden-catalogos'
 import { OrdenForm } from './orden-form'
 import { canService, orderStates, useOrdenes, useServiceCatalogos } from './api'
+import { useDebouncedValue } from '@/lib/use-debounced-value'
+import { PermissionNotice } from '@/components/shared/permission-notice'
 
 export function OrdenList({ initialState = '', title = 'Órdenes' }: { initialState?: string; title?: string }) {
   const [filters, setFilters] = useState({ page: 1, pageSize: DEFAULT_PAGE_SIZE, search: '', estado: initialState, idCliente: '', idEquipo: '', idPrioridad: '', idTecnico: '', fechaDesde: '', fechaHasta: '' })
   const validDates = !filters.fechaDesde || !filters.fechaHasta || filters.fechaDesde <= filters.fechaHasta
-  const orders = useOrdenes(filters, validDates)
+  const search = useDebouncedValue(filters.search)
+  const orders = useOrdenes({ ...filters, search }, validDates)
   const catalogos = useServiceCatalogos()
   const change = (key: keyof typeof filters, value: string) => setFilters({ ...filters, [key]: value, page: 1 })
   return <section className="space-y-4" aria-label={title}>
     <h2 className="text-xl font-semibold">{title}</h2>
     <div className="grid gap-3 md:grid-cols-3">
-      <TextField id={`${title}-search`} label="Buscar orden" type="search" maxLength={150} value={filters.search} onChange={e => change('search', e.target.value)} />
+      <TextField id={`${title}-search`} label="Buscar orden" type="search" placeholder="Buscar por número de orden, cliente o serie…" maxLength={150} value={filters.search} onChange={e => change('search', e.target.value)} />
       <SelectField id={`${title}-estado`} label="Estado" placeholder="Todos" options={orderStates.map(value => ({ value, label: value }))} value={filters.estado} onChange={e => change('estado', e.target.value)} />
       <SelectField id={`${title}-prioridad`} label="Prioridad" help="Filtra por prioridad de recepción." placeholder="Todas" options={catalogos.data?.data.prioridades.map(p => ({ value: String(p.id), label: p.nombre })) ?? []} value={filters.idPrioridad} onChange={e => change('idPrioridad', e.target.value)} />
       <SelectField id={`${title}-tecnico`} label="Técnico" help="Filtra por el técnico de servicio." placeholder="Todos" options={catalogos.data?.data.tecnicos.map(t => ({ value: String(t.id), label: t.nombre })) ?? []} value={filters.idTecnico} onChange={e => change('idTecnico', e.target.value)} />
@@ -49,6 +52,7 @@ export function OrdenesPage(_props: { catalogos?: OrdenCatalogos }) {
   const { user } = useSession()
   const navigate = useNavigate()
   return <div className="space-y-5"><PageHeader eyebrow="TechCare / Recepción" title="Órdenes de servicio" description="Recepción y seguimiento de equipos." actions={canService(user, 'ORDENES_CREAR') && !showForm && <Button onClick={() => setShowForm(true)}>Nueva orden</Button>} />
+    <PermissionNotice permission="ORDENES_CREAR" action="registrar órdenes de servicio" />
     {showForm && <OrdenForm onCancel={() => setShowForm(false)} onCreated={id => navigate(`/ordenes/${id}`)} />}
     <OrdenList />
   </div>

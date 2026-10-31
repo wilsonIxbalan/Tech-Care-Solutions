@@ -27,13 +27,13 @@ export function ProveedorForm({ onCancel, proveedor, onSaved }: { onCancel: () =
   }}>
     <fieldset disabled={blocked} className="space-y-4">
     <div className="grid gap-4 sm:grid-cols-2">
-      <TextField id="proveedor-nit" label="NIT" required maxLength={20} error={errors.nit?.message} {...form.register('nit')} />
-      <TextField id="proveedor-nombre" label="Nombre" required maxLength={150} error={errors.nombre?.message} {...form.register('nombre')} />
-      <TextField id="proveedor-contacto" label="Nombre de contacto" maxLength={120} error={errors.nombreContacto?.message} {...form.register('nombreContacto')} />
-      <TextField id="proveedor-telefono" label="Teléfono" type="tel" required maxLength={20} error={errors.telefono?.message} {...form.register('telefono')} />
-      <TextField id="proveedor-email" label="Correo electrónico" type="email" maxLength={120} error={errors.email?.message} {...form.register('email')} />
+      <TextField id="proveedor-nit" placeholder="1234567-9" autoComplete="off" label="NIT" required maxLength={20} error={errors.nit?.message} {...form.register('nit')} />
+      <TextField id="proveedor-nombre" placeholder="Distribuidora Tecnológica, S.A." autoComplete="organization" label="Nombre" required maxLength={150} error={errors.nombre?.message} {...form.register('nombre')} />
+      <TextField id="proveedor-contacto" placeholder="Nombre de la persona de contacto" autoComplete="name" label="Nombre de contacto" maxLength={120} error={errors.nombreContacto?.message} {...form.register('nombreContacto')} />
+      <TextField id="proveedor-telefono" inputMode="tel" placeholder="5555 1234" autoComplete="tel" label="Teléfono" type="tel" required maxLength={20} error={errors.telefono?.message} {...form.register('telefono')} />
+      <TextField id="proveedor-email" placeholder="nombre@empresa.com" autoComplete="email" label="Correo electrónico" type="email" maxLength={120} error={errors.email?.message} {...form.register('email')} />
     </div>
-    <AreaField id="proveedor-direccion" label="Dirección" maxLength={250} error={errors.direccion?.message} {...form.register('direccion')} />
+    <AreaField id="proveedor-direccion" placeholder="Calle, zona, municipio" autoComplete="street-address" label="Dirección" maxLength={250} error={errors.direccion?.message} {...form.register('direccion')} />
     <SelectField id="proveedor-estado" label="Estado del proveedor" value={estado} options={['ACTIVO', 'INACTIVO'].map(value => ({ value, label: value }))} onChange={e => setEstado(e.target.value as ProveedorRow['estado'])} />
     </fieldset>
     <SupplyError error={save.error} />

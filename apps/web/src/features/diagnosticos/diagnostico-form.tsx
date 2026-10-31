@@ -13,7 +13,7 @@ export function DiagnosticoForm({ orden, onCancel }: { orden?: OrdenDetalleDto; 
   const allowed = ['RECIBIDO', 'DIAGNOSTICO'].includes(orden.estado) && !orden.diagnosticos.some(d => d.estado === 'ACTIVO')
   if (!allowed) return null
   return <ServiceForm title="Registrar diagnóstico" path={`/ordenes/${orden.idOrden}/diagnostico`} schema={diagnosticoInputSchema} onCancel={onCancel} submitLabel="Registrar diagnóstico"
-    fields={[{ name: 'descripcion', label: 'Descripción del diagnóstico', kind: 'area', required: true, maxLength: 1000 }, { name: 'costoManoObraEstimado', label: 'Costo estimado de mano de obra', required: true, inputMode: 'decimal', help: 'Se permite cero. Hasta dos decimales, sin separadores de miles.' }]}>
+    fields={[{ name: 'descripcion', label: 'Descripción del diagnóstico', kind: 'area', required: true, maxLength: 1000, placeholder: 'Falla encontrada y causa probable' }, { name: 'costoManoObraEstimado', label: 'Costo estimado de mano de obra', required: true, inputMode: 'decimal', maxLength: 13, placeholder: '0.00', help: 'Se permite cero. Hasta dos decimales, sin separadores de miles.' }]}>
     <p className="text-sm text-muted-foreground">Técnico responsable: {user?.nombreCompleto}. Registra el diagnóstico y la estimación de mano de obra antes de iniciar la reparación.</p>
   </ServiceForm>
 }

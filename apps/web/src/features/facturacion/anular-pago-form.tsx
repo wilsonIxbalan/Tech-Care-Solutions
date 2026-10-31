@@ -31,7 +31,7 @@ export function AnularPagoForm({ pago, idOrden, allowed, onCancel, onSaved }: {
   return <section className="space-y-4 rounded-lg border p-4">
     <form aria-label="Anular pago" noValidate className="space-y-4" onSubmit={form.handleSubmit(values => { if (allowed && pago.estado === 'APLICADO' && !write.isPending && !isUnconfirmed(write.error)) setConfirmation(values) })}>
       <h3 className="font-semibold">Anular pago #{pago.idPago} · {formatMoney(pago.monto)}</h3>
-      <AreaField id="pago-motivo" label="Motivo de anulación" required maxLength={300} disabled={write.isPending || confirmation !== null} error={form.formState.errors.motivo?.message} {...form.register('motivo')} />
+      <AreaField id="pago-motivo" placeholder="Explica por qué se anula el pago" label="Motivo de anulación" required maxLength={300} disabled={write.isPending || confirmation !== null} error={form.formState.errors.motivo?.message} {...form.register('motivo')} />
       {!confirmation && <BillingError error={write.error} />}
       {!allowed && <p role="alert" className="text-sm">No se puede anular este pago. Comprueba el estado de la orden; una entrega impide la anulación.</p>}
       <div className="flex justify-end gap-3"><Button type="button" variant="outline" disabled={write.isPending} onClick={onCancel}>Cancelar</Button><Button type="submit" variant="destructive" disabled={!allowed || pago.estado !== 'APLICADO' || write.isPending || confirmation !== null || isUnconfirmed(write.error)}>Revisar anulación</Button></div>

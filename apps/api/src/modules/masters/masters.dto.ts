@@ -64,9 +64,14 @@ export class PartPatch extends PartialType(PartInput, {
   skipNullProperties: false,
 }) {}
 export class SupplierInput {
-  @Text(20) nit!: string;
+  @Text(20)
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim().toUpperCase() : value)
+  @ValidateBy({ name: 'validNit', validator: { validate: validNit, defaultMessage: () => 'Escribe un NIT válido con su dígito verificador (por ejemplo, 1234567-9) o CF para consumidor final.' } })
+  nit!: string;
   @Text(150) nombre!: string;
-  @Text(20) telefono!: string;
+  @Text(20)
+  @Matches(phonePattern, { message: 'Escribe un teléfono de Guatemala de 8 dígitos, que inicie entre 2 y 7; puedes anteponer +502.' })
+  telefono!: string;
   @Text(120, true, true) nombreContacto?: string | null;
   @Text(120, true, true, true) email?: string | null;
   @Text(250, true, true) direccion?: string | null;
@@ -88,7 +93,9 @@ export class UserInput {
   @Text(50) nombreUsuario!: string;
   @Text(150) nombreCompleto!: string;
   @Text(120, false, false, true) email!: string;
-  @Text(20, true, true) telefono?: string | null;
+  @Text(20, true, true)
+  @Matches(phonePattern, { message: 'Escribe un teléfono de Guatemala de 8 dígitos, que inicie entre 2 y 7; puedes anteponer +502.' })
+  telefono?: string | null;
   @ApiProperty({
     type: String,
     format: 'password',

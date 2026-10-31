@@ -1,3 +1,4 @@
+import { Matches } from 'class-validator';
 import { Choice, CivilDate, Decimal, Id, Text } from '../../common/validation';
 export class OrderInput {
   @Id() idCliente!: number;
@@ -32,8 +33,12 @@ export class StateInput {
   @Text(500) observacion!: string;
 }
 export class DeliveryInput {
-  @Text(150) nombreRecibe!: string;
-  @Text(30, true, true) documentoRecibe?: string | null;
+  @Text(150)
+  @Matches(/^[\p{L}\p{M}][\p{L}\p{M} '’.-]*$/u, { message: 'El nombre solo puede tener letras, espacios, apóstrofo, punto y guion.' })
+  nombreRecibe!: string;
+  @Text(30, true, true)
+  @Matches(/^\s*(?:\d\s*){13}$/, { message: 'Escribe un DPI de 13 dígitos (se permiten espacios).' })
+  documentoRecibe?: string | null;
   @Text(500, true, true) observaciones?: string | null;
 }
 export class EmptyInput {}

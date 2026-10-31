@@ -13,6 +13,7 @@ import { FacturacionForm } from './facturacion-form'
 import { FacturaDetalle } from './factura-detalle'
 import { PagosFactura } from './pagos-factura'
 import { facturasReadPermissions, useFactura, useFacturas, type FacturaFilters } from './api'
+import { PermissionNotice } from '@/components/shared/permission-notice'
 
 const initialFilters: FacturaFilters = { page: 1, pageSize: DEFAULT_PAGE_SIZE, search: '', estado: '', conSaldo: '', idCliente: '', fechaDesde: '', fechaHasta: '' }
 
@@ -40,6 +41,7 @@ function FacturacionWorkspace({ canInvoice, canPay }: { canInvoice: boolean; can
   function update(field: keyof FacturaFilters, value: string | number) { setDraft({ ...draft, [field]: value, page: 1 }); setFilterError('') }
   return <>
     <PageHeader eyebrow="TechCare / Caja" title="Facturación y pagos" description="Consulta facturas, emite desde órdenes listas y administra pagos." actions={canInvoice && <Button ref={newButton} disabled={creating || pending} onClick={() => setCreating(true)}>Nueva factura</Button>} />
+    <><PermissionNotice permission="FACTURAR" action="emitir facturas" /><PermissionNotice permission="PAGOS_REGISTRAR" action="registrar o anular pagos" /></>
     {creating && canInvoice && <FacturacionForm onCancel={closeCreate} onSaved={select} onViewFactura={select} />}
     <section aria-label="Listado de facturas" className="space-y-4">
       <form aria-label="Filtros de facturas" className="space-y-4 rounded-xl border bg-card p-4" onSubmit={event => {
@@ -49,10 +51,10 @@ function FacturacionWorkspace({ canInvoice, canPay }: { canInvoice: boolean; can
         setFilterError(''); setFilters({ ...draft, page: 1 })
       }}>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <TextField id="facturas-buscar" label="Buscar facturas" type="search" placeholder="Factura, orden, cliente o NIT" maxLength={150} value={draft.search} onChange={event => update('search', event.target.value)} />
+          <TextField id="facturas-buscar" label="Buscar facturas" type="search" placeholder="Buscar por factura, orden, cliente o NIT…" maxLength={150} value={draft.search} onChange={event => update('search', event.target.value)} />
           <SelectField id="facturas-estado" label="Estado" placeholder="Todos" options={['EMITIDA', 'PAGADA', 'ANULADA'].map(value => ({ value, label: value }))} value={draft.estado} onChange={event => update('estado', event.target.value)} />
           <SelectField id="facturas-saldo" label="Saldo" placeholder="Todas las facturas" options={[{ value: 'true', label: 'Solo con saldo pendiente' }]} value={draft.conSaldo} onChange={event => update('conSaldo', event.target.value)} />
-          <TextField id="facturas-cliente" label="ID de cliente" inputMode="numeric" value={draft.idCliente} onChange={event => update('idCliente', event.target.value)} />
+          <TextField id="facturas-cliente" placeholder="Ej. 15" maxLength={10} autoComplete="off" label="ID de cliente" inputMode="numeric" value={draft.idCliente} onChange={event => update('idCliente', event.target.value)} />
           <TextField id="facturas-desde" label="Fecha desde" type="date" value={draft.fechaDesde} onChange={event => update('fechaDesde', event.target.value)} />
           <TextField id="facturas-hasta" label="Fecha hasta" type="date" min={draft.fechaDesde || undefined} value={draft.fechaHasta} onChange={event => update('fechaHasta', event.target.value)} />
           <SelectField id="facturas-tamano" label="Por página" allowEmpty={false} options={[5, 10, 20, 50].map(value => ({ value: String(value), label: String(value) }))} value={String(draft.pageSize)} onChange={event => update('pageSize', Number(event.target.value))} />

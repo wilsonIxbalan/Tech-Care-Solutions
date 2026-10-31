@@ -11,7 +11,7 @@ export function ReparacionForm({ orden, onCancel }: { orden?: OrdenDetalleDto; c
   if (!orden) return <p>Abre una <Link className="underline" to="/ordenes">orden</Link> para iniciar una reparación.</p>
   if (!canService(user, 'REPARACION_GESTIONAR', true) || !['ESPERANDO_AUTORIZACION', 'REPARACION'].includes(orden.estado) || orden.factura || !orden.diagnosticos.some(d => d.estado === 'ACTIVO')) return null
   return <ServiceForm title="Iniciar reparación" path={`/ordenes/${orden.idOrden}/reparaciones`} schema={reparacionInputSchema} onCancel={onCancel} submitLabel="Iniciar reparación" confirm
-    fields={[{ name: 'descripcion', label: 'Descripción de la reparación', kind: 'area', required: true, maxLength: 1000 }, { name: 'costoManoObra', label: 'Costo de mano de obra', required: true, inputMode: 'decimal', help: 'Se permite cero. Hasta dos decimales, sin separadores de miles.' }]}>
+    fields={[{ name: 'descripcion', label: 'Descripción de la reparación', kind: 'area', required: true, maxLength: 1000, placeholder: 'Trabajo a realizar según el diagnóstico' }, { name: 'costoManoObra', label: 'Costo de mano de obra', required: true, inputMode: 'decimal', maxLength: 13, placeholder: '0.00', help: 'Se permite cero. Hasta dos decimales, sin separadores de miles.' }]}>
     <p className="text-sm text-muted-foreground">Técnico responsable: {user?.nombreCompleto}. Confirma la autorización del trabajo antes de iniciarlo. La orden debe tener un diagnóstico activo y no estar facturada.</p>
   </ServiceForm>
 }

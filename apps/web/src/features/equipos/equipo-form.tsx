@@ -5,7 +5,7 @@ import type { FieldError, UseFormRegisterReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { AreaField, TextField } from '@/components/shared/form-fields'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
+import { Label, RequiredMark } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import type { EquipoCatalogos } from '@/features/equipos/equipo-catalogos'
 import { createEquipoSchema } from '@/features/equipos/equipo-schema'
@@ -37,7 +37,7 @@ function CatalogSelect({ label, catalogName, options, registration, error, value
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>{label} *</Label>
+      <Label htmlFor={id}>{label} <RequiredMark /></Label>
       <NativeSelect
         {...registration}
         value={value}
@@ -136,11 +136,11 @@ export function EquipoForm({ equipo, onCancel, onSaved }: { equipo?: EquipoDto; 
               registration={form.register('idMarca')}
               error={errors.idMarca}
             />
-            <TextField id="equipo-modelo" label="Modelo" autoFocus required maxLength={80} error={errors.modelo?.message} {...form.register('modelo')} />
-            <TextField id="equipo-numero-serie" label="Número de serie" required maxLength={60} error={errors.numeroSerie?.message} {...form.register('numeroSerie')} />
+            <TextField id="equipo-modelo" placeholder="ThinkPad T14" autoComplete="off" label="Modelo" autoFocus required maxLength={80} error={errors.modelo?.message} {...form.register('modelo')} />
+            <TextField id="equipo-numero-serie" placeholder="SN-ABC123" autoComplete="off" autoCapitalize="characters" label="Número de serie" required maxLength={60} error={errors.numeroSerie?.message} {...form.register('numeroSerie')} />
           </div>
 
-          <AreaField id="equipo-descripcion" label="Descripción" required maxLength={300} error={errors.descripcion?.message} {...form.register('descripcion')} />
+          <AreaField id="equipo-descripcion" placeholder="Color, accesorios y estado físico del equipo" label="Descripción" required maxLength={300} error={errors.descripcion?.message} {...form.register('descripcion')} />
 
           <div className="space-y-2"><Label htmlFor="equipo-estado">Estado del equipo</Label><NativeSelect id="equipo-estado" value={estado} onChange={event => setEstado(event.target.value as EquipoDto['estado'])}><option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option><option value="BAJA">Baja</option></NativeSelect></div>
           </fieldset>

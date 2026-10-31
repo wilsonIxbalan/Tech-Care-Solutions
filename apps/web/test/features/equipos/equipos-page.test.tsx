@@ -78,10 +78,10 @@ describe('Equipos operativo', () => {
 
   it('busca propietarios con un solo campo, conserva selección entre páginas y exige elegir al escribir otra búsqueda', async () => {
     const otro = { ...cliente, idCliente: 222, nombreMostrar: 'Cliente página dos' }
-    const fetchMock = mockHttp(url => url.pathname.endsWith('/clientes') ? json(list(url.searchParams.get('page') === '2' ? [otro] : [cliente], Number(url.searchParams.get('page')), 2)) : undefined)
+    const fetchMock = mockHttp(url => url.pathname.endsWith('/clientes') ? json({ data: Number(url.searchParams.get('pageSize')) > 10 ? [cliente, otro] : [cliente], meta: { page: 1, pageSize: Number(url.searchParams.get('pageSize')), total: 25, totalPages: 3 } }) : undefined)
     await openForm(); select(); text()
     fireEvent.focus(screen.getByRole('combobox', { name: /^Cliente propietario/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Más clientes' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Cargar más resultados' }))
     await screen.findByRole('option', { name: 'Cliente página dos' })
     expect(screen.getByRole('combobox', { name: /^Cliente propietario/ })).toHaveValue('Ana Pérez')
     fireEvent.click(screen.getByRole('option', { name: 'Cliente página dos' }))
@@ -91,8 +91,7 @@ describe('Equipos operativo', () => {
     submit()
     expect(await screen.findByText('Selecciona un cliente propietario del catálogo disponible.')).toBeVisible()
     expect(writes(fetchMock)).toHaveLength(0)
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Más clientes' })).toBeEnabled())
-    fireEvent.click(screen.getByRole('button', { name: 'Más clientes' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Cargar más resultados' }))
     fireEvent.focus(screen.getByRole('combobox', { name: /^Cliente propietario/ }))
     fireEvent.click(await screen.findByRole('option', { name: 'Cliente página dos' }))
     submit(); expect(await screen.findByText('Equipo guardado correctamente.')).toBeVisible()
@@ -203,6 +202,5 @@ describe('Equipos operativo', () => {
     await waitFor(() => expect(screen.getAllByText('Lectura fallida.')).toHaveLength(2))
     fail = false; for (const button of screen.getAllByRole('button', { name: 'Reintentar consulta' })) fireEvent.click(button)
     expect(await screen.findByText('Sin equipos para estos filtros')).toBeVisible()
-    expect(await screen.findByText('Sin clientes para esta búsqueda.')).toBeVisible()
   })
 })

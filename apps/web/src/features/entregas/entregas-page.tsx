@@ -1,3 +1,4 @@
+import { PermissionNotice } from '@/components/shared/permission-notice'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/shared/page-header'
@@ -20,7 +21,7 @@ export function EntregasPage(_props: { ordenes?: readonly OrdenEntrega[]; entreg
   const { user } = useSession()
   const [selected, setSelected] = useState<OrdenResumenDto | null>(null)
   const order = useOrden(selected?.idOrden)
-  if (!canService(user, 'ENTREGAR_ORDEN')) return <p>No tienes permiso para registrar entregas.</p>
+  if (!canService(user, 'ENTREGAR_ORDEN')) return <PermissionNotice permission="ENTREGAR_ORDEN" action="registrar entregas" />
   return <div className="space-y-5"><PageHeader title="Entregas y cierre" description="Busca una orden lista, revisa su factura y saldo y confirma quién recibe el equipo." />
     <ApiSelector<OrdenResumenDto> path="/ordenes" label="Orden para entrega" filters={{ estado: 'LISTO' }} selected={selected} onSelect={setSelected} valueOf={o => o.idOrden} labelOf={o => `${o.numeroOrden} · ${o.clienteNombre}`} />
     {selected && (order.isPending ? <LoadingState label="Revisando requisitos…" /> : order.isError ? <ErrorState description={order.error.message} onRetry={() => void order.refetch()} /> : <div className="space-y-4">

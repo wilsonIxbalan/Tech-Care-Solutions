@@ -1,48 +1,36 @@
 import { useState, type Ref } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { SelectField, TextField } from '@/components/shared/form-fields'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { SearchSelect } from '@/components/shared/search-select'
 import { Button } from '@/components/ui/button'
+import { useDebouncedValue } from '@/lib/use-debounced-value'
 import { getReportLookup, reportLookupError, type RemoteReportCatalog } from './reporte-lookups'
 import type { ReportOption } from './reportes-model'
 
-export function ReporteSelectorRemoto({ id, label, catalog, userId, value, required, error, inputRef, onSelect }: {
+export function ReporteSelectorRemoto({ id, label, catalog, userId, value, required, error, onSelect }: {
   id: string; label: string; catalog: RemoteReportCatalog; userId: number; value: string
   required?: boolean; error?: string; inputRef?: Ref<HTMLSelectElement>; onSelect: (option: ReportOption | null) => void
 }) {
-  const [draft, setDraft] = useState('')
   const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [selected, setSelected] = useState<ReportOption | null>(null)
+  const debounced = useDebouncedValue(search.trim())
   const query = useQuery({
-    queryKey: ['reportes-lookup', userId, catalog, search, page],
-    queryFn: ({ signal }) => getReportLookup(catalog, search, page, signal),
+    queryKey: ['reportes-lookup', userId, catalog, debounced, pageSize],
+    queryFn: ({ signal }) => getReportLookup(catalog, debounced, 1, signal, pageSize),
+    placeholderData: keepPreviousData,
     retry: false, staleTime: 60_000, refetchOnWindowFocus: false, refetchOnReconnect: false,
   })
-  const options = !query.isFetching && !query.isError ? query.data?.options ?? [] : []
-  const pinned = selected?.value === value && !options.some(option => option.value === value) ? [selected] : []
-  const selectOptions = [...pinned, ...options]
-  function find() {
-    const next = draft.trim()
-    if (next === search && page === 1) void query.refetch()
-    else { setSearch(next); setPage(1) }
-  }
-  return <div className="space-y-3 rounded-lg border p-3" role="group" aria-label={`Selector de ${label.toLocaleLowerCase('es')}`}>
-    <TextField id={`${id}-search`} label={`Buscar ${label.toLocaleLowerCase('es')}`} maxLength={150} value={draft} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); find() } }} help="Busca por nombre, código o documento y recorre las páginas para elegir." />
-    <Button variant="outline" size="sm" onClick={find}>Buscar {label.toLocaleLowerCase('es')}</Button>
-    <SelectField ref={inputRef} id={id} label={label} required={required} value={value} options={selectOptions} error={error} placeholder={required ? 'Selecciona una opción' : 'Todos'} help={selected?.value === value ? `Selección: ${selected.label}. Se conserva al cambiar la búsqueda o la página.` : 'Selecciona un registro de los resultados de búsqueda.'} onChange={event => {
-      const option = selectOptions.find(item => item.value === event.target.value) ?? null
-      setSelected(option)
-      onSelect(option)
-    }} />
-    {query.isFetching && <p role="status" className="text-xs text-muted-foreground">Buscando {catalog}…</p>}
-    {query.isError && <div className="space-y-2"><p role="alert" className="text-sm text-destructive">{reportLookupError(query.error)}</p><Button variant="outline" size="sm" onClick={() => { void query.refetch() }}>Reintentar búsqueda de {label.toLocaleLowerCase('es')}</Button></div>}
-    {!query.isFetching && !query.isError && query.data && <>
-      {!options.length && <p className="text-xs text-muted-foreground">No hay coincidencias para esta búsqueda.</p>}
-      <nav aria-label={`Páginas de ${label.toLocaleLowerCase('es')}`} className="flex flex-wrap items-center gap-2 text-xs">
-        <span>Página {query.data.meta.page} de {Math.max(1, query.data.meta.totalPages)} · {query.data.meta.total} registros</span>
-        <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior: {label.toLocaleLowerCase('es')}</Button>
-        <Button variant="outline" size="sm" disabled={page >= query.data.meta.totalPages} onClick={() => setPage(page + 1)}>Siguiente: {label.toLocaleLowerCase('es')}</Button>
-      </nav>
-    </>}
+  const options = !query.isError ? query.data?.options ?? [] : []
+  const current = value && selected?.value === value ? selected : null
+  const pinned = current && !options.some(option => option.value === value) ? [current] : []
+  const lower = label.toLocaleLowerCase('es')
+  return <div className="space-y-2 rounded-lg border p-3" role="group" aria-label={`Selector de ${lower}`}>
+    <SearchSelect id={id} label={label} required={required} error={error} selected={current} rows={[...pinned, ...options]}
+      valueOf={option => option.value} labelOf={option => option.label} search={search} placeholder={`Busca ${lower} por nombre, código o documento…`}
+      loading={query.isFetching || search.trim() !== debounced}
+      hasMore={(query.data?.meta.total ?? 0) > pageSize && pageSize < 100} onLoadMore={() => setPageSize(size => Math.min(100, size + 20))}
+      onSearch={text => { setSearch(text); setPageSize(20) }}
+      onSelect={option => { setSelected(option); onSelect(option) }} />
+    {query.isError && <div className="space-y-2"><p role="alert" className="text-sm text-destructive">{reportLookupError(query.error)}</p><Button variant="outline" size="sm" onClick={() => { void query.refetch() }}>Reintentar búsqueda de {lower}</Button></div>}
   </div>
 }

@@ -10,13 +10,14 @@ import { catalogos, orden, list, urlOf, failure, tecnico, factura } from './serv
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 const cliente = { idCliente: 11, nombreMostrar: 'Cliente seleccionado', estado: 'ACTIVO' }
 const equipo = { idEquipo: 41, idCliente: 11, modelo: 'Modelo de prueba', numeroSerie: 'SERIE-0041', estado: 'ACTIVO' }
+const more = (url: URL, rows: unknown[]) => { const size = Number(url.searchParams.get('pageSize')); return json({ data: size > 10 ? rows : [], meta: { page: 1, pageSize: size, total: 25, totalPages: 3 } }) }
 function mockCreation(post: (body: unknown) => Response | Promise<Response>) {
   const fetcher = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = urlOf(input)
     if (init?.method === 'POST') return post(JSON.parse(String(init.body)))
     if (url.pathname.endsWith('/catalogos')) return json({ data: catalogos })
-    if (url.pathname.endsWith('/clientes')) return list(url.searchParams.get('page') === '2' ? [cliente] : [], Number(url.searchParams.get('page')), 2)
-    if (url.pathname.endsWith('/equipos')) return list(url.searchParams.get('page') === '2' ? [equipo] : [], Number(url.searchParams.get('page')), 2)
+    if (url.pathname.endsWith('/clientes')) return more(url, [cliente])
+    if (url.pathname.endsWith('/equipos')) return more(url, [equipo])
     throw new Error(`Unexpected request: ${input}`)
   })
   vi.stubGlobal('fetch', fetcher)
@@ -24,13 +25,11 @@ function mockCreation(post: (body: unknown) => Response | Promise<Response>) {
 }
 async function fillCreation() {
   await screen.findByRole('option', { name: 'Urgente' })
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Cliente: siguientes' })).toBeEnabled())
-  fireEvent.click(screen.getByRole('button', { name: 'Cliente: siguientes' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Cargar más resultados' }))
   await screen.findByRole('option', { name: 'Cliente seleccionado' })
   fireEvent.keyDown(screen.getByLabelText('Cliente *'), { key: 'ArrowDown' })
   fireEvent.keyDown(screen.getByLabelText('Cliente *'), { key: 'Enter' })
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Equipo: siguientes' })).toBeEnabled())
-  fireEvent.click(screen.getByRole('button', { name: 'Equipo: siguientes' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Cargar más resultados' }))
   await screen.findByRole('option', { name: /SERIE-0041/ })
   fireEvent.click(screen.getByRole('option', { name: /SERIE-0041/ }))
   fireEvent.change(screen.getByLabelText('Prioridad *'), { target: { value: '7' } })
@@ -41,8 +40,8 @@ describe('órdenes conectadas', () => {
     const fetcher = mockCreation(() => json({ data: {} }, 201))
     renderWithSession(<OrdenForm onCancel={vi.fn()} />)
     await fillCreation()
-    expect(screen.getAllByRole('combobox', { name: 'Cliente *' })).toHaveLength(1)
-    expect(screen.getAllByRole('combobox', { name: 'Equipo *' })).toHaveLength(1)
+    expect(screen.getAllByRole('combobox', { name: 'Cliente' })).toHaveLength(1)
+    expect(screen.getAllByRole('combobox', { name: 'Equipo' })).toHaveLength(1)
     expect(screen.queryByLabelText('Buscar equipo')).not.toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Fecha estimada'), { target: { value: '2000-01-01' } })
     expect(await screen.findByText(/No puedes agendar la entrega para 2000-01-01/)).toBeVisible()

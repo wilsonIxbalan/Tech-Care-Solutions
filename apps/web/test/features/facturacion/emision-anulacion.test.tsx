@@ -3,13 +3,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { toast } from 'sonner'
 import { FacturacionPage } from '@/features/facturacion/facturacion-page'
 import { json, renderWithSession as render } from '../../support/session'
-import { factura, failure, invoiceResult, mockBilling, orden, page, posts } from './fixtures'
+import { factura, failure, invoiceResult, mockBilling, orden, posts } from './fixtures'
 
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks() })
 async function newInvoice() {
   fireEvent.click(screen.getByRole('button', { name: 'Nueva factura' }))
   await waitFor(() => expect(screen.getByLabelText('Orden *')).toBeEnabled())
-  fireEvent.change(screen.getByLabelText('Orden *'), { target: { value: '2' } })
+  fireEvent.click(await screen.findByRole('option', { name: 'OS-2' }))
   await waitFor(() => expect(screen.getByRole('button', { name: 'Revisar y generar' })).toBeEnabled())
 }
 async function reviewInvoice() {
@@ -33,23 +33,22 @@ describe('emisión desde orden con resumen oficial', () => {
     const fetchMock = mockBilling(url => {
       if (url.pathname !== '/api/v1/ordenes') return undefined
       const current = Number(url.searchParams.get('page'))
-      return json(page(current === 1 ? [{ ...orden, idOrden: 20, numeroOrden: 'OS-20' }] : [orden], current, 2))
+      const size = Number(url.searchParams.get('pageSize'))
+      return json({ data: size > 10 ? [{ ...orden, idOrden: 20, numeroOrden: 'OS-20' }, orden] : [{ ...orden, idOrden: 20, numeroOrden: 'OS-20' }], meta: { page: current, pageSize: size, total: 25, totalPages: 3 } })
     })
     render(<FacturacionPage />)
     fireEvent.click(screen.getByRole('button', { name: 'Nueva factura' }))
     await waitFor(() => expect(screen.getByLabelText('Orden *')).toBeEnabled())
     expect(screen.getByLabelText('Orden *')).toHaveValue('')
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('resumen-facturacion'))).toBe(false)
-    fireEvent.change(screen.getByLabelText('Buscar orden lista'), { target: { value: 'Ana' } })
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Más órdenes' })).toBeEnabled())
-    fireEvent.click(screen.getByRole('button', { name: 'Más órdenes' }))
+    fireEvent.change(screen.getByLabelText('Orden *'), { target: { value: 'Ana' } })
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('search=Ana'))).toBe(true))
+    fireEvent.click(await screen.findByRole('button', { name: 'Cargar más resultados' }))
     await screen.findByRole('option', { name: 'OS-2' })
-    fireEvent.change(screen.getByLabelText('Orden *'), { target: { value: '2' } })
+    fireEvent.click(await screen.findByRole('option', { name: 'OS-2' }))
     await waitFor(() => expect(screen.getByRole('button', { name: 'Revisar y generar' })).toBeEnabled())
-    fireEvent.click(screen.getByRole('button', { name: 'Órdenes anteriores' }))
-    await screen.findByRole('option', { name: 'OS-20' })
-    expect(screen.getByLabelText('Orden *')).toHaveValue('2')
-    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/ordenes?page=2&pageSize=10&search=Ana&estado=LISTO'))).toBe(true)
+    expect(screen.getByLabelText('Orden *')).toHaveValue('OS-2')
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/ordenes?page=1&pageSize=30&search=Ana&estado=LISTO'))).toBe(true)
     expect(screen.getByRole('region', { name: 'Resumen de facturación' })).toHaveTextContent('103.77')
     expect(posts(fetchMock)).toHaveLength(0)
   })
@@ -131,7 +130,7 @@ describe('emisión desde orden con resumen oficial', () => {
     render(<FacturacionPage />)
     fireEvent.click(screen.getByRole('button', { name: 'Nueva factura' }))
     await waitFor(() => expect(screen.getByLabelText('Orden *')).toBeEnabled())
-    fireEvent.change(screen.getByLabelText('Orden *'), { target: { value: '2' } })
+    fireEvent.click(await screen.findByRole('option', { name: 'OS-2' }))
     await screen.findAllByRole('alert')
     expect(screen.getByRole('button', { name: 'Revisar y generar' })).toBeDisabled()
     if (condition === 'facturada') {

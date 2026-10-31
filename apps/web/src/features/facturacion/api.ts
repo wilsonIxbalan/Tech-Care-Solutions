@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { invalidateRelatedQueries } from '@/lib/query-invalidation'
 import { useSession } from '@/features/auth/session-context'
@@ -32,7 +32,7 @@ export function useFactura(id: number | null) {
 }
 export function useOrdenesFacturables(filters: { page: number; pageSize: number; search: string }, enabled: boolean) {
   const { user } = useSession()
-  return useQuery({ queryKey: ['facturacion-ordenes', user?.idUsuario, filters], retry: false,
+  return useQuery({ queryKey: ['facturacion-ordenes', user?.idUsuario, filters], placeholderData: keepPreviousData, retry: false,
     enabled: enabled && Boolean(user?.permisos.includes('FACTURAR')),
     queryFn: ({ signal }) => apiFetch<OrdenResumenDto[]>(`/ordenes?${billingQuery({ ...filters, estado: 'LISTO' })}`, { signal }),
   })

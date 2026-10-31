@@ -17,9 +17,9 @@ const boundaries: Array<[new () => object, string, number]> = [
   [UserInput, 'nombreUsuario', 50], [UserInput, 'nombreCompleto', 150],
   [OrderInput, 'problemaReportado', 1000], [OrderInput, 'observaciones', 500],
   [DiagnosisInput, 'descripcion', 1000], [RepairInput, 'descripcion', 1000], [ActivityInput, 'descripcion', 500],
-  [StateInput, 'observacion', 500], [DeliveryInput, 'nombreRecibe', 150], [DeliveryInput, 'documentoRecibe', 30],
+  [StateInput, 'observacion', 500], [DeliveryInput, 'nombreRecibe', 150],
   [DeliveryInput, 'observaciones', 500], [PurchaseInput, 'numeroDocumentoProveedor', 40], [PurchaseInput, 'observaciones', 500],
-  [InvoiceInput, 'nitFacturacion', 20], [InvoiceInput, 'nombreFacturacion', 150], [InvoiceInput, 'direccionFacturacion', 250],
+  [InvoiceInput, 'nombreFacturacion', 150], [InvoiceInput, 'direccionFacturacion', 250],
   [PaymentInput, 'referencia', 60], [CancelPaymentInput, 'motivo', 300], [AdjustmentInput, 'observacion', 300],
 ];
 describe('Formularios: limites del servidor y mensajes en español (sin SQL)', () => {
@@ -35,6 +35,27 @@ describe('Formularios: limites del servidor y mensajes en español (sin SQL)', (
       expect((await validate(plainToInstance(Type, { telefono }))).some(error => error.property === 'telefono')).toBe(true);
     }
     expect(plainToInstance(Type, { nit: ' cf ' }).nit).toBe('CF');
+  });
+  it('proveedor y usuario validan NIT y teléfono como cliente', async () => {
+    const ok = await validate(plainToInstance(SupplierInput, { nit: '1234567-9', telefono: '+502 2222-3333' }));
+    expect(ok.filter(e => ['nit', 'telefono'].includes(e.property))).toEqual([]);
+    const bad = await validate(plainToInstance(SupplierInput, { nit: '1234567-5', telefono: '12345678' }));
+    expect(bad.map(e => e.property)).toEqual(expect.arrayContaining(['nit', 'telefono']));
+    expect((await validate(plainToInstance(UserInput, { telefono: '12345678' }))).some(e => e.property === 'telefono')).toBe(true);
+    for (const telefono of [undefined, null, '2222-3333'])
+      expect((await validate(plainToInstance(UserInput, { telefono }))).some(e => e.property === 'telefono')).toBe(false);
+  });
+  it('entrega valida DPI de 13 dígitos y nombre sin números', async () => {
+    const ok = await validate(plainToInstance(DeliveryInput, { nombreRecibe: "María-José O'Connor", documentoRecibe: '2345 67890 1234' }));
+    expect(ok.filter(e => ['nombreRecibe', 'documentoRecibe'].includes(e.property))).toEqual([]);
+    expect((await validate(plainToInstance(DeliveryInput, { nombreRecibe: 'Ana', documentoRecibe: null }))).length).toBe(0);
+    const bad = await validate(plainToInstance(DeliveryInput, { nombreRecibe: 'Ana 2', documentoRecibe: '12345' }));
+    expect(bad.map(e => e.property)).toEqual(expect.arrayContaining(['nombreRecibe', 'documentoRecibe']));
+  });
+  it('factura valida el NIT cuando se envía', async () => {
+    expect((await validate(plainToInstance(InvoiceInput, { nitFacturacion: 'cf' }))).some(e => e.property === 'nitFacturacion')).toBe(false);
+    expect((await validate(plainToInstance(InvoiceInput, { nitFacturacion: null }))).some(e => e.property === 'nitFacturacion')).toBe(false);
+    expect((await validate(plainToInstance(InvoiceInput, { nitFacturacion: '1234567-5' }))).some(e => e.property === 'nitFacturacion')).toBe(true);
   });
   it.each(boundaries)('%p.%s acepta su limite %i y rechaza un caracter adicional', async (Type, field, max) => {
     const accepted = await validate(plainToInstance(Type, { [field]: 'a'.repeat(max) }));
