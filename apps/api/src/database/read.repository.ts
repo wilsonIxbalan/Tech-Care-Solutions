@@ -54,7 +54,7 @@ const reads = {
     id: 'IdMovimiento',
     columns:
       'IdMovimiento,IdBodega,BodegaNombre,IdRepuesto,CodigoRepuesto,RepuestoNombre,CodigoTipoMovimiento,Naturaleza,Cantidad,FechaMovimiento,IdUsuario,UsuarioNombre,DocumentoOrigen,NumeroDocumento,ExistenciaResultante,Observacion',
-    search: ['CodigoRepuesto', 'RepuestoNombre', 'NumeroDocumento'],
+    search: ['CodigoRepuesto', 'RepuestoNombre', 'BodegaNombre', 'NumeroDocumento'],
     date: 'FechaMovimiento',
     filters: ['IdBodega', 'IdRepuesto', 'CodigoTipoMovimiento', 'IdUsuario'],
   },

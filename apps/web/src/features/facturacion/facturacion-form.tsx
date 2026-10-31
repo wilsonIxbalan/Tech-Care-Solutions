@@ -16,9 +16,11 @@ export function FacturacionForm({ onCancel, onSaved, onViewFactura }: {
   onCancel: () => void; onSaved: (idFactura: number) => void; onViewFactura?: (idFactura: number) => void
 }) {
   const [selected, setSelected] = useState<OrdenFacturacion | null>(null)
-  const schema = createFacturacionSchema(selected ? [selected] : [])
-  type Values = z.output<typeof schema>
-  const form = useForm<z.input<typeof schema>, unknown, Values>({ resolver: zodResolver(schema), defaultValues: { idOrden: '', nitFacturacion: '', nombreFacturacion: '', direccionFacturacion: '', porcentajeImpuesto: '12.00' } })
+  type Schema = ReturnType<typeof createFacturacionSchema>
+  type Values = z.output<Schema>
+  // El esquema se arma al validar para incluir la orden recién elegida.
+  const latest = useRef<OrdenFacturacion | null>(null)
+  const form = useForm<z.input<Schema>, unknown, Values>({ resolver: (values, context, options) => zodResolver(createFacturacionSchema(latest.current ? [latest.current] : []))(values, context, options), defaultValues: { idOrden: '', nitFacturacion: '', nombreFacturacion: '', direccionFacturacion: '', porcentajeImpuesto: '12.00' } })
   const rate = porcentajeImpuestoSchema.safeParse(useWatch({ control: form.control, name: 'porcentajeImpuesto' }))
   const orden = useOrdenFacturacion(selected?.idOrden ?? null, 'FACTURAR')
   const eligible = orden.isSuccess && orden.data.estado === 'LISTO' && !orden.data.factura && !orden.data.entrega
@@ -48,7 +50,7 @@ export function FacturacionForm({ onCancel, onSaved, onViewFactura }: {
   return <section aria-label="Nueva factura" className="space-y-5 rounded-xl border bg-card p-5">
     <h2 className="text-lg font-semibold">Generar factura desde orden</h2>
     <form aria-label="Datos de facturación" noValidate className="space-y-5" onSubmit={form.handleSubmit(values => { if (ready && !write.isPending && !isUnconfirmed(write.error)) setConfirmation(values) })}>
-      <OrdenSelector selected={selected} disabled={disabled} error={errors.idOrden?.message} onSelect={value => { setSelected(value); form.setValue('idOrden', value ? String(value.idOrden) : '', { shouldValidate: true }) }} />
+      <OrdenSelector selected={selected} disabled={disabled} error={errors.idOrden?.message} onSelect={value => { latest.current = value; setSelected(value); form.setValue('idOrden', value ? String(value.idOrden) : '', { shouldValidate: true }) }} />
       {selected && (orden.isPending ? <LoadingState label="Consultando la orden seleccionada…" /> : orden.isError ? <ErrorState description={orden.error.message} onRetry={() => void orden.refetch()} /> : !eligible && <div role="alert" className="space-y-2 text-sm"><p>{orden.data.factura ? 'Esta orden ya tiene una factura.' : 'La orden debe estar LISTO y sin entrega para facturar.'}</p>{orden.data.factura && onViewFactura && <Button type="button" variant="outline" onClick={() => onViewFactura(orden.data.factura!.idFactura)}>Ver factura existente</Button>}</div>)}
       <p className="text-sm text-muted-foreground">Los datos fiscales vacíos se heredan del cliente. Comprueba los datos antes de confirmar.</p>
       <fieldset disabled={disabled} className="grid gap-4 sm:grid-cols-2">

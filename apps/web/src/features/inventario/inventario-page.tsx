@@ -18,6 +18,7 @@ import { AjusteForm, MinimoForm } from './inventario-forms'
 import { sqlInteger } from './inventario-schema'
 import { BodegasPanel } from '@/features/bodegas/bodegas-panel'
 import { PermissionNotice } from '@/components/shared/permission-notice'
+import { useDebouncedValue } from '@/lib/use-debounced-value'
 
 export interface InventarioCatalogos { bodegas?: readonly BodegaOption[]; categorias?: readonly CategoriaOption[]; repuestos?: readonly RepuestoRow[]; tipos?: readonly TipoMovimientoOption[] }
 const defaults = { search: '', idBodega: '', idCategoria: '', idRepuesto: '', codigoTipoMovimiento: '', fechaDesde: '', fechaHasta: '', idUsuario: '', bajoMinimo: '' }
@@ -33,7 +34,9 @@ export function InventarioPage({ catalogos = {}, inventario, movimientos }: { ca
   const [stockPage, setStockPage] = useState(1)
   const [movementPage, setMovementPage] = useState(1)
   const [editor, setEditor] = useState<InventarioDto | 'ajuste' | null>(null)
-  const common = { search: filters.search, idBodega: filters.idBodega, idRepuesto: filters.idRepuesto, pageSize: DEFAULT_PAGE_SIZE }
+  // Texto, bodega y repuesto filtran al momento; fechas, tipo y usuario se aplican con el botón.
+  const search = useDebouncedValue(draft.search.trim())
+  const common = { search, idBodega: draft.idBodega, idRepuesto: draft.idRepuesto, pageSize: DEFAULT_PAGE_SIZE }
   const stock = useSupplyList<InventarioDto>('inventario', { ...common, page: stockPage, idCategoria: filters.idCategoria, bajoMinimo: filters.bajoMinimo ? filters.bajoMinimo === 'true' : undefined }, inventario === undefined)
   const movements = useSupplyList<MovimientoDto>('inventario/movimientos', { ...common, page: movementPage, codigoTipoMovimiento: filters.codigoTipoMovimiento, idUsuario: filters.idUsuario, fechaDesde: filters.fechaDesde, fechaHasta: filters.fechaHasta }, movimientos === undefined)
   if (!access.stockRead) return <EmptyState title="Acceso restringido" description="No tienes permiso para consultar inventario." />
@@ -51,9 +54,9 @@ export function InventarioPage({ catalogos = {}, inventario, movimientos }: { ca
       setError(''); setFilters(draft); setStockPage(1); setMovementPage(1)
     }}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <TextField id="inventario-search" label="Buscar código, repuesto o documento" type="search" placeholder="Buscar por código, repuesto, bodega o documento…" maxLength={150} value={draft.search} onChange={e => setDraft({ ...draft, search: e.target.value })} />
-        <SupplySelector resource="bodegas" label="Bodega" id="inventario-bodega" value={draft.idBodega} selected={selected.bodega} options={catalogos.bodegas?.map(b => ({ id: b.idBodega, nombre: b.nombre }))} onSelect={option => { setSelected({ ...selected, bodega: option }); setDraft({ ...draft, idBodega: option ? String(option.id) : '' }) }} />
-        <SupplySelector resource="repuestos" label="Repuesto" id="inventario-repuesto" value={draft.idRepuesto} selected={selected.repuesto} options={catalogos.repuestos?.map(r => ({ id: r.idRepuesto, nombre: `${r.codigo} · ${r.nombre}` }))} onSelect={option => { setSelected({ ...selected, repuesto: option }); setDraft({ ...draft, idRepuesto: option ? String(option.id) : '' }) }} />
+        <TextField id="inventario-search" label="Buscar código, repuesto o documento" type="search" placeholder="Buscar por código, repuesto, bodega o documento…" maxLength={150} value={draft.search} onChange={e => { setDraft({ ...draft, search: e.target.value }); setStockPage(1); setMovementPage(1) }} />
+        <SupplySelector resource="bodegas" label="Bodega" id="inventario-bodega" value={draft.idBodega} selected={selected.bodega} options={catalogos.bodegas?.map(b => ({ id: b.idBodega, nombre: b.nombre }))} onSelect={option => { setSelected({ ...selected, bodega: option }); setDraft({ ...draft, idBodega: option ? String(option.id) : '' }); setStockPage(1); setMovementPage(1) }} />
+        <SupplySelector resource="repuestos" label="Repuesto" id="inventario-repuesto" value={draft.idRepuesto} selected={selected.repuesto} options={catalogos.repuestos?.map(r => ({ id: r.idRepuesto, nombre: `${r.codigo} · ${r.nombre}` }))} onSelect={option => { setSelected({ ...selected, repuesto: option }); setDraft({ ...draft, idRepuesto: option ? String(option.id) : '' }); setStockPage(1); setMovementPage(1) }} />
         <SelectField id="inventario-categoria" label="Categoría (existencias)" placeholder="Todas" options={categorias.map(c => ({ value: String(c.idCategoria), label: c.nombre }))} value={draft.idCategoria} onChange={e => setDraft({ ...draft, idCategoria: e.target.value })} />
         <SelectField id="inventario-stock" label="Situación de existencias" placeholder="Todas" options={[{ value: 'true', label: 'Bajo mínimo' }, { value: 'false', label: 'No bajo mínimo' }]} value={draft.bajoMinimo} onChange={e => setDraft({ ...draft, bajoMinimo: e.target.value })} />
         <SelectField id="movimiento-tipo" label="Tipo (movimientos)" placeholder="Todos" options={tipos.map(t => ({ value: t.codigo, label: t.nombre }))} value={draft.codigoTipoMovimiento} onChange={e => setDraft({ ...draft, codigoTipoMovimiento: e.target.value })} />

@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import type { FieldError, UseFormRegisterReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
@@ -64,10 +64,13 @@ export function EquipoForm({ equipo, onCancel, onSaved }: { equipo?: EquipoDto; 
   const [selected, setSelected] = useState<ClienteOption | null>(equipo ? { idCliente: equipo.idCliente, nombreMostrar: equipo.clienteNombre } : null)
   const [estado, setEstado] = useState<EquipoDto['estado']>(equipo?.estado ?? 'ACTIVO')
   const catalogos: EquipoCatalogos = { ...catalogs.data, clientes: selected ? [selected] : [] }
+  // El cliente elegido se valida antes del siguiente render: el esquema se arma al validar.
+  const latest = useRef(catalogos)
+  useEffect(() => { latest.current = { ...catalogs.data, clientes: selected ? [selected] : [] } }, [catalogs.data, selected])
   const save = useSaveEquipo(equipo?.idEquipo)
   const sending = useRef(false)
   const form = useForm<EquipoFormInput, unknown, EquipoFormValues>({
-    resolver: zodResolver(createEquipoSchema(catalogos)),
+    resolver: (values, context, options) => zodResolver(createEquipoSchema(latest.current))(values, context, options),
     defaultValues: equipo ? {
       idCliente: String(equipo.idCliente), idTipoEquipo: String(equipo.idTipoEquipo), idMarca: String(equipo.idMarca),
       modelo: equipo.modelo, numeroSerie: equipo.numeroSerie, descripcion: equipo.descripcion ?? '',
@@ -116,7 +119,7 @@ export function EquipoForm({ equipo, onCancel, onSaved }: { equipo?: EquipoDto; 
         >
           <fieldset disabled={!allowed || isSubmitting} className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
-            <ClienteSelector selected={selected} onSelect={setSelected} disabled={!allowed || isSubmitting}
+            <ClienteSelector selected={selected} onSelect={cliente => { latest.current = { ...latest.current, clientes: cliente ? [cliente] : [] }; setSelected(cliente) }} disabled={!allowed || isSubmitting}
               registration={form.register('idCliente')}
               error={errors.idCliente}
             />

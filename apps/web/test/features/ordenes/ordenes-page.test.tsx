@@ -62,6 +62,14 @@ describe('órdenes conectadas', () => {
     fireEvent.change(screen.getByLabelText('Buscar orden'), { target: { value: 'SERIE' } })
     await waitFor(() => expect(fetcher.mock.calls.some(([input]) => urlOf(input).searchParams.get('search') === 'SERIE')).toBe(true))
   })
+  it('no marca error al elegir cliente y equipo activos (valida con la selección vigente)', async () => {
+    mockCreation(() => json({ data: { idOrden: 21, numeroOrden: 'OS-0021', estado: 'RECIBIDO' } }, 201))
+    renderWithSession(<OrdenForm onCancel={vi.fn()} />)
+    await fillCreation()
+    await waitFor(() => expect(screen.getByLabelText('Equipo *')).toHaveValue('SERIE-0041 · Modelo de prueba'))
+    expect(screen.queryByText('Selecciona un cliente activo del catálogo disponible.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Selecciona un equipo activo del cliente.')).not.toBeInTheDocument()
+  })
   it('crea OrdenInput con selección en segunda página, JSON y sin actor ni estado; protege doble submit', async () => {
     let resolve!: (response: Response) => void
     const fetcher = mockCreation(() => new Promise<Response>(done => { resolve = done }))

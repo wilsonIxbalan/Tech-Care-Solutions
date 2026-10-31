@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { AreaField, SelectField, TextField } from '@/components/shared/form-fields'
@@ -22,9 +22,12 @@ export function OrdenForm({ onCancel, onCreated }: { catalogos?: OrdenCatalogos;
   const mutation = useServiceMutation<{ idOrden: number; numeroOrden: string; estado: string }>('/ordenes')
   const lock = useRef(false)
   const [created, setCreated] = useState<string | null>(null)
+  // La selección se valida antes del siguiente render: el esquema se arma al validar, no con el estado previo.
+  const latest = useRef<OrdenCatalogos>({ clientes: [], equipos: [], prioridades: [] })
+  useEffect(() => { latest.current = { ...latest.current, prioridades: catalogos.data?.data.prioridades.map(p => ({ idPrioridad: p.id, nombre: p.nombre })) ?? [] } }, [catalogos.data])
   const form = useForm<OrdenFormInput, unknown, OrdenFormValues>({
     mode: 'onChange',
-    resolver: zodResolver(createOrdenSchema({ clientes: cliente ? [cliente] : [], equipos: equipo ? [equipo] : [], prioridades: catalogos.data?.data.prioridades.map(p => ({ idPrioridad: p.id, nombre: p.nombre })) ?? [] })),
+    resolver: (values, context, options) => zodResolver(createOrdenSchema(latest.current))(values, context, options),
     defaultValues: { idCliente: '', idEquipo: '', idPrioridad: '', problemaReportado: '', fechaEstimada: '', observaciones: '' },
   })
   const { errors } = form.formState
@@ -46,9 +49,10 @@ export function OrdenForm({ onCancel, onCreated }: { catalogos?: OrdenCatalogos;
     <h2 className="text-lg font-semibold">Recepción de orden</h2>
     <fieldset disabled={mutation.isPending} className="space-y-4">
       <ApiSelector<ClienteDto> searchable path="/clientes" label="Cliente" filters={{ estado: 'ACTIVO' }} selected={cliente} valueOf={c => c.idCliente} labelOf={c => c.nombreMostrar} error={errors.idCliente?.message} onSelect={value => {
-        setCliente(value); setEquipo(null); form.setValue('idCliente', value ? String(value.idCliente) : '', { shouldValidate: true }); form.setValue('idEquipo', '')
+        latest.current = { ...latest.current, clientes: value ? [value] : [], equipos: [] }
+        setCliente(value); setEquipo(null); form.setValue('idCliente', value ? String(value.idCliente) : '', { shouldValidate: true }); form.setValue('idEquipo', ''); form.clearErrors('idEquipo')
       }} />
-      <ApiSelector<EquipoDto> searchable key={cliente?.idCliente ?? 'sin-cliente'} path="/equipos" label="Equipo" filters={{ estado: 'ACTIVO', idCliente: cliente?.idCliente }} selected={equipo} disabled={!cliente} valueOf={e => e.idEquipo} labelOf={e => `${e.numeroSerie} · ${e.modelo}`} error={errors.idEquipo?.message} onSelect={value => { setEquipo(value); form.setValue('idEquipo', value ? String(value.idEquipo) : '', { shouldValidate: true }) }} />
+      <ApiSelector<EquipoDto> searchable key={cliente?.idCliente ?? 'sin-cliente'} path="/equipos" label="Equipo" filters={{ estado: 'ACTIVO', idCliente: cliente?.idCliente }} selected={equipo} disabled={!cliente} valueOf={e => e.idEquipo} labelOf={e => `${e.numeroSerie} · ${e.modelo}`} error={errors.idEquipo?.message} onSelect={value => { latest.current = { ...latest.current, equipos: value ? [value] : [] }; setEquipo(value); form.setValue('idEquipo', value ? String(value.idEquipo) : '', { shouldValidate: true }) }} />
       {catalogos.isPending ? <LoadingState label="Cargando prioridades…" /> : catalogos.isError ? <ErrorState description={catalogos.error.message} onRetry={() => void catalogos.refetch()} /> : <SelectField id="orden-prioridad" label="Prioridad" required options={catalogos.data.data.prioridades.map(p => ({ value: String(p.id), label: p.nombre }))} error={errors.idPrioridad?.message} {...form.register('idPrioridad')} />}
       <TextField id="orden-fecha" label="Fecha estimada" type="date" min={guatemalaCivilDay(new Date().toISOString())!} error={errors.fechaEstimada?.message} help="Fecha de entrega prevista. Selecciona hoy o una fecha posterior, según la hora de Guatemala." {...form.register('fechaEstimada')} />
       <AreaField id="orden-problema" placeholder="Describe la falla o el motivo del ingreso" label="Problema reportado" required maxLength={1000} error={errors.problemaReportado?.message} {...form.register('problemaReportado')} />
