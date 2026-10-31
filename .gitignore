@@ -28,7 +28,6 @@ test-results/
 /analisis
 /reference/
 /guias-equipo/
-/README.md
 /AGENTS.md
 /CLAUDE.md
 /.cursor/
@@ -38,6 +37,7 @@ test-results/
 # Markdown versionable: seguimiento, cinco documentos tecnicos y avisos legales.
 *.md
 !/seguimiento/**/*.md
+!/README.md
 !/apps/web/THIRD_PARTY_NOTICES.md
 !/Docs/
 !/Docs/01-arquitectura-flujos.md
