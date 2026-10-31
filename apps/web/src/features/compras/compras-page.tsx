@@ -9,7 +9,7 @@ import { ReceivedTable } from '@/components/shared/received-table'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { formatMoney, formatUtcDateTime } from '@/lib/format'
+import { formatMoney, formatGuatemalaDateTime } from '@/lib/format'
 import { apiFetch } from '@/lib/api-client'
 import { formatCivilDate } from '@/lib/format'
 import type { ReceivedData } from '@/lib/received-data'
@@ -54,7 +54,7 @@ export function ComprasPage({ catalogos = {}, compras, detalle, detalles }: { ca
     </div>
     {!datesValid ? <p role="alert">Indica un intervalo de fechas válido.</p> : <><ReceivedTable state={listState(query, compras)} caption="Compras" rowKey={c => c.idCompra} columns={[
       { title: 'Compra', cell: c => c.numeroCompra }, { title: 'Proveedor', cell: c => c.proveedorNombre }, { title: 'Bodega', cell: c => c.bodegaNombre },
-      { title: 'Fecha (UTC)', cell: c => formatUtcDateTime(c.fechaCompra) }, { title: 'Estado', cell: c => <Badge className={c.estado === 'PENDIENTE' ? 'border-amber-300 bg-amber-50 text-amber-900' : c.estado === 'RECIBIDA' ? 'border-teal-300 bg-teal-50 text-teal-900' : 'border-red-300 bg-red-50 text-red-800'}>{c.estado}</Badge> }, { title: 'Total (Q)', cell: c => formatMoney(c.total) },
+      { title: 'Fecha (Guatemala)', cell: c => formatGuatemalaDateTime(c.fechaCompra) }, { title: 'Estado', cell: c => <Badge className={c.estado === 'PENDIENTE' ? 'border-amber-300 bg-amber-50 text-amber-900' : c.estado === 'RECIBIDA' ? 'border-teal-300 bg-teal-50 text-teal-900' : 'border-red-300 bg-red-50 text-red-800'}>{c.estado}</Badge> }, { title: 'Total (Q)', cell: c => formatMoney(c.total) },
       { title: 'Acciones', cell: c => <Button variant="outline" onClick={() => setIdCompra(c.idCompra)} aria-label={`Ver ${c.numeroCompra}`}>Ver detalle</Button> },
     ]} />
     {query.isError && <Button variant="outline" onClick={() => void query.refetch()}>Reintentar consulta</Button>}

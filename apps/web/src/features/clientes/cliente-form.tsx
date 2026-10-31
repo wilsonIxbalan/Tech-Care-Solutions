@@ -134,7 +134,8 @@ export function ClienteForm({ cliente, onCancel, onSaved }: { cliente?: ClienteD
             <TextField
               id="cliente-nit"
               label="NIT"
-              placeholder="NIT del cliente"
+              placeholder="1234567-9 o CF"
+              help="Incluye el dígito verificador; se acepta con o sin guion."
               required
               maxLength={20}
               error={formState.errors.nit?.message}
@@ -144,6 +145,9 @@ export function ClienteForm({ cliente, onCancel, onSaved }: { cliente?: ClienteD
               id="cliente-telefono"
               label="Teléfono"
               type="tel"
+              inputMode="tel"
+              placeholder="2222-3333"
+              help="8 dígitos; prefijo +502 opcional."
               autoComplete="tel"
               required
               maxLength={20}

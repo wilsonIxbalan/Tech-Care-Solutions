@@ -5,7 +5,7 @@ import { canService } from '@/features/ordenes/api'
 import { ServiceForm } from '@/features/ordenes/service-form'
 import { ReceivedTable } from '@/components/shared/received-table'
 import { Button } from '@/components/ui/button'
-import { formatMoney, formatUtcDateTime } from '@/lib/format'
+import { formatMoney, formatGuatemalaDateTime } from '@/lib/format'
 import type { OrdenDetalleDto, ReparacionDto } from '@/types/domain'
 import type { ReparacionCatalogos } from './reparacion-catalogos'
 import { ReparacionForm } from './reparacion-form'
@@ -22,9 +22,9 @@ function ReparacionDetalle({ reparacion: r, orden }: { reparacion: ReparacionDto
   return <article className="space-y-4 rounded-xl border p-4">
     <h3 className="font-semibold">Reparación #{r.idReparacion} · {r.estado}</h3>
     <p>{r.descripcion}</p><p>Técnico: {r.tecnicoNombre} · Mano de obra: {formatMoney(r.costoManoObra)}</p>
-    <p>Inicio: {formatUtcDateTime(r.fechaInicio)} · Fin: {r.fechaFin ? formatUtcDateTime(r.fechaFin) : 'En proceso'}</p>
+    <p>Inicio: {formatGuatemalaDateTime(r.fechaInicio)} · Fin: {r.fechaFin ? formatGuatemalaDateTime(r.fechaFin) : 'En proceso'}</p>
     <ReceivedTable state={{ status: 'success', data: r.actividades }} caption="Actividades" rowKey={a => a.idActividad} columns={[
-      { title: 'Descripción', cell: a => a.descripcion }, { title: 'Técnico', cell: a => a.tecnicoNombre }, { title: 'Horas', cell: a => a.horasInvertidas }, { title: 'Fecha', cell: a => formatUtcDateTime(a.fechaActividad) },
+      { title: 'Descripción', cell: a => a.descripcion }, { title: 'Técnico', cell: a => a.tecnicoNombre }, { title: 'Horas', cell: a => a.horasInvertidas }, { title: 'Fecha', cell: a => formatGuatemalaDateTime(a.fechaActividad) },
     ]} />
     <ReceivedTable state={{ status: 'success', data: r.repuestos }} caption="Repuestos consumidos" rowKey={c => c.idRepuestoReparacion} columns={[
       { title: 'Repuesto', cell: c => `${c.codigoRepuesto} · ${c.repuestoNombre}` }, { title: 'Bodega', cell: c => c.bodegaNombre }, { title: 'Cantidad', cell: c => c.cantidad }, { title: 'Precio histórico (Q)', cell: c => formatMoney(c.precioVentaUnitario) }, { title: 'Subtotal (Q)', cell: c => formatMoney(c.subtotal) }, { title: 'Estado', cell: c => c.estado },

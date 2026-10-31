@@ -9,10 +9,10 @@ import type { ReceivedData } from '@/lib/received-data'
 import type { EntregaDto, OrdenResumenDto } from '@/types/domain'
 import { EntregaForm } from './entrega-form'
 import type { OrdenEntrega } from './entrega-schema'
-import { formatUtcDateTime } from '@/lib/format'
+import { formatGuatemalaDateTime } from '@/lib/format'
 
 export function EntregaDetalle({ entrega }: { entrega: EntregaDto }) {
-  return <section className="space-y-2 rounded-xl border p-4" aria-label="Entrega registrada"><h2 className="font-semibold">Entrega registrada</h2><p>Receptor: {entrega.nombreRecibe}</p><p>Documento: {entrega.documentoRecibe ?? 'No indicado'}</p><p>Responsable: {entrega.usuarioEntregaNombre}</p><p>Fecha: {formatUtcDateTime(entrega.fechaEntrega)}</p><p>{entrega.observaciones}</p></section>
+  return <section className="space-y-2 rounded-xl border p-4" aria-label="Entrega registrada"><h2 className="font-semibold">Entrega registrada</h2><p>Receptor: {entrega.nombreRecibe}</p><p>Documento: {entrega.documentoRecibe ?? 'No indicado'}</p><p>Responsable: {entrega.usuarioEntregaNombre}</p><p>Fecha: {formatGuatemalaDateTime(entrega.fechaEntrega)}</p><p>{entrega.observaciones}</p></section>
 }
 
 export function EntregasPage(_props: { ordenes?: readonly OrdenEntrega[]; entregas?: ReceivedData<EntregaDto> }) {

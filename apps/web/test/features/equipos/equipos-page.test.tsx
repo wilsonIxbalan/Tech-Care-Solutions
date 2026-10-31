@@ -13,7 +13,7 @@ async function openForm() {
   return view
 }
 function fill(label: RegExp, value: string) { fireEvent.change(screen.getByLabelText(label), { target: { value } }) }
-function select() { fill(/^Cliente propietario/, '11'); fill(/^Tipo de equipo/, '7'); fill(/^Marca/, '23') }
+function select() { fireEvent.click(screen.getByRole('option', { name: 'Ana Pérez' })); fill(/^Tipo de equipo/, '7'); fill(/^Marca/, '23') }
 function text() { fill(/^Modelo/, ' Modelo de prueba '); fill(/^Número de serie/, ' SERIE-PRUEBA '); fill(/^Descripción/, ' Equipo con cargador ') }
 function submit() { fireEvent.click(screen.getByRole('button', { name: 'Guardar equipo' })) }
 const writes = (fetchMock: ReturnType<typeof mockHttp>) => fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST' || init?.method === 'PATCH')
@@ -76,18 +76,25 @@ describe('Equipos operativo', () => {
     expect(await screen.findByRole('option', { name: 'Laptop' })).toBeInTheDocument()
   })
 
-  it('busca propietarios remotamente y conserva selección entre páginas y búsquedas', async () => {
+  it('busca propietarios con un solo campo, conserva selección entre páginas y exige elegir al escribir otra búsqueda', async () => {
     const otro = { ...cliente, idCliente: 222, nombreMostrar: 'Cliente página dos' }
     const fetchMock = mockHttp(url => url.pathname.endsWith('/clientes') ? json(list(url.searchParams.get('page') === '2' ? [otro] : [cliente], Number(url.searchParams.get('page')), 2)) : undefined)
     await openForm(); select(); text()
+    fireEvent.focus(screen.getByRole('combobox', { name: /^Cliente propietario/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Más clientes' }))
     await screen.findByRole('option', { name: 'Cliente página dos' })
-    expect(screen.getByRole('combobox', { name: /^Cliente propietario/ })).toHaveValue('11')
-    fill(/^Cliente propietario/, '222')
-    fill(/^Buscar cliente propietario/, 'remoto')
+    expect(screen.getByRole('combobox', { name: /^Cliente propietario/ })).toHaveValue('Ana Pérez')
+    fireEvent.click(screen.getByRole('option', { name: 'Cliente página dos' }))
+    fill(/^Cliente propietario/, 'remoto')
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('search=remoto') && String(url).includes('page=1'))).toBe(true))
-    expect(screen.getByRole('combobox', { name: /^Cliente propietario/ })).toHaveValue('222')
-    expect(screen.getByRole('option', { name: 'Cliente página dos' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: /^Cliente propietario/ })).toHaveValue('remoto')
+    submit()
+    expect(await screen.findByText('Selecciona un cliente propietario del catálogo disponible.')).toBeVisible()
+    expect(writes(fetchMock)).toHaveLength(0)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Más clientes' })).toBeEnabled())
+    fireEvent.click(screen.getByRole('button', { name: 'Más clientes' }))
+    fireEvent.focus(screen.getByRole('combobox', { name: /^Cliente propietario/ }))
+    fireEvent.click(await screen.findByRole('option', { name: 'Cliente página dos' }))
     submit(); expect(await screen.findByText('Equipo guardado correctamente.')).toBeVisible()
     expect(JSON.parse(String(writes(fetchMock)[0][1]?.body)).idCliente).toBe(222)
   })
@@ -108,13 +115,13 @@ describe('Equipos operativo', () => {
     renderFeature(<EquiposPage />)
     fireEvent.click(await screen.findByRole('button', { name: 'Editar SERIE-PRUEBA' }))
     await screen.findByRole('option', { name: 'Laptop' })
-    expect(screen.getByRole('combobox', { name: /^Cliente propietario/ })).toHaveValue('11')
+    expect(screen.getByRole('combobox', { name: /^Cliente propietario/ })).toHaveValue('Ana Pérez')
     expect(screen.getByRole('combobox', { name: /^Tipo de equipo/ })).toHaveValue('7')
     expect(screen.getByRole('combobox', { name: /^Marca/ })).toHaveValue('23')
     await screen.findByRole('option', { name: 'Otro cliente' })
-    fill(/^Cliente propietario/, '222'); submit()
+    fireEvent.click(screen.getByRole('option', { name: 'Otro cliente' })); submit()
     expect(await screen.findByText('No se puede cambiar el propietario de un equipo con órdenes.')).toBeVisible()
-    expect(screen.getByRole('combobox', { name: /^Cliente propietario/ })).toHaveValue('222')
+    expect(screen.getByRole('combobox', { name: /^Cliente propietario/ })).toHaveValue('Otro cliente')
     expect(screen.getByLabelText(/^Modelo/)).toHaveValue(equipo.modelo)
     expect(writes(fetchMock)).toHaveLength(1)
     expect(writes(fetchMock)[0][0]).toContain('/equipos/31')
@@ -169,7 +176,7 @@ describe('Equipos operativo', () => {
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/equipos?page=2'))).toBe(true))
     fill(/^Buscar equipos/, 'SERIE')
     fireEvent.change(screen.getByLabelText('Estado'), { target: { value: 'BAJA' } })
-    await screen.findByRole('option', { name: 'Ana Pérez' }); fill(/^Cliente propietario/, '11')
+    fireEvent.click(await screen.findByRole('option', { name: 'Ana Pérez' }))
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/equipos?page=1') && String(url).includes('search=SERIE') && String(url).includes('estado=BAJA') && String(url).includes('idCliente=11'))).toBe(true))
   })
 

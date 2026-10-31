@@ -1,6 +1,6 @@
 import { ReceivedTable } from '@/components/shared/received-table'
 import type { FacturaDetalleDto } from '@/types/domain'
-import { formatMoney, formatUtcDateTime } from '@/lib/format'
+import { formatMoney, formatGuatemalaDateTime } from '@/lib/format'
 import { useContext, useEffect, useId, useRef } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Tooltip } from 'radix-ui'
@@ -35,7 +35,7 @@ export function FacturaDetalle({ factura }: { factura: FacturaDetalleDto }) {
     {canDownload && user && <FacturaPdf key={`${user.idUsuario}-${factura.idFactura}`} factura={factura} />}
     <dl className="grid gap-3 text-sm sm:grid-cols-2">
       {[
-        ['Orden', factura.numeroOrden], ['Cliente', factura.clienteNombre], ['NIT de facturación', factura.nitFacturacion], ['Nombre de facturación', factura.nombreFacturacion], ['Dirección', factura.direccionFacturacion ?? '—'], ['Fecha (UTC)', formatUtcDateTime(factura.fechaFactura)],
+        ['Orden', factura.numeroOrden], ['Cliente', factura.clienteNombre], ['NIT de facturación', factura.nitFacturacion], ['Nombre de facturación', factura.nombreFacturacion], ['Dirección', factura.direccionFacturacion ?? '—'], ['Fecha (Guatemala)', formatGuatemalaDateTime(factura.fechaFactura)],
         ['Mano de obra (Q)', formatMoney(factura.subtotalManoObra)], ['Repuestos (Q)', formatMoney(factura.subtotalRepuestos)], ['Subtotal (Q)', formatMoney(factura.subtotal)], ['Tasa (%)', factura.porcentajeImpuesto], ['Impuesto (Q)', formatMoney(factura.impuesto)], ['Total (Q)', formatMoney(factura.total)], ['Total pagado (Q)', formatMoney(factura.totalPagado)], ['Saldo (Q)', formatMoney(factura.saldo)],
       ].map(([label, value]) => <div key={label} className="min-w-0 break-words"><dt className="text-muted-foreground">{label}</dt><dd>{value}</dd></div>)}
     </dl>
@@ -44,7 +44,7 @@ export function FacturaDetalle({ factura }: { factura: FacturaDetalleDto }) {
       { title: 'Descripción', cell: d => d.descripcion }, { title: 'Cantidad', cell: d => d.cantidad }, { title: 'Precio histórico (Q)', cell: d => formatMoney(d.precioUnitario) }, { title: 'Subtotal (Q)', cell: d => formatMoney(d.subtotal) },
     ]} />
     <ReceivedTable state={{ status: 'success', data: factura.pagos }} caption="Pagos de la factura" rowKey={p => p.idPago} columns={[
-      { title: 'Fecha (UTC)', cell: p => formatUtcDateTime(p.fechaPago) }, { title: 'Método', cell: p => p.metodoPagoNombre }, { title: 'Monto (Q)', cell: p => formatMoney(p.monto) }, { title: 'Referencia', cell: p => p.referencia }, { title: 'Estado', cell: p => p.estado }, { title: 'Responsable', cell: p => p.usuarioNombre }, { title: 'Motivo de anulación', cell: p => p.motivoAnulacion },
+      { title: 'Fecha (Guatemala)', cell: p => formatGuatemalaDateTime(p.fechaPago) }, { title: 'Método', cell: p => p.metodoPagoNombre }, { title: 'Monto (Q)', cell: p => formatMoney(p.monto) }, { title: 'Referencia', cell: p => p.referencia }, { title: 'Estado', cell: p => p.estado }, { title: 'Responsable', cell: p => p.usuarioNombre }, { title: 'Motivo de anulación', cell: p => p.motivoAnulacion },
     ]} />
   </div>
 }

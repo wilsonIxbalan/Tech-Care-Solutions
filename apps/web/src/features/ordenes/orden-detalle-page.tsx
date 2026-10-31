@@ -12,7 +12,7 @@ import { ReparacionesSection } from '@/features/reparaciones/reparaciones-sectio
 import { EntregaForm } from '@/features/entregas/entrega-form'
 import { EntregaDetalle } from '@/features/entregas/entregas-page'
 import { FacturaDetalle } from '@/features/facturacion/factura-detalle'
-import { formatMoney, formatUtcDateTime } from '@/lib/format'
+import { formatMoney, formatGuatemalaDateTime } from '@/lib/format'
 import { useOrden } from './api'
 import { ServiceForm } from './service-form'
 
@@ -32,14 +32,14 @@ export function OrdenDetallePage() {
   if (['RECIBIDO', 'DIAGNOSTICO', 'ESPERANDO_AUTORIZACION', 'REPARACION'].includes(o.estado) && !o.factura && user?.roles.some(role => ['RECEPCION', 'ADMINISTRADOR'].includes(role))) transitions.push('CANCELADO')
   return <div className="space-y-6">
     <PageHeader title={o.numeroOrden} description={`${o.clienteNombre} · ${o.numeroSerie} · ${o.estado}`} actions={<Button asChild variant="outline"><Link to="/ordenes">Volver a órdenes</Link></Button>} />
-    <section className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2" aria-label="Datos de orden"><p>Estado: {o.estado}</p><div className="flex items-center gap-2">Prioridad: <PriorityBadge priority={o.prioridad} /></div><p>Ingreso: {formatUtcDateTime(o.fechaIngreso)}</p><p>Fecha estimada: {o.fechaEstimada ?? 'Sin fecha estimada'}</p><p className="sm:col-span-2">Problema reportado: {o.problemaReportado}</p><p className="sm:col-span-2">Observaciones: {o.observaciones ?? 'Sin observaciones'}</p></section>
+    <section className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2" aria-label="Datos de orden"><p>Estado: {o.estado}</p><div className="flex items-center gap-2">Prioridad: <PriorityBadge priority={o.prioridad} /></div><p>Ingreso: {formatGuatemalaDateTime(o.fechaIngreso)}</p><p>Fecha estimada: {o.fechaEstimada ?? 'Sin fecha estimada'}</p><p className="sm:col-span-2">Problema reportado: {o.problemaReportado}</p><p className="sm:col-span-2">Observaciones: {o.observaciones ?? 'Sin observaciones'}</p></section>
     {transitions.length > 0 && <ServiceForm title="Cambiar estado de orden" key={o.estado} path={`/ordenes/${o.idOrden}/estado`} schema={z.object({ estado: z.enum(transitions as [string, ...string[]]), observacion: z.string().trim().min(1, 'Indica el motivo del cambio.').max(500) })} confirm submitLabel="Revisar cambio" fields={[{ name: 'estado', label: 'Nuevo estado', kind: 'select', required: true, options: transitions.map(value => ({ value, label: value })) }, { name: 'observacion', label: 'Motivo del cambio', kind: 'area', required: true, maxLength: 500 }]} />}
     <ReceivedTable state={{ status: 'success', data: o.historial }} caption="Historial de estados" rowKey={h => h.idHistorial} columns={[
-      { title: 'Anterior', cell: h => h.estadoAnterior }, { title: 'Nuevo', cell: h => h.estadoNuevo }, { title: 'Fecha', cell: h => formatUtcDateTime(h.fechaCambio) }, { title: 'Usuario', cell: h => h.usuarioNombre }, { title: 'Observación', cell: h => h.observacion },
+      { title: 'Anterior', cell: h => h.estadoAnterior }, { title: 'Nuevo', cell: h => h.estadoNuevo }, { title: 'Fecha', cell: h => formatGuatemalaDateTime(h.fechaCambio) }, { title: 'Usuario', cell: h => h.usuarioNombre }, { title: 'Observación', cell: h => h.observacion },
     ]} />
     <section className="space-y-4" aria-label="Diagnósticos"><h2 className="text-xl font-semibold">Diagnósticos</h2>
       <ReceivedTable state={{ status: 'success', data: o.diagnosticos }} caption="Diagnósticos registrados" rowKey={d => d.idDiagnostico} columns={[
-        { title: 'Descripción', cell: d => d.descripcion }, { title: 'Técnico', cell: d => d.tecnicoNombre }, { title: 'Costo estimado (Q)', cell: d => formatMoney(d.costoManoObraEstimado) }, { title: 'Estado', cell: d => d.estado }, { title: 'Fecha', cell: d => formatUtcDateTime(d.fechaDiagnostico) },
+        { title: 'Descripción', cell: d => d.descripcion }, { title: 'Técnico', cell: d => d.tecnicoNombre }, { title: 'Costo estimado (Q)', cell: d => formatMoney(d.costoManoObraEstimado) }, { title: 'Estado', cell: d => d.estado }, { title: 'Fecha', cell: d => formatGuatemalaDateTime(d.fechaDiagnostico) },
       ]} />
       {showDiagnosis ? <DiagnosticoForm orden={o} onCancel={() => setShowDiagnosis(false)} /> : <Button variant="outline" onClick={() => setShowDiagnosis(true)}>Ver registro de diagnóstico</Button>}
     </section>

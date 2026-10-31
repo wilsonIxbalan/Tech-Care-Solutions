@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ApiError } from '../../common/api-error';
+import { ApiError, invalid } from '../../common/api-error';
 import { OrderQuery } from '../../common/query.dto';
 import { ReadRepository } from '../../database/read.repository';
 import { SessionUser } from '../auth/auth.dto';
@@ -27,6 +27,11 @@ export class ServiceService {
     return this.reads.orderDetail(id);
   }
   create(dto: OrderInput, user: SessionUser) {
+    const parts = new Intl.DateTimeFormat('en', { timeZone: 'America/Guatemala', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+    const today = ['year', 'month', 'day'].map(type => parts.find(part => part.type === type)!.value).join('-');
+    if (dto.fechaEstimada && dto.fechaEstimada < today) {
+      throw invalid('fechaEstimada', `No puedes agendar la entrega para ${dto.fechaEstimada}: es anterior a hoy (${today}, hora de Guatemala). Selecciona hoy o una fecha posterior.`);
+    }
     return this.repository.create(dto, user.idUsuario);
   }
   diagnosis(id: number, dto: DiagnosisInput, user: SessionUser) {

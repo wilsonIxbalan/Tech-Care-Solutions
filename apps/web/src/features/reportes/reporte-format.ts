@@ -1,4 +1,4 @@
-import { formatCivilDate, formatMoney, formatUtcDateTime } from '@/lib/format'
+import { formatCivilDate, formatMoney, formatGuatemalaDateTime } from '@/lib/format'
 import type { ReportRow } from './reportes-model'
 import { reportPublicKey } from './reportes-model'
 
@@ -10,7 +10,7 @@ export function formatReportValue(key: string, value: ReportRow[string] | undefi
   if (value === null) return '—'
   if (value === undefined) return 'Campo no recibido'
   if (moneyColumns.has(key)) return typeof value === 'string' && formatMoney(value) !== '—' ? formatMoney(value) : 'Importe no verificable'
-  if (instantColumns.has(key)) return typeof value === 'string' ? formatUtcDateTime(value) : 'Fecha no verificable'
+  if (instantColumns.has(key)) return typeof value === 'string' ? formatGuatemalaDateTime(value) : 'Fecha no verificable'
   if (key === 'FechaEstimada') return typeof value === 'string' && formatCivilDate(value) !== '—' ? formatCivilDate(value) : 'Fecha civil no verificable'
   return typeof value === 'boolean' ? value ? 'Sí' : 'No' : String(value)
 }

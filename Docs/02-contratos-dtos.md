@@ -7,6 +7,8 @@ Complementos: [rutas y respuestas](03-endpoints-bd.md), [errores/sesión](04-err
 - IDs: enteros positivos de SQL INT. Cantidades: enteros positivos; stock mínimo permite 0. Booleanos reales, no "true"/"false".
 - Money: string decimal de dos posiciones, sin símbolo/separador, p. ej. `"125.50"`; escala/rango del DECIMAL SQL correspondiente. Horas son decimal positivo y porcentaje va de 0.00 a 100.00.
 - Eventos: ISO UTC, p. ej. `2026-10-21T16:30:00Z`; UI muestra America/Guatemala. Fecha civil: YYYY-MM-DD, sin conversión de zona accidental.
+- Presentación de todas las horas y exportaciones: America/Guatemala (UTC−6). CSV/XLSX convierten columnas de fecha/hora a ISO con offset `-06:00`; las fechas civiles no cambian. Los ingresos mensuales se agrupan por mes de Guatemala. SQL y transporte de instantes conservan UTC para no reinterpretar registros históricos.
+- Clientes: NIT de 2 a 12 posiciones con dígito verificador módulo 11 (0–9 o K), guion opcional, o CF; se normalizan letras a mayúsculas. Esto valida formato y dígito, no inscripción en RTU. Teléfono nacional de ocho dígitos, inicial 2–7, prefijo +502 opcional; admite separación por espacio o guion. Alta y PATCH aplican las mismas reglas.
 - Obligatorios de texto: trim/no vacío y máximo de SQL. Opcionales vacíos se normalizan a null solo si la columna lo permite. **No recortar ni normalizar passwords.**
 - En PATCH, omitir significa conservar; null solo limpia un campo nullable. Rechazar campos desconocidos y cantidades/precios inválidos antes del SP.
 - Actor, técnico de diagnóstico/inicio, recepción/caja/entrega y fechas automáticas salen de sesión/servidor, nunca del body.
@@ -39,7 +41,7 @@ Notación: `s(n)` string de máximo n; `?` opcional, sujeto a nullabilidad; Mone
 
 ## DTO de acciones
 
-- **OrdenInput:** idCliente, idEquipo, idPrioridad, problemaReportado s(1000), fechaEstimada? fecha civil, observaciones? s(500).
+- **OrdenInput:** idCliente, idEquipo, idPrioridad, problemaReportado s(1000), fechaEstimada? fecha civil (hoy o posterior en America/Guatemala), observaciones? s(500). Una fecha pasada devuelve 400 VALIDACION con detalle en fechaEstimada.
 - **DiagnosticoInput:** descripcion s(1000), costoManoObraEstimado Money.
 - **ReparacionInput:** descripcion s(1000), costoManoObra Money. **FinalizarInput:** observacion? s(500).
 - **ActividadInput:** descripcion s(500), horasInvertidas decimal string positivo, escala/rango DECIMAL(5,2).

@@ -1,15 +1,17 @@
 import { z } from 'zod'
+import { validNit, phonePattern, nitMessage, phoneMessage } from '@/lib/client-validation'
 
 // Límites de texto de dbo.Cliente en database/fases/01_tablas.sql.
-// Falta acordar el formato de NIT y teléfono; no se imponen patrones.
 // La unicidad del NIT (excepto CF) corresponde al servidor.
 const commonFields = {
   nit: z.string().trim()
     .min(1, 'Escribe el NIT.')
-    .max(20, 'El NIT debe tener como máximo 20 caracteres.'),
+    .max(20, 'El NIT debe tener como máximo 20 caracteres.')
+    .toUpperCase().refine(validNit, nitMessage),
   telefono: z.string().trim()
     .min(1, 'Escribe el teléfono.')
-    .max(20, 'El teléfono debe tener como máximo 20 caracteres.'),
+    .max(20, 'El teléfono debe tener como máximo 20 caracteres.')
+    .regex(phonePattern, phoneMessage),
   email: z.string().trim()
     .max(120, 'El correo debe tener como máximo 120 caracteres.')
     .refine(value => value === '' || z.email().safeParse(value).success, 'Escribe un correo válido.')
