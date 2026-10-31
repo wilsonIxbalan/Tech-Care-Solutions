@@ -7,6 +7,9 @@ overrides:
   '@nestjs/swagger>js-yaml': '5.4.1'
   # ExcelJS usa uuid.v4; 11.1.1 conserva entrada CommonJS y corrige limites.
   'exceljs>uuid': '11.1.1'
+  # GHSA-g3hv-75wg-m249 via exceljs>archiver; ambos solo usan la clase Minimatch.
+  'glob@7>minimatch': '11.0.1'
+  'readdir-glob>minimatch': '11.0.1'
   # Uso actual: SQL login, no auth_code. Validar carga del driver/Identity y
   # suite completa antes de cambiar estos pins o habilitar autenticacion Entra.
   '@azure/identity>@azure/msal-node': '7.1.0'
