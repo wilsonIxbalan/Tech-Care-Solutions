@@ -1,4 +1,6 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { validNit, phonePattern } from '../../common/client-validation';
 import {
   ArrayNotEmpty,
   ArrayUnique,
@@ -7,6 +9,8 @@ import {
   IsString,
   MaxLength,
   MinLength,
+  Matches,
+  ValidateBy,
 } from 'class-validator';
 import {
   BooleanField,
@@ -17,8 +21,13 @@ import {
 } from '../../common/validation';
 export class ClientInput {
   @Choice(['INDIVIDUAL', 'EMPRESARIAL']) tipoCliente!: string;
-  @Text(20) nit!: string;
-  @Text(20) telefono!: string;
+  @Text(20)
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim().toUpperCase() : value)
+  @ValidateBy({ name: 'validNit', validator: { validate: validNit, defaultMessage: () => 'Escribe un NIT válido con su dígito verificador (por ejemplo, 1234567-9) o CF para consumidor final.' } })
+  nit!: string;
+  @Text(20)
+  @Matches(phonePattern, { message: 'Escribe un teléfono de Guatemala de 8 dígitos, que inicie entre 2 y 7; puedes anteponer +502.' })
+  telefono!: string;
   @Text(100, true, true) nombres?: string | null;
   @Text(100, true, true) apellidos?: string | null;
   @Text(150, true, true) razonSocial?: string | null;

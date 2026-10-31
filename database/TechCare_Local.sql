@@ -1935,7 +1935,7 @@ BEGIN
  IF @Page<1 OR @PageSize IS NULL OR @PageSize NOT BETWEEN 1 AND 100 THROW 51700,N'Paginacion no valida.',1;
  IF @MaxRows IS NOT NULL AND @MaxRows NOT BETWEEN 1 AND 10000 THROW 51700,N'Limite de filas no valido.',1;
  -- Grano factura antes de agrupar: no JOIN directo con pagos ni lineas 1:N.
- SELECT YEAR(f.FechaFactura) AS Anio,MONTH(f.FechaFactura) AS Mes,COUNT_BIG(*) AS CantidadFacturas,
+ SELECT YEAR(DATEADD(HOUR,-6,f.FechaFactura)) AS Anio,MONTH(DATEADD(HOUR,-6,f.FechaFactura)) AS Mes,COUNT_BIG(*) AS CantidadFacturas,
   SUM(f.SubtotalManoObra) AS TotalManoObra,SUM(f.SubtotalRepuestos) AS TotalRepuestos,
   SUM(f.Subtotal) AS Subtotal,SUM(f.Impuesto) AS Impuesto,SUM(f.Total) AS Total
  INTO #Filas
@@ -1943,7 +1943,7 @@ BEGIN
  JOIN dbo.Cliente c ON c.IdCliente=e.IdCliente WHERE f.Estado<>'ANULADA'
   AND (@IdCliente IS NULL OR c.IdCliente=@IdCliente) AND (@Desde IS NULL OR f.FechaFactura>=@Desde)
   AND (@HastaExclusiva IS NULL OR f.FechaFactura<@HastaExclusiva)
- GROUP BY YEAR(f.FechaFactura),MONTH(f.FechaFactura);
+ GROUP BY YEAR(DATEADD(HOUR,-6,f.FechaFactura)),MONTH(DATEADD(HOUR,-6,f.FechaFactura));
  DELETE r FROM #Filas r WHERE @Search IS NOT NULL AND NOT EXISTS
  (SELECT 1 FROM (VALUES
   (CONVERT(NVARCHAR(MAX),CAST(r.TotalManoObra AS DECIMAL(38,2)))),(CONVERT(NVARCHAR(MAX),CAST(r.TotalRepuestos AS DECIMAL(38,2)))),

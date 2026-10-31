@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { StatusBadge } from '@/components/shared/status-badge'
 import { PriorityBadge } from '@/components/shared/priority-badge'
 import { useSession } from '@/features/auth/session-context'
-import { formatUtcDateTime } from '@/lib/format'
+import { formatGuatemalaDateTime } from '@/lib/format'
 import type { OrdenCatalogos } from './orden-catalogos'
 import { OrdenForm } from './orden-form'
 import { canService, orderStates, useOrdenes, useServiceCatalogos } from './api'
@@ -35,7 +35,7 @@ export function OrdenList({ initialState = '', title = 'Órdenes' }: { initialSt
     {catalogos.isError && <ErrorState description={catalogos.error.message} onRetry={() => void catalogos.refetch()} />}
     {orders.isPending ? <LoadingState label="Consultando órdenes…" /> : orders.isError ? <ErrorState description={orders.error.message} onRetry={() => void orders.refetch()} /> : <>
       {!orders.data.data.length ? <EmptyState title="Sin órdenes" description="No hay órdenes que coincidan con estos filtros." /> : <Table containerLabel={title}><caption className="sr-only">{title}</caption><TableHeader><TableRow>{['Orden', 'Cliente', 'Equipo', 'Estado', 'Prioridad', 'Ingreso'].map(h => <TableHead key={h}>{h}</TableHead>)}</TableRow></TableHeader><TableBody>{orders.data.data.map(o => <TableRow key={o.idOrden}>
-        <TableCell><Link className="rounded-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" to={`/ordenes/${o.idOrden}`}>{o.numeroOrden}</Link></TableCell><TableCell>{o.clienteNombre}</TableCell><TableCell>{o.numeroSerie}</TableCell><TableCell><StatusBadge state={o.estado} /></TableCell><TableCell><PriorityBadge priority={o.prioridad} /></TableCell><TableCell>{formatUtcDateTime(o.fechaIngreso)}</TableCell>
+        <TableCell><Link className="rounded-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" to={`/ordenes/${o.idOrden}`}>{o.numeroOrden}</Link></TableCell><TableCell>{o.clienteNombre}</TableCell><TableCell>{o.numeroSerie}</TableCell><TableCell><StatusBadge state={o.estado} /></TableCell><TableCell><PriorityBadge priority={o.prioridad} /></TableCell><TableCell>{formatGuatemalaDateTime(o.fechaIngreso)}</TableCell>
       </TableRow>)}</TableBody></Table>}
       <div className="flex items-center gap-3"><Button variant="outline" disabled={filters.page <= 1 || orders.isFetching} onClick={() => setFilters({ ...filters, page: filters.page - 1 })}>Anterior</Button><span>Página {filters.page} de {Math.max(1, orders.data.meta?.totalPages ?? 1)} · {orders.data.meta?.total ?? orders.data.data.length} órdenes</span><Button variant="outline" disabled={filters.page >= (orders.data.meta?.totalPages ?? 1) || orders.isFetching} onClick={() => setFilters({ ...filters, page: filters.page + 1 })}>Siguiente</Button></div>
     </>}

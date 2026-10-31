@@ -45,12 +45,22 @@ describe('resultado validado de Clientes', () => {
     })
   })
 
-  it.each(['nit', 'telefono'])('respeta el límite existente de 20 caracteres de %s sin imponer un formato', field => {
+  it.each(['nit', 'telefono'])('rechaza texto libre y exceso de longitud en %s', field => {
     const values = { ...commonValues, tipoCliente: 'INDIVIDUAL', nombres: 'Ana', apellidos: 'Pérez' }
-    expect(clienteSchema.safeParse({ ...values, [field]: 'x'.repeat(20) }).success).toBe(true)
+    expect(clienteSchema.safeParse({ ...values, [field]: 'x'.repeat(20) }).success).toBe(false)
     const result = clienteSchema.safeParse({ ...values, [field]: 'x'.repeat(21) })
     expect(result.success).toBe(false)
     if (!result.success) expect(result.error.issues[0].path).toEqual([field])
+  })
+
+  it.each(['CF', 'cf', '1234567-9', '12345679', '1000002-K', '1000002k'])('acepta NIT con dígito válido: %s', nit => {
+    expect(clienteSchema.safeParse({ ...commonValues, tipoCliente: 'INDIVIDUAL', nombres: 'Ana', apellidos: 'Pérez', nit }).success).toBe(true)
+  })
+  it.each(['1234567-5', '000000-0', 'ABC', '123-4-5', '12345678901234'])('rechaza NIT inválido: %s', nit => {
+    expect(clienteSchema.safeParse({ ...commonValues, tipoCliente: 'INDIVIDUAL', nombres: 'Ana', apellidos: 'Pérez', nit }).success).toBe(false)
+  })
+  it.each(['telefono', '12345678', '2222333', '222233333', '+50322223333', '2222abcd'])('rechaza teléfono inválido: %s', telefono => {
+    expect(clienteSchema.safeParse({ ...commonValues, tipoCliente: 'INDIVIDUAL', nombres: 'Ana', apellidos: 'Pérez', telefono }).success).toBe(false)
   })
 
   it.each([['nombres', 100], ['apellidos', 100], ['direccion', 250]] as const)('respeta el límite individual de %s', (field, limit) => {

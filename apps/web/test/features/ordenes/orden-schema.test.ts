@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { OrdenCatalogos } from '@/features/ordenes/orden-catalogos'
 import { createOrdenSchema } from '@/features/ordenes/orden-schema'
 
@@ -23,6 +23,8 @@ const values = {
 }
 
 describe('validación de recepción de órdenes', () => {
+  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-31T18:00:00Z')) })
+  afterEach(() => vi.useRealTimers())
   it('recorta texto, mantiene la fecha civil y excluye datos asignados por el servidor', () => {
     expect(createOrdenSchema(catalogos).parse({
       ...values, problemaReportado: '  No enciende  ', fechaEstimada: '2026-10-31', observaciones: '  Revisar cargador  ',
@@ -81,9 +83,16 @@ describe('validación de recepción de órdenes', () => {
     if (!result.success) expect(result.error.issues).toContainEqual(expect.objectContaining({ path: ['fechaEstimada'] }))
   })
 
-  it.each(['', '2000-02-29', '2026-10-31', '2099-12-31'])('conserva la fecha %j sin inventar la fecha real de ingreso', fechaEstimada => {
+  it.each(['', '2026-10-31', '2099-12-31'])('acepta fecha de hoy o futura: %j', fechaEstimada => {
     const result = createOrdenSchema(catalogos).parse({ ...values, fechaEstimada, observaciones: '   ' })
     expect(result.fechaEstimada).toBe(fechaEstimada)
     expect(result.observaciones).toBe('')
+  })
+  it('rechaza fechas pasadas con una explicación y usa el día de Guatemala cerca de medianoche UTC', () => {
+    vi.setSystemTime(new Date('2026-11-01T03:00:00Z'))
+    expect(createOrdenSchema(catalogos).safeParse({ ...values, fechaEstimada: '2026-10-31' }).success).toBe(true)
+    const result = createOrdenSchema(catalogos).safeParse({ ...values, fechaEstimada: '2026-10-30' })
+    expect(result.success).toBe(false)
+    if (!result.success) expect(result.error.issues).toContainEqual(expect.objectContaining({ path: ['fechaEstimada'], message: expect.stringContaining('2026-10-31, hora de Guatemala') }))
   })
 })

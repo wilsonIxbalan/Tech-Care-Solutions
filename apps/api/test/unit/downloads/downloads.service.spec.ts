@@ -19,7 +19,7 @@ describe('DownloadsService sin BD', () => {
     execute.mockResolvedValue([[{ IdRepuesto: '0001', Total: 0, Fecha: new Date('2026-10-26T06:00:00Z') }, { IdRepuesto: '0002', Total: 2.3 }]]);
     const result = await service.report('inventario', query({ page: 9, pageSize: 1, idBodega: 3 }));
     expect(execute).toHaveBeenCalledWith('inventario', { page: 9, pageSize: 1, idBodega: 3 }, 10000);
-    expect(result.buffer.toString()).toContain('"0001","0.00","2026-10-26T06:00:00.000Z"');
+    expect(result.buffer.toString()).toContain('"0001","0.00","2026-10-26T00:00:00.000-06:00"');
     expect(result.buffer.toString()).toContain('"0002","2.30",""');
     expect(result.filename).toBe('inventario-conjunto-1.csv');
   });

@@ -35,7 +35,7 @@ describe('tabular downloads', () => {
       rows: [{ id: '000000123456789012345', nombre: 'José, "técnico"\r\nsegunda línea', total: '0.00', fecha: '2026-10-26T06:00:00.000Z', nulo: null }],
     });
     expect(buffer.subarray(0, 3)).toEqual(Buffer.from([0xef, 0xbb, 0xbf]));
-    expect(parseCsv(buffer)[1]).toEqual(['000000123456789012345', 'José, "técnico"\r\nsegunda línea', '0.00', '2026-10-26T06:00:00.000Z', '']);
+    expect(parseCsv(buffer)[1]).toEqual(['000000123456789012345', 'José, "técnico"\r\nsegunda línea', '0.00', '2026-10-26T00:00:00.000-06:00', '']);
   });
 
   it.each(['=SUM(1,2)', '+cmd', '-2+3', '@SUM(1)', '\t=1', '\r=2', '\n=3', '  \t@SUM(1)', '   =HYPERLINK("https://example.invalid")', '\uFEFF=2', '\u0000=2', '\u200E=2'])('neutraliza fórmula textual %j', (hostile) => {

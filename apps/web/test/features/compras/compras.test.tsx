@@ -103,7 +103,7 @@ describe('compras HTTP', () => {
   })
   it('detalle mantiene valores históricos del servidor sin catálogo ni totales calculados', () => {
     renderWithSession(<CompraDetalle compra={compra} />)
-    expect(screen.getByText('Recepción (UTC)').nextElementSibling).toHaveTextContent('—')
+    expect(screen.getByText('Recepción (Guatemala)').nextElementSibling).toHaveTextContent('—')
     expect(screen.getByText('Documento del proveedor').nextElementSibling).toHaveTextContent('—')
     expect(screen.getByRole('table')).toHaveTextContent('Q 9.99')
     expect(screen.getByRole('table')).toHaveTextContent('Q 19.98')

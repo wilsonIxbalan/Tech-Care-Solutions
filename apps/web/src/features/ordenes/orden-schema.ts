@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { guatemalaCivilDay } from '@/lib/civil-date'
 import type { OrdenCatalogos } from '@/features/ordenes/orden-catalogos'
 
 function catalogId(ids: readonly number[] | undefined, message: string) {
@@ -25,13 +26,16 @@ export function createOrdenSchema(catalogos: OrdenCatalogos) {
     problemaReportado: z.string().trim()
       .min(1, 'Escribe el problema reportado.')
       .max(1000, 'El problema reportado debe tener como máximo 1000 caracteres.'),
-    // Fecha civil, sin convertirla en un instante UTC. La API debe acordar
-    // AAAA-MM-DD y comprobar el mínimo contra el ingreso real en Guatemala.
+    // Fecha civil AAAA-MM-DD; el mínimo se comprueba contra el día de Guatemala.
     fechaEstimada: z.string().trim()
       .refine(value => value === '' || (!value.startsWith('0000-') && z.iso.date().safeParse(value).success), 'Escribe una fecha válida (AAAA-MM-DD).'),
     observaciones: z.string().trim()
       .max(500, 'Las observaciones deben tener como máximo 500 caracteres.'),
   }).superRefine((values, context) => {
+    const today = guatemalaCivilDay(new Date().toISOString())!
+    if (values.fechaEstimada && values.fechaEstimada < today) {
+      context.addIssue({ code: 'custom', path: ['fechaEstimada'], message: `No puedes agendar la entrega para ${values.fechaEstimada}: es anterior a hoy (${today}, hora de Guatemala). Selecciona hoy o una fecha posterior.` })
+    }
     const equipo = catalogos.equipos?.find(item => item.idEquipo === values.idEquipo)
     if (equipo && equipo.idCliente !== values.idCliente) {
       context.addIssue({ code: 'custom', path: ['idEquipo'], message: 'El equipo seleccionado no pertenece al cliente.' })

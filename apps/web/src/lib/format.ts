@@ -21,14 +21,14 @@ export function isZonedInstant(value: string) {
   return /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,7})?(?:Z|[+-]\d{2}:\d{2})$/.test(value) && formatCivilDate(value.slice(0, 10)) !== '—'
 }
 
-const utcDateTime = new Intl.DateTimeFormat('es-GT', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23', timeZone: 'UTC' })
+const guatemalaDateTime = new Intl.DateTimeFormat('es-GT', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23', timeZone: 'America/Guatemala' })
 
 /** No atribuye UTC a un DATETIME2 serializado sin zona ni convierte NULL en una fecha. */
-export function formatUtcDateTime(value: string | null | undefined): string {
+export function formatGuatemalaDateTime(value: string | null | undefined): string {
   if (value == null) return '—'
   if (!isZonedInstant(value)) return `${value || 'Fecha vacía'} (fecha o zona no verificable)`
   const instant = new Date(value)
-  return Number.isNaN(instant.getTime()) ? `${value} (fecha no válida)` : `${utcDateTime.format(instant)} UTC`
+  return Number.isNaN(instant.getTime()) ? `${value} (fecha no válida)` : `${guatemalaDateTime.format(instant)} (Guatemala)`
 }
 
 /** A civil DATE is not a UTC timestamp. */

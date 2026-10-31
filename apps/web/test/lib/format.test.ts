@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatCivilDate, formatDateTime, formatMoney, formatUtcDateTime } from '@/lib/format'
+import { formatCivilDate, formatDateTime, formatMoney, formatGuatemalaDateTime } from '@/lib/format'
 
 describe('presentation formats', () => {
   it('formats GTQ without accepting formatted user input as Money', () => {
@@ -19,9 +19,10 @@ describe('presentation formats', () => {
     expect(formatDateTime('2026-10-31T18:00:00')).toBe('—')
   })
   it('preserva nulos y distingue instantes explícitos de fechas sin zona o inválidas', () => {
-    expect(formatUtcDateTime(null)).toBe('—')
-    expect(formatUtcDateTime('2026-10-31T18:00:00')).toContain('zona no verificable')
-    expect(formatUtcDateTime('2026-02-30T18:00:00Z')).toContain('no verificable')
-    expect(formatUtcDateTime('2026-10-31T18:00:00-06:00')).toMatch(/01\/11\/2026.*00:00:00.*UTC/)
+    expect(formatGuatemalaDateTime(null)).toBe('—')
+    expect(formatGuatemalaDateTime('2026-10-31T18:00:00')).toContain('zona no verificable')
+    expect(formatGuatemalaDateTime('2026-02-30T18:00:00Z')).toContain('no verificable')
+    expect(formatGuatemalaDateTime('2026-10-31T18:00:00-06:00')).toMatch(/31\/10\/2026.*18:00:00.*Guatemala/)
+    expect(formatGuatemalaDateTime('2026-11-01T03:00:00Z')).toMatch(/31\/10\/2026.*21:00:00.*Guatemala/)
   })
 })
