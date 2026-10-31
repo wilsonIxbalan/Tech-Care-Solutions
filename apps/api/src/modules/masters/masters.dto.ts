@@ -86,20 +86,21 @@ export class UserInput {
     minLength: 12,
     maxLength: 128,
   })
-  @IsString()
-  @MinLength(12)
-  @MaxLength(128)
+   @IsString({ message: 'Escribe una contraseña válida.' })
+   @MinLength(12, { message: 'La contraseña debe tener al menos 12 caracteres.' })
+   @MaxLength(128, { message: 'La contraseña admite como máximo 128 caracteres.' })
   password!: string;
   @BooleanField() activo?: boolean;
   @ApiProperty({
     type: [String],
     enum: ['ADMINISTRADOR', 'RECEPCION', 'TECNICO', 'BODEGA', 'CAJA'],
   })
-  @IsArray()
-  @ArrayNotEmpty()
-  @ArrayUnique()
+  @IsArray({ message: 'Selecciona los roles del usuario.' })
+  @ArrayNotEmpty({ message: 'Selecciona al menos un rol.' })
+  @ArrayUnique({ message: 'No repitas un rol en la selección.' })
   @IsIn(['ADMINISTRADOR', 'RECEPCION', 'TECNICO', 'BODEGA', 'CAJA'], {
     each: true,
+    message: 'Selecciona únicamente roles válidos.',
   })
   roles!: string[];
 }

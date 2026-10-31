@@ -31,7 +31,7 @@ describe('reportes conectados', () => {
   })
   it('ofrece doce reportes, cambia filtros y permite identificadores en un catálogo explícito', () => {
     render(<ReportesPage />)
-    expect(within(screen.getByLabelText('Reporte *')).getAllByRole('option')).toHaveLength(13)
+    expect(within(screen.getByLabelText('Reporte *')).getAllByRole('option')).toHaveLength(12)
     select('historial-equipo')
     expect(screen.getByLabelText('Número de serie *')).toBeVisible()
     expect(screen.queryByLabelText('Desde (Guatemala)')).not.toBeInTheDocument()
@@ -64,7 +64,7 @@ describe('reportes conectados', () => {
     expect(screen.getByRole('table', { name: 'Existencias' })).toHaveTextContent('0')
     expect(screen.getByRole('table', { name: 'Existencias' })).toHaveTextContent('—')
     const [url, options] = vi.mocked(fetch).mock.calls[0]
-    expect(String(url)).toContain('/reportes/inventario?idBodega=1&page=1&pageSize=20')
+    expect(String(url)).toContain('/reportes/inventario?idBodega=1&page=1&pageSize=5')
     expect(options?.credentials).toBe('include')
     fireEvent.change(screen.getByLabelText('Bodega'), { target: { value: '2' } })
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
@@ -114,7 +114,7 @@ describe('reportes conectados', () => {
     expect(screen.getByRole('table', { name: 'Consumos de repuestos' })).toHaveTextContent('Q 10.00')
     expect(screen.getByRole('table', { name: 'Historial de estados' })).toHaveTextContent('—')
     expect(String(vi.mocked(fetch).mock.calls[0][0])).not.toMatch(/search|IdCliente|NumeroSerie/)
-    expect(within(screen.getByLabelText('Conjunto para CSV *')).getAllByRole('option')).toHaveLength(3)
+    expect(within(screen.getByLabelText('Conjunto para CSV *')).getAllByRole('option')).toHaveLength(2)
   })
   it('conserva un cliente sin órdenes sin fabricar filas ni sumas', async () => {
     vi.mocked(fetch).mockResolvedValue(json({ data: { cliente: { idCliente: 1, nombreMostrar: 'Ana', nit: 'CF' }, ordenes: [] } }))
@@ -143,7 +143,7 @@ describe('reportes conectados', () => {
     expect(await screen.findByRole('table', { name: 'Orden' })).toHaveTextContent('OS-9')
     expect(screen.getByRole('table', { name: 'Pagos' })).toHaveTextContent('Q 1.00')
     expect(screen.getByRole('table', { name: 'Historial de estados' })).toHaveTextContent('RECIBIDO')
-    expect(within(screen.getByLabelText('Conjunto para CSV *')).getAllByRole('option')).toHaveLength(4)
+    expect(within(screen.getByLabelText('Conjunto para CSV *')).getAllByRole('option')).toHaveLength(3)
   })
   it('valida antes de consultar y cancelar limpia los resultados y devuelve foco', async () => {
     render(<ReportesPage />)

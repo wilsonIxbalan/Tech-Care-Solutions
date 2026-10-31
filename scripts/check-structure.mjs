@@ -72,6 +72,7 @@ if (existsSync(resolve(root, '.git'))) {
    }
 }
 const ci = await readFile(resolve(root, '.github/workflows/ci.yml'), 'utf8')
-if (!ci.includes('branches: [developer, main]')) { console.error('CI debe comprobar developer.'); failures++ }
+const pushBranches = ci.match(/branches:\s*\[([^\]]+)\]/)?.[1].split(',').map(name => name.trim()) ?? []
+if (!['developer', 'main', 'devWilson'].every(name => pushBranches.includes(name))) { console.error('CI debe comprobar developer, main y devWilson.'); failures++ }
 console.log(`Estructura: ${failures} errores. No crea Git ni ejecuta SQL.`)
 process.exitCode = failures ? 1 : 0

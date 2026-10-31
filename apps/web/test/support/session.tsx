@@ -11,7 +11,7 @@ export function json(data: unknown, status = 200) {
 }
 export function renderWithSession(ui: ReactElement, overrides: Partial<SessionContextValue> = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
-  const value: SessionContextValue = { user: adminUser, pending: false, error: null, refresh: async () => {}, signIn: async () => {}, signOut: async () => {}, ...overrides }
+  const value: SessionContextValue = { user: adminUser, pending: false, verifying: false, error: null, refresh: async () => {}, signIn: async () => {}, signOut: async () => {}, ...overrides }
   function Wrapper({ children }: PropsWithChildren) { return <QueryClientProvider client={client}><SessionContext.Provider value={value}><MemoryRouter>{children}</MemoryRouter></SessionContext.Provider></QueryClientProvider> }
   return { ...render(ui, { wrapper: Wrapper }), client }
 }

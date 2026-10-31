@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader } from '@/components/shared/page-header'
+import { DEFAULT_PAGE_SIZE } from '@/lib/pagination'
 import { SelectField } from '@/components/shared/form-fields'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
@@ -34,7 +35,7 @@ function ReporteConsulta({ report, catalogos, userId, onCancel, remote }: { repo
     queryFn: async ({ signal }) => {
       const params = new URLSearchParams(filters)
       params.set('page', String(page))
-      params.set('pageSize', '20')
+      params.set('pageSize', String(DEFAULT_PAGE_SIZE))
       return parseReportResponse(report, await apiFetch<unknown>(`/reportes/${report.id}?${params}`, { signal }))
     },
   })

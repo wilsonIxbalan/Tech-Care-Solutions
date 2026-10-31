@@ -79,7 +79,7 @@ describe('reparaciones operativas', () => {
     const [input, init] = fetcher.mock.calls.find(([, init]) => init?.method === 'POST')!
     expect(input).toBe('/api/v1/reparaciones/61/repuestos')
     expect(JSON.parse(String(init?.body))).toEqual({ idBodega: 4, idRepuesto: 9, cantidad: 2 })
-    for (const key of ['inventario', 'ordenes', 'dashboard', 'caja']) expect(invalidations).toHaveBeenCalledWith({ queryKey: [key] })
+    for (const key of ['inventario', 'inventario/movimientos', 'ordenes', 'dashboard', 'facturacion-resumen', 'facturas']) expect(invalidations).toHaveBeenCalledWith({ queryKey: [key] })
   })
   it('un conflicto de actividad conserva el formulario y el error de campo', async () => {
     const fetcher = vi.fn(() => failure(400, { horasInvertidas: ['Horas no válidas.'] }))

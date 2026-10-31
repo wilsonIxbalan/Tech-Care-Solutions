@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { PageHeader } from '@/components/shared/page-header'
+import { DEFAULT_PAGE_SIZE } from '@/lib/pagination'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { TextField, SelectField } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
@@ -14,7 +15,7 @@ export function ClientesPage() {
   const { user } = useSession()
   const allowed = Boolean(user?.permisos.some(permission => clientesReadPermissions.includes(permission)))
   const manage = Boolean(user?.permisos.includes('CLIENTES_GESTIONAR'))
-  const [filters, setFilters] = useState({ search: '', estado: '', page: 1, pageSize: 20 })
+  const [filters, setFilters] = useState({ search: '', estado: '', page: 1, pageSize: DEFAULT_PAGE_SIZE })
   const clientes = useClientes(filters)
   const [editor, setEditor] = useState<ClienteDto | 'new' | null>(null)
   const [message, setMessage] = useState('')
@@ -37,10 +38,10 @@ export function ClientesPage() {
       <div className="grid gap-4 sm:grid-cols-[1fr_10rem_8rem]">
         <TextField id="clientes-busqueda" label="Buscar clientes" type="search" placeholder="Nombre, NIT o teléfono" maxLength={150} value={filters.search} onChange={event => setFilters({ ...filters, search: event.target.value, page: 1 })} />
         <SelectField id="clientes-filtro-estado" label="Estado" placeholder="Todos" options={[{ value: 'ACTIVO', label: 'Activo' }, { value: 'INACTIVO', label: 'Inactivo' }]} value={filters.estado} onChange={event => setFilters({ ...filters, estado: event.target.value, page: 1 })} />
-        <SelectField id="clientes-tamano" label="Por página" options={[10, 20, 50].map(size => ({ value: String(size), label: String(size) }))} value={String(filters.pageSize)} onChange={event => setFilters({ ...filters, pageSize: Number(event.target.value), page: 1 })} />
+        <SelectField id="clientes-tamano" label="Por página" allowEmpty={false} options={[5, 10, 20, 50].map(size => ({ value: String(size), label: String(size) }))} value={String(filters.pageSize)} onChange={event => setFilters({ ...filters, pageSize: Number(event.target.value), page: 1 })} />
       </div>
       {clientes.isPending ? <LoadingState label="Consultando clientes…" /> : clientes.isError ? <ErrorState description={clientes.error.message} onRetry={() => void clientes.refetch()} /> : <>
-        {clientes.data.data.length ? <div className="rounded-xl border bg-card"><Table containerLabel="Clientes"><TableHeader><TableRow>{['Cliente', 'NIT', 'Contacto', 'Estado', 'Acciones'].map(title => <TableHead key={title}>{title}</TableHead>)}</TableRow></TableHeader><TableBody>{clientes.data.data.map(cliente => <TableRow key={cliente.idCliente}>
+        {clientes.data.data.length ? <div className="rounded-xl border bg-card"><Table containerLabel="Clientes"><caption className="sr-only">Clientes</caption><TableHeader><TableRow>{['Cliente', 'NIT', 'Contacto', 'Estado', 'Acciones'].map(title => <TableHead key={title}>{title}</TableHead>)}</TableRow></TableHeader><TableBody>{clientes.data.data.map(cliente => <TableRow key={cliente.idCliente}>
           <TableCell><p className="font-medium">{cliente.nombreMostrar}</p><p className="text-xs text-muted-foreground">{cliente.tipoCliente === 'INDIVIDUAL' ? 'Individual' : 'Empresarial'}</p></TableCell>
           <TableCell>{cliente.nit}</TableCell><TableCell><p>{cliente.telefono}</p><p className="text-xs text-muted-foreground">{cliente.email ?? 'Sin correo'}</p></TableCell><TableCell><Badge variant="outline">{cliente.estado}</Badge></TableCell>
           <TableCell>{manage ? <Button variant="outline" size="sm" disabled={Boolean(editor)} aria-label={`Editar ${cliente.nombreMostrar}`} onClick={event => { trigger.current = event.currentTarget; setMessage(''); setEditor(cliente) }}>Editar</Button> : <span className="text-xs text-muted-foreground">Solo consulta</span>}</TableCell>

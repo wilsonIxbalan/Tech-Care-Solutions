@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSession } from '@/features/auth/session-context'
 import { ApiError, apiFetch } from '@/lib/api-client'
 import { z } from 'zod'
+import { invalidateRelatedQueries } from '@/lib/query-invalidation'
 import type { SessionUser } from '@/types/api'
 import type { OrdenDetalleDto, OrdenResumenDto } from '@/types/domain'
 
@@ -41,7 +42,7 @@ export function useServiceCatalogos() {
 }
 export function useServiceMutation<T = Record<string, unknown>>(path: string) {
   const client = useQueryClient()
-  const invalidate = () => Promise.all(['ordenes', 'inventario', 'movimientos', 'repuestos', 'dashboard', 'facturas', 'facturacion', 'pagos', 'caja', 'entregas', 'reportes'].map(key => client.invalidateQueries({ queryKey: [key] })))
+  const invalidate = () => invalidateRelatedQueries(client, 'service')
   return useMutation({ retry: false,
     mutationFn: async (body: unknown) => {
       const result = await apiFetch<T>(path, { method: 'POST', body: JSON.stringify(body) })

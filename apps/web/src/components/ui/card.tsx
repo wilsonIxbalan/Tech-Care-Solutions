@@ -2,13 +2,13 @@ import type { ComponentProps } from 'react'
 import { cn } from '@/lib/utils'
 
 export function Card({ className, ...props }: ComponentProps<'div'>) {
-  return <div data-slot="card" className={cn('rounded-xl border bg-card text-card-foreground shadow-[0_2px_8px_rgba(15,23,42,0.025)]', className)} {...props} />
+  return <div data-slot="card" className={cn('rounded-xl border bg-card text-card-foreground shadow-[0_2px_8px_rgba(15,23,42,0.05)]', className)} {...props} />
 }
 export function CardHeader({ className, ...props }: ComponentProps<'div'>) {
-  return <div data-slot="card-header" className={cn('flex flex-col gap-1.5 p-6', className)} {...props} />
+  return <div data-slot="card-header" className={cn('mb-6 flex flex-col gap-1.5 rounded-t-xl border-b border-primary/15 bg-accent/40 p-6', className)} {...props} />
 }
 export function CardTitle({ className, ...props }: ComponentProps<'h3'>) {
-  return <h3 data-slot="card-title" className={cn('font-semibold tracking-tight', className)} {...props} />
+  return <h3 data-slot="card-title" className={cn('text-base leading-6 font-semibold tracking-tight text-secondary-foreground', className)} {...props} />
 }
 export function CardDescription({ className, ...props }: ComponentProps<'p'>) {
   return <p data-slot="card-description" className={cn('text-sm leading-6 text-muted-foreground', className)} {...props} />

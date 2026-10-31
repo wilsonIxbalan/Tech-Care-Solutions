@@ -45,7 +45,7 @@ export function LoginPage() {
       <div className="w-full max-w-md space-y-8">
         <div className="flex items-center justify-center gap-3 lg:hidden"><BrandMark className="h-10 w-12" /><p className="text-center text-2xl font-semibold tracking-tight">Tech Care <span className="font-normal text-primary">Solutions</span></p></div>
         <Card className="border-0 bg-transparent shadow-none">
-          <CardHeader className="px-0"><p className="mb-2 text-xs font-semibold tracking-widest text-primary uppercase">Bienvenido de nuevo</p><CardTitle className="text-3xl">Iniciar sesión</CardTitle><p className="mt-2 text-sm leading-6 text-muted-foreground">Ingresa tus credenciales para continuar con tu trabajo.</p></CardHeader>
+          <CardHeader className="mb-0 border-0 bg-transparent px-0"><p className="mb-2 text-xs font-semibold tracking-widest text-primary uppercase">Bienvenido de nuevo</p><CardTitle className="text-3xl">Iniciar sesión</CardTitle><p className="mt-2 text-sm leading-6 text-muted-foreground">Ingresa tus credenciales para continuar con tu trabajo.</p></CardHeader>
           <CardContent className="px-0">
             {error && <div className="mb-5"><ErrorState description="No pudimos comprobar tu sesión anterior." onRetry={() => void refresh()} /></div>}
             <form className="space-y-5" noValidate onChange={() => setMessage('')} onSubmit={form.handleSubmit(async input => {

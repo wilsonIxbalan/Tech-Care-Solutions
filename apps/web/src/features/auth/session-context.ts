@@ -4,6 +4,7 @@ import type { LoginInput, SessionUser } from '@/types/api'
 export interface SessionContextValue {
   user: SessionUser | null
   pending: boolean
+  verifying: boolean
   error: Error | null
   refresh: () => Promise<unknown>
   signIn: (input: LoginInput) => Promise<void>

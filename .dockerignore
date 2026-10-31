@@ -1,0 +1,14 @@
+.git
+.artifacts
+**/node_modules
+**/dist
+**/coverage
+**/.vite
+**/.vercel
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+**/*.tsbuildinfo
+**/*.bacpac
+**/*.bak

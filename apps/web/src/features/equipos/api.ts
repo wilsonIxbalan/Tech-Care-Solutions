@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { invalidateRelatedQueries } from '@/lib/query-invalidation'
 import { useSession } from '@/features/auth/session-context'
 import { listQuery } from '@/features/clientes/api'
 import type { ClienteFilters } from '@/features/clientes/api'
@@ -38,9 +39,7 @@ export function useSaveEquipo(id?: number) {
   return useMutation({ retry: false,
     mutationFn: (body: ReturnType<typeof equipoBody>) => apiFetch<EquipoDto>(id ? `/equipos/${id}` : '/equipos', { method: id ? 'PATCH' : 'POST', body: JSON.stringify(body) }),
     onSuccess: () => {
-      void client.invalidateQueries({ queryKey: ['equipos'] })
-      void client.invalidateQueries({ queryKey: ['clientes'] })
-      void client.invalidateQueries({ queryKey: ['dashboard'] })
+      void invalidateRelatedQueries(client, 'equipment')
     },
   })
 }

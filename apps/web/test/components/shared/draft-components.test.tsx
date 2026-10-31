@@ -1,9 +1,12 @@
 import { createRef } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { TextField, AreaField, SelectField } from '@/components/shared/form-fields'
 import { DraftActions, DraftSection } from '@/components/shared/draft-section'
 import { ReceivedTable } from '@/components/shared/received-table'
+
+beforeAll(() => vi.stubGlobal('ResizeObserver', class { observe() {}; unobserve() {}; disconnect() {} }))
+afterAll(() => vi.unstubAllGlobals())
 
 describe('contratos de componentes compartidos', () => {
   it('conserva referencias, atributos y descripciones del módulo junto a ayuda y error', () => {
@@ -16,11 +19,22 @@ describe('contratos de componentes compartidos', () => {
     expect(ref.current).toBe(screen.getByLabelText('Importe *'))
     expect(ref.current).toHaveAttribute('inputmode', 'decimal')
     expect(ref.current).toHaveAttribute('maxlength', '13')
-    expect(ref.current).toHaveAccessibleDescription('Regla del módulo Dos decimales Importe inválido')
+    expect(ref.current).toHaveAccessibleDescription('Regla del módulo Dos decimales Máximo 13 caracteres. Importe inválido')
     expect(screen.getByLabelText('Notas')).toHaveAttribute('aria-invalid', 'true')
-    expect(screen.getByLabelText('Notas')).toHaveAccessibleDescription('Regla del módulo')
+    expect(screen.getByLabelText('Notas')).toHaveAccessibleDescription('Regla del módulo Máximo 500 caracteres.')
     expect(screen.getByLabelText('Rol')).toHaveAccessibleDescription('Regla del módulo Ayuda de selección Selección inválida')
     expect(screen.getByLabelText('Rol')).toHaveClass('w-48')
+  })
+  it('expone la ayuda de límite con foco y toque, y permite cerrarla con Escape', async () => {
+    render(<TextField id="nombre" label="Nombre" maxLength={80} />)
+    const help = screen.getByRole('button', { name: 'Ayuda para Nombre' })
+    fireEvent.focus(help)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Máximo 80 caracteres.')
+    fireEvent.keyDown(help, { key: 'Escape' })
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    fireEvent.click(help)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Máximo 80 caracteres.')
+    expect(screen.getByLabelText('Nombre')).toHaveAccessibleDescription('Máximo 80 caracteres.')
   })
   it('distingue selección sin conectar de catálogo recibido vacío y explica el botón bloqueado', () => {
     const { rerender } = render(<SelectField id="catalogo" label="Catálogo" />)

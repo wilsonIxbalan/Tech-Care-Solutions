@@ -75,7 +75,7 @@ describe('órdenes conectadas', () => {
     await screen.findByText(status === 400 ? 'Revisa los campos.' : 'El estado ha cambiado.')
     expect(screen.getByLabelText('Problema reportado *')).toHaveValue('  No enciende  ')
     expect(screen.getByLabelText('Equipo *')).toHaveValue('41')
-    if (status === 400) expect(screen.getByLabelText('Problema reportado *')).toHaveAccessibleDescription('Describe la falla.')
+    if (status === 400) expect(screen.getByLabelText('Problema reportado *')).toHaveAccessibleDescription('Máximo 1000 caracteres. Describe la falla.')
     expect(fetcher.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(1)
   })
   it('restringe creación por permiso y muestra vacío/error con reconsulta explícita', async () => {

@@ -26,7 +26,7 @@ describe('Downloads HTTP (repositorios mock; ninguna conexión BD)', () => {
         DownloadsService, FinancialExportGuard,
         { provide: APP_GUARD, useClass: AccessGuard },
         { provide: ConfigService, useValue: new ConfigService({ NODE_ENV: 'test', FRONTEND_ORIGIN: 'http://localhost:5173' }) },
-        { provide: ReportsRepository, useValue: { execute } },
+        { provide: ReportsRepository, useValue: { exportRows: execute } },
         { provide: ReadRepository, useValue: { invoiceDetail } },
         { provide: AuthService, useValue: { authenticate: jest.fn((token?: string) => {
           if (token !== 'valid') throw new ApiError(401, 'SESION_INVALIDA', 'Sesión requerida.');
@@ -70,7 +70,7 @@ describe('Downloads HTTP (repositorios mock; ninguna conexión BD)', () => {
     expect(result.headers['content-disposition']).toBe('attachment; filename="inventario-conjunto-1.csv"');
     expect(result.headers['cache-control']).toBe('private, no-store');
     expect(result.text).toBe('\uFEFF"idFactura","total"\r\n"1","12.30"\r\n');
-    expect(execute).toHaveBeenCalledWith('inventario', { page: 2, pageSize: 1, idBodega: 3 });
+    expect(execute).toHaveBeenCalledWith('inventario', { page: 2, pageSize: 1, idBodega: 3 }, 10000);
   });
 
   it.each([

@@ -17,8 +17,10 @@ export function SupplyError({ error }: { error: Error | null }) {
 }
 export function SupplyPagination({ meta, page, onPage, busy = false, label = '' }: { meta?: ApiResponse<unknown>['meta']; page: number; onPage: (page: number) => void; busy?: boolean; label?: string }) {
   return <div className="flex flex-wrap items-center gap-3"><span aria-live="polite" className="text-sm">{meta?.total ?? 0} {label} · Página {page} de {Math.max(1, meta?.totalPages ?? 1)}</span>
-    <Button type="button" size="sm" variant="outline" disabled={busy || page <= 1} onClick={() => onPage(page - 1)}>Anterior {label}</Button>
-    <Button type="button" size="sm" variant="outline" disabled={busy || page >= (meta?.totalPages ?? 1)} onClick={() => onPage(page + 1)}>Siguiente {label}</Button></div>
+    <div className="inline-flex shrink-0 gap-2">
+      <Button type="button" size="sm" variant="outline" aria-label={label ? `Anterior ${label}` : 'Anterior'} disabled={busy || page <= 1} onClick={() => onPage(page - 1)}>Anterior</Button>
+      <Button type="button" size="sm" variant="outline" aria-label={label ? `Siguiente ${label}` : 'Siguiente'} disabled={busy || page >= (meta?.totalPages ?? 1)} onClick={() => onPage(page + 1)}>Siguiente</Button>
+    </div></div>
 }
 export interface SupplyOption { id: number; nombre: string }
 /** Selections persist across server searches/pages; a page is never treated as the whole catalog. */

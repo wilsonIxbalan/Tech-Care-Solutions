@@ -50,7 +50,7 @@ describe('administración de usuarios', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }))
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining('page=2'), expect.anything()))
     fireEvent.change(screen.getByLabelText('Buscar usuarios'), { target: { value: 'prueba' } })
-    await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining('page=1&pageSize=20&search=prueba'), expect.anything()))
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining('page=1&pageSize=5&search=prueba'), expect.anything()))
     fireEvent.change(screen.getByLabelText('Estado'), { target: { value: 'false' } })
     await waitFor(() => expect(fetch).toHaveBeenCalledWith(expect.stringContaining('activo=false'), expect.anything()))
     fireEvent.change(screen.getByLabelText('Por página'), { target: { value: '10' } })
@@ -106,7 +106,7 @@ describe('administración de usuarios', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
     expect(await screen.findByText('El correo ya está en uso.')).toBeVisible()
     expect(screen.getByLabelText('Correo electrónico *')).toHaveValue('prueba2@example.com')
-    expect(screen.getByLabelText('Correo electrónico *')).toHaveAccessibleDescription('Usa otro correo.')
+    expect(screen.getByLabelText('Correo electrónico *')).toHaveAccessibleDescription('Máximo 120 caracteres. Usa otro correo.')
     expect(screen.getByRole('form', { name: 'Editar usuario' })).toBeVisible()
   })
   it('confirma desactivación, envía solo activo y permite cancelar sin red', async () => {

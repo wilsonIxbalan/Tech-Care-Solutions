@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
+import { invalidateRelatedQueries } from '@/lib/query-invalidation'
 import { useSession } from '@/features/auth/session-context'
 import { ApiError, apiFetch } from '@/lib/api-client'
 import type { FacturaDetalleDto, FacturaResumenDto, OrdenDetalleDto, OrdenResumenDto } from '@/types/domain'
@@ -79,9 +80,8 @@ export function useBillingWrite<TInput, TResult>(send: (input: TInput) => Promis
   return useMutation({ mutationKey: ['facturacion-write'], retry: false, mutationFn: send,
     onSettled: () => {
       // Refresh even after a lost response or a conflict: the server may have committed.
-      for (const key of ['facturas', 'dashboard', 'facturacion-ordenes', 'facturacion-resumen', 'reportes']) void client.invalidateQueries({ queryKey: [key] })
+      void invalidateRelatedQueries(client, 'billing')
       if (idOrden !== null) {
-        void client.invalidateQueries({ queryKey: ['ordenes'] })
         void client.invalidateQueries({ queryKey: ['orden', idOrden] })
       }
     },

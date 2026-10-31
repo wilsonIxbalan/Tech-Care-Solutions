@@ -5,9 +5,9 @@ export class LoginDto {
   // Se conserva el nombre del campo: admite nombre de usuario o correo.
   @Text(120) nombreUsuario!: string;
   @ApiProperty({ type: String, format: 'password' })
-  @IsString()
-  @MinLength(1)
-  @MaxLength(128)
+   @IsString({ message: 'Escribe una contraseña válida.' })
+   @MinLength(1, { message: 'Escribe tu contraseña.' })
+   @MaxLength(128, { message: 'La contraseña admite como máximo 128 caracteres.' })
   password!: string;
 }
 export interface SessionUser {

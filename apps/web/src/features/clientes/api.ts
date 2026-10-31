@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { invalidateRelatedQueries } from '@/lib/query-invalidation'
 import { useSession } from '@/features/auth/session-context'
 import { apiFetch } from '@/lib/api-client'
 import type { ClienteDto } from '@/types/domain'
@@ -41,9 +42,7 @@ export function useSaveCliente(id?: number) {
     retry: false,
     mutationFn: (body: ReturnType<typeof clienteBody>) => apiFetch<ClienteDto>(id ? `/clientes/${id}` : '/clientes', { method: id ? 'PATCH' : 'POST', body: JSON.stringify(body) }),
     onSuccess: () => {
-      void client.invalidateQueries({ queryKey: ['clientes'] })
-      void client.invalidateQueries({ queryKey: ['equipos'] })
-      void client.invalidateQueries({ queryKey: ['dashboard'] })
+      void invalidateRelatedQueries(client, 'customers')
     },
   })
 }

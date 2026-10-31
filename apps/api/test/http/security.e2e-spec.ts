@@ -111,6 +111,33 @@ describe('Seguridad HTTP aislada', () => {
     save.mockClear();
   });
 
+  it.each(['a'.repeat(151), 'Ana\u0000Lucía'])(
+    'valida nombre completo antes de guardar y muestra detalles claros', async nombreCompleto => {
+      user.roles = ['ADMINISTRADOR']; user.permisos = ['USUARIOS_GESTIONAR'];
+      const result = await request(app.getHttpServer()).post('/api/v1/usuarios')
+        .set('Cookie', cookie).set('Origin', origin)
+        .send({ nombreUsuario: 'persona.prueba', nombreCompleto, email: 'persona@example.invalid', password: 'synthetic-only-password', roles: ['RECEPCION'] })
+        .expect(400);
+      expect(result.body.error.code).toBe('VALIDACION');
+      expect(result.body.error.details.nombreCompleto.join(' ')).toMatch(/máximo 150|caracteres de control/);
+      expect(save).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    { code: 'EREQUEST', number: 40613 },
+    { code: 'EREQUEST', number: 40501 },
+    { code: 'ECONNRESET' },
+    { code: 'ELOGIN', originalError: { info: { number: 40615 } } },
+  ])('indisponibilidad SQL devuelve 503 sin exponer el driver: %j', async failure => {
+    report.mockRejectedValueOnce({ ...failure, message: 'PRIVATE-CANARY SQL secreto' });
+    const response = await request(app.getHttpServer()).get('/api/v1/reportes/inventario')
+      .set('Cookie', cookie).set('X-Request-Id', 'sql-test-request').expect(503);
+    expect(response.body.error.code).toBe('SERVICIO_NO_DISPONIBLE');
+    expect(response.body.requestId).toBe('sql-test-request');
+    expect(JSON.stringify(response.body)).not.toMatch(/PRIVATE-CANARY|ELOGIN|EREQUEST|40615/);
+  });
+
   it.each(['facturas-saldo', 'ingresos', 'compras-proveedor'])(
     'finanzas %s exige rol confirmado además del permiso',
     async (slug) => {

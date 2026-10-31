@@ -25,7 +25,7 @@ export function createCompraSchema(catalogos: CompraCatalogos, remote = false) {
   }).superRefine((value, ctx) => {
     const seen = new Set<string>()
     value.items.forEach((item, i) => {
-      if (seen.has(item.idRepuesto)) ctx.addIssue({ code: 'custom', path: ['items', i, 'idRepuesto'], message: 'El repuesto ya está incluido. Ajusta su única línea; SQL no permite repetirlo.' })
+      if (seen.has(item.idRepuesto)) ctx.addIssue({ code: 'custom', path: ['items', i, 'idRepuesto'], message: 'El repuesto ya está incluido. Ajusta su línea existente.' })
       seen.add(item.idRepuesto)
     })
   })

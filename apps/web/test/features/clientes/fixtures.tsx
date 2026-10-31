@@ -26,6 +26,6 @@ export function mockHttp(override?: (url: URL, init?: RequestInit) => Response |
 }
 export function renderFeature(children: ReactNode, permisos = ['CLIENTES_GESTIONAR', 'EQUIPOS_GESTIONAR']) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } } })
-  const view = render(<QueryClientProvider client={client}><SessionContext.Provider value={{ user: { idUsuario: 99, nombreUsuario: 'test', nombreCompleto: 'Usuario sintético', roles: ['RECEPCION'], permisos }, pending: false, error: null, refresh: vi.fn(), signIn: vi.fn(), signOut: vi.fn() }}>{children}</SessionContext.Provider></QueryClientProvider>)
+  const view = render(<QueryClientProvider client={client}><SessionContext.Provider value={{ user: { idUsuario: 99, nombreUsuario: 'test', nombreCompleto: 'Usuario sintético', roles: ['RECEPCION'], permisos }, pending: false, verifying: false, error: null, refresh: vi.fn(), signIn: vi.fn(), signOut: vi.fn() }}>{children}</SessionContext.Provider></QueryClientProvider>)
   return { ...view, client }
 }

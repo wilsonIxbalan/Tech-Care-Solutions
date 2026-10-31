@@ -20,7 +20,7 @@ describe('Mantenimiento de bodegas sin SQL', () => {
     expect(fetch).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Administrar bodegas' }))
     expect(await screen.findByText('No hay bodegas para estos filtros')).toBeVisible()
-    expect(fetch).toHaveBeenCalledWith('/api/v1/bodegas?page=1&pageSize=20', expect.objectContaining({ credentials: 'include' }))
+    expect(fetch).toHaveBeenCalledWith('/api/v1/bodegas?page=1&pageSize=5', expect.objectContaining({ credentials: 'include' }))
   })
 
   it('valida y crea por POST sin inventar existencias o movimientos', async () => {

@@ -31,14 +31,6 @@ export interface Download {
   filename: string;
 }
 
-function matches(row: Row, search: string): boolean {
-  return Object.values(row).some(
-    (value) =>
-      typeof value === 'string' &&
-      value.toLocaleLowerCase('es').includes(search),
-  );
-}
-
 @Injectable()
 export class DownloadsService {
   constructor(
@@ -53,12 +45,21 @@ export class DownloadsService {
       throw invalid('conjunto', 'Selecciona el conjunto (1 a N) para el CSV.');
     if (formato === 'xlsx' && conjunto !== undefined)
       throw invalid('conjunto', 'XLSX incluye todos los conjuntos; omite conjunto.');
-    const rawSets = await this.reports.execute(slug, filters);
+    const rawSets = await this.reports.exportRows(slug, filters, MAX_EXPORT_ROWS);
     if (
       (slug === 'historial-cliente' || slug === 'historial-equipo') &&
       !rawSets[0]?.length
     )
       throw notFound();
+    // Defensa adicional ante contratos incorrectos; SQL ya aplica search y el
+    // limite global ANTES de transferir filas, incluidos pagos e historiales.
+    const total = rawSets.reduce((count, set) => count + set.length, 0);
+    if (total > MAX_EXPORT_ROWS)
+      throw new ApiError(
+        413,
+        'EXPORTACION_DEMASIADO_GRANDE',
+        'La exportación supera 10000 filas en total. Ajusta los filtros; no se ha truncado ningún conjunto.',
+      );
     const sets: ExportSet[] = rawSets.map((raw, index) => {
       const rows = publicRows(raw);
       // mssql preserves column metadata even for an empty resultset.
@@ -72,24 +73,6 @@ export class DownloadsService {
         rows,
       };
     });
-    if (query.search) {
-      const search = query.search.toLocaleLowerCase('es');
-      sets.forEach((set) => {
-        set.rows = set.rows.filter((row) => matches(row, search));
-      });
-      if (slug === 'facturas-saldo' && sets[1]) {
-        // As in ReportsService, search targets invoices, not payment references.
-        const ids = new Set(sets[0].rows.map((row) => row.idFactura));
-        sets[1].rows = publicRows(rawSets[1]).filter((row) => ids.has(row.idFactura));
-      }
-    }
-    const total = sets.reduce((count, set) => count + set.rows.length, 0);
-    if (total > MAX_EXPORT_ROWS)
-      throw new ApiError(
-        413,
-        'EXPORTACION_DEMASIADO_GRANDE',
-        'La exportación supera 10000 filas en total. Ajusta los filtros; no se ha truncado ningún conjunto.',
-      );
     const basename = slug.replace(/[^a-z0-9-]/gi, '-');
     if (formato === 'csv') {
       const set = sets[(conjunto ?? 0) - 1];

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as sql from 'mssql';
-import { invalid, notFound } from '../../common/api-error';
+import { ApiError, invalid, notFound } from '../../common/api-error';
+import { databaseDiagnostics } from '../../database/database-diagnostics';
 import { dateRange, orderStates, ReportQuery } from '../../common/query.dto';
 import {
   DatabaseService,
@@ -65,14 +66,45 @@ export const reports = {
   },
   trazabilidad: { procedure: 'usp_ReporteTrazabilidad', keys: ['idOrden'] },
 } as const;
+export const completeReports = new Set(['historial-cliente', 'historial-equipo', 'trazabilidad']);
+
 @Injectable()
 export class ReportsRepository {
   constructor(private readonly db: DatabaseService) {}
   async execute(slug: string, query: ReportQuery) {
+    return this.run(slug, query);
+  }
+  async paged(slug: string, query: ReportQuery) {
+    if (completeReports.has(slug)) throw invalid('page', 'Este reporte conserva todas sus relaciones.');
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    if (!Number.isInteger(page) || page < 1 || page > 2147483647
+      || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100)
+      throw invalid('page', 'La página o su tamaño no son válidos.');
+    const result = await this.run(slug, query, [int('Page', page), int('PageSize', pageSize)]);
+    const metadata = result[result.length - 1];
+    const sets = result.slice(0, -1);
+    const value = metadata?.[0]?.TotalRows;
+    const total = typeof value === 'number' ? value
+      : typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : NaN;
+    const expectedSets = slug === 'facturas-saldo' ? 2 : 1;
+    if (!metadata || metadata.length !== 1 || !Number.isSafeInteger(total) || total < 0 || sets.length !== expectedSets)
+      throw new ApiError(503, 'SERVICIO_NO_DISPONIBLE', 'No se pudo verificar la paginación del reporte.');
+    return { sets, total };
+  }
+  async exportRows(slug: string, query: ReportQuery, maxRows: number) {
+    if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 10000)
+      throw invalid('maxRows', 'El límite de exportación no es válido.');
+    // Nunca enviar Page: CSV/XLSX incluyen el resultado filtrado completo.
+    return this.run(slug, query, [int('MaxRows', maxRows)]);
+  }
+  private async run(slug: string, query: ReportQuery, controls: Param[] = []) {
     if (!Object.prototype.hasOwnProperty.call(reports, slug)) throw notFound();
     const report = reports[slug as keyof typeof reports];
+    if (query.search?.includes('\u0000'))
+      throw invalid('search', 'La búsqueda no admite caracteres nulos.');
     if (
-      ['historial-cliente', 'historial-equipo', 'trazabilidad'].includes(slug) &&
+      completeReports.has(slug) &&
       query.search !== undefined
     )
       throw invalid(
@@ -133,8 +165,18 @@ export class ReportsRepository {
           ),
         );
     }
-    const result = await this.db.execute(`dbo.${report.procedure}`, params);
-    return result.recordsets as Row[][];
+    if (!completeReports.has(slug) && query.search !== undefined)
+      params.push(param('Search', sql.NVarChar(150), query.search));
+    try {
+      const result = await this.db.execute(`dbo.${report.procedure}`, [...params, ...controls]);
+      return result.recordsets as Row[][];
+    } catch (error) {
+      const { sqlNumber } = databaseDiagnostics(error);
+      if (sqlNumber === 8144 || sqlNumber === 8145)
+        throw new ApiError(503, 'SERVICIO_NO_DISPONIBLE',
+          'Los reportes necesitan actualizar sus procedimientos SQL. Contacta a administración.', undefined, error);
+      throw error;
+    }
   }
   async orderMovements(id: number) {
     return (
