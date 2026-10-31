@@ -59,6 +59,12 @@ describe('resultado validado de Clientes', () => {
     expect(clienteSchema.safeParse({ ...values, [field]: 'x'.repeat(limit + 1) }).success).toBe(false)
   })
 
+  it('acepta nombres personales con acentos, apóstrofes y guiones', () => {
+    expect(clienteSchema.safeParse({
+      ...commonValues, tipoCliente: 'INDIVIDUAL', nombres: "María-José", apellidos: "D'Ávila-Pérez",
+    }).success).toBe(true)
+  })
+
   it.each([['razonSocial', 150], ['nombreContacto', 120]] as const)('respeta el límite empresarial de %s', (field, limit) => {
     const values = { ...commonValues, tipoCliente: 'EMPRESARIAL', razonSocial: 'Empresa' }
     expect(clienteSchema.safeParse({ ...values, [field]: 'x'.repeat(limit) }).success).toBe(true)

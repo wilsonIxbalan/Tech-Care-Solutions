@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useIsMutating } from '@tanstack/react-query'
 import { PageHeader } from '@/components/shared/page-header'
+import { DEFAULT_PAGE_SIZE } from '@/lib/pagination'
 import { SelectField, TextField } from '@/components/shared/form-fields'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
@@ -13,7 +14,7 @@ import { FacturaDetalle } from './factura-detalle'
 import { PagosFactura } from './pagos-factura'
 import { facturasReadPermissions, useFactura, useFacturas, type FacturaFilters } from './api'
 
-const initialFilters: FacturaFilters = { page: 1, pageSize: 20, search: '', estado: '', conSaldo: '', idCliente: '', fechaDesde: '', fechaHasta: '' }
+const initialFilters: FacturaFilters = { page: 1, pageSize: DEFAULT_PAGE_SIZE, search: '', estado: '', conSaldo: '', idCliente: '', fechaDesde: '', fechaHasta: '' }
 
 export function FacturacionPage() {
   const { user } = useSession()
@@ -54,7 +55,7 @@ function FacturacionWorkspace({ canInvoice, canPay }: { canInvoice: boolean; can
           <TextField id="facturas-cliente" label="ID de cliente" inputMode="numeric" value={draft.idCliente} onChange={event => update('idCliente', event.target.value)} />
           <TextField id="facturas-desde" label="Fecha desde" type="date" value={draft.fechaDesde} onChange={event => update('fechaDesde', event.target.value)} />
           <TextField id="facturas-hasta" label="Fecha hasta" type="date" min={draft.fechaDesde || undefined} value={draft.fechaHasta} onChange={event => update('fechaHasta', event.target.value)} />
-          <SelectField id="facturas-tamano" label="Por página" allowEmpty={false} options={[10, 20, 50].map(value => ({ value: String(value), label: String(value) }))} value={String(draft.pageSize)} onChange={event => update('pageSize', Number(event.target.value))} />
+          <SelectField id="facturas-tamano" label="Por página" allowEmpty={false} options={[5, 10, 20, 50].map(value => ({ value: String(value), label: String(value) }))} value={String(draft.pageSize)} onChange={event => update('pageSize', Number(event.target.value))} />
         </div>
         {filterError && <p role="alert" className="text-sm text-destructive">{filterError}</p>}
         <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => { setDraft(initialFilters); setFilters(initialFilters); setFilterError('') }}>Limpiar filtros</Button><Button type="submit">Aplicar filtros</Button></div>

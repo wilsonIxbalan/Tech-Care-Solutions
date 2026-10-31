@@ -4,6 +4,7 @@ import { Pencil, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { invalidateRelatedQueries } from '@/lib/query-invalidation'
 import { PageHeader } from '@/components/shared/page-header'
+import { DEFAULT_PAGE_SIZE } from '@/lib/pagination'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { SelectField, TextField } from '@/components/shared/form-fields'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
@@ -21,7 +22,7 @@ import type { RoleCode } from '@/types/api'
 
 export function UsuariosPage() {
   const { user } = useSession()
-  const [filters, setFilters] = useState({ search: '', activo: '', page: 1, pageSize: 20 })
+  const [filters, setFilters] = useState({ search: '', activo: '', page: 1, pageSize: DEFAULT_PAGE_SIZE })
   const [editor, setEditor] = useState<UsuarioRow | 'new' | null>(null)
   const trigger = useRef<HTMLButtonElement | null>(null)
   const client = useQueryClient()
@@ -45,10 +46,10 @@ export function UsuariosPage() {
       <div className="grid gap-4 sm:grid-cols-[1fr_12rem_8rem]">
         <TextField id="usuarios-busqueda" label="Buscar usuarios" maxLength={150} placeholder="Nombre, usuario o correo" value={filters.search} onChange={event => setFilters({ ...filters, search: event.target.value, page: 1 })} />
         <SelectField id="usuarios-estado" label="Estado" placeholder="Todos" options={[{ value: 'true', label: 'Activo' }, { value: 'false', label: 'Inactivo' }]} value={filters.activo} onChange={event => setFilters({ ...filters, activo: event.target.value, page: 1 })} />
-        <SelectField id="usuarios-tamano" label="Por página" allowEmpty={false} options={[10, 20, 50].map(size => ({ value: String(size), label: String(size) }))} value={String(filters.pageSize)} onChange={event => setFilters({ ...filters, pageSize: Number(event.target.value), page: 1 })} />
+        <SelectField id="usuarios-tamano" label="Por página" allowEmpty={false} options={[5, 10, 20, 50].map(size => ({ value: String(size), label: String(size) }))} value={String(filters.pageSize)} onChange={event => setFilters({ ...filters, pageSize: Number(event.target.value), page: 1 })} />
       </div>
       {usuarios.isPending ? <LoadingState label="Consultando usuarios…" /> : usuarios.isError ? <ErrorState description={usuarios.error.message} onRetry={() => void usuarios.refetch()} /> : <>
-        {usuarios.data.data.length ? <div className="rounded-xl border bg-card"><Table containerLabel="Usuarios"><TableHeader><TableRow>{['Usuario', 'Roles', 'Estado', 'Último acceso', 'Acciones'].map(title => <TableHead key={title}>{title}</TableHead>)}</TableRow></TableHeader><TableBody>{usuarios.data.data.map(usuario => <TableRow key={usuario.idUsuario}>
+        {usuarios.data.data.length ? <div className="rounded-xl border bg-card"><Table containerLabel="Usuarios"><caption className="sr-only">Usuarios</caption><TableHeader><TableRow>{['Usuario', 'Roles', 'Estado', 'Último acceso', 'Acciones'].map(title => <TableHead key={title}>{title}</TableHead>)}</TableRow></TableHeader><TableBody>{usuarios.data.data.map(usuario => <TableRow key={usuario.idUsuario}>
           <TableCell><p className="font-medium">{usuario.nombreCompleto}</p><p className="mt-1 text-xs text-muted-foreground">{usuario.nombreUsuario} · {usuario.email}</p></TableCell>
           <TableCell><div className="flex flex-wrap gap-1">{usuario.roles.map(role => <Badge variant="outline" key={role}>{roleLabels[role]}</Badge>)}</div></TableCell>
           <TableCell><Badge variant={usuario.activo ? 'default' : 'secondary'}>{usuario.activo ? 'Activo' : 'Inactivo'}</Badge></TableCell><TableCell className="text-xs">{usuario.ultimoAcceso ? formatDateTime(usuario.ultimoAcceso) : 'Sin accesos'}</TableCell>

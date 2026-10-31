@@ -4,7 +4,7 @@ import { esTecnicoElegible, permiteDiagnostico } from '@/features/diagnosticos/d
 import type { DiagnosticoCatalogos } from '@/features/diagnosticos/diagnostico-catalogos'
 
 export const diagnosticoInputSchema = z.object({
-  descripcion: z.string().trim().min(1, 'Escribe la descripción del diagnóstico.').max(1000),
+  descripcion: z.string().trim().min(1, 'Escribe la descripción del diagnóstico.').max(1000, 'La descripción debe tener como máximo 1000 caracteres.'),
   costoManoObraEstimado: nonNegativeMoneySchema('Escribe el costo estimado de mano de obra.', 'El costo estimado no puede superar 9999999999.99.'),
 })
 

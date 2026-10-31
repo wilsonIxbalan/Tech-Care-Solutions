@@ -6,6 +6,10 @@ Estándar v1 · 21/10/2026. Leer después: [contratos](02-contratos-dtos.md), [e
 
 Las bases frontend, backend y SQL estan integradas en devWilson. La integracion funcional se valida por recorridos; la presencia de un formulario no certifica persistencia ni una prueba con mocks certifica Azure. Entrega: 31/10/2026.
 
+Guias operativas versionables: [despliegue Vercel/Render nativo](../seguimiento/guias/despliegue-vercel-render.md)
+y [usuarios y recorrido ficticio RL26](../seguimiento/guias/recorrido-realista.md).
+RL26 es una carga manual adicional, sin usuarios/passwords en SQL ni reemplazo de SEM26.
+
 Tres capas y un backend modular, sin microservicios, Redis, crédito, integración SAT ni refresh tokens. Guías operativas y configuración privada permanecen en la carpeta compartida; estos cinco documentos técnicos sí se versionan.
 
 ## Tecnologías y responsabilidades

@@ -31,13 +31,21 @@ La organización de secciones puede reutilizar páginas/modal/drawer de la base;
 
 ## Diseño acordado
 
-- Tokens en [styles.css](../apps/web/src/styles.css): primario #0F766E, sidebar #0B1628, fondo #F4F7FB, texto #0F172A, peligro #B91C1C. Usar clases semánticas, no HEX repetidos por pantalla.
+- Tokens en [styles.css](../apps/web/src/styles.css): primario #0F766E, sidebar #0B1628, fondo #EFF4F8, texto #0F172A, peligro #B91C1C. Encabezados de tabla #115E59 y bordes de entrada #7B8FA5. Usar clases semánticas, no HEX repetidos por pantalla.
 - Inter local, cuerpo 14–16 px, títulos 24–36 px; contraste suficiente, espaciado de 4 px y contenido legible en laptop/ancho pequeño.
 - Una acción principal por sección; Button outline/secondary para alternativas; destructive solo para una anulación/cancelación explícita. Confirmar recepción, facturación, anulación y entrega.
 - Reutilizar Card/Input/Label/NativeSelect/Checkbox/Table/Tabs/Dialog/Sheet y componentes shared. Sin window.alert/confirm ni cambios de tema por pantalla.
 - Lucide: un mismo icono para una misma acción; tamaño consistente, texto junto a acciones importantes y aria-label en botones de solo icono. Estado con texto/icono, nunca solo color.
 - Sonner success tras respuesta confirmada; error breve una vez. Alert inline para campos/global persistente, 409, permisos o resultado no confirmado. Conservar entradas al fallar.
 - Foco visible y teclado en formularios/diálogos; submit deshabilitado mientras procesa. Campos readonly para números/fechas generados y totales del servidor.
+- Tamaños de pagina: 5, 10, 20 y 50; valor inicial 5, sin opcion vacia. Las tablas
+  pueden plegarse con un resumen accesible y se abren inicialmente para no ocultar
+  resultados. No desmontar contenido, perder seleccion ni mover filtros al plegar.
+- Prioridades Baja/Normal/Alta/Urgente con etiqueta, icono y color semantico; valores
+  desconocidos se conservan como texto con estilo neutro, sin inventar urgencia.
+- Campos con limites nativos acordes a SQL y esquemas; ayuda de formato/longitud
+  visible y enlazada mediante aria-describedby, ademas de tooltip con foco/clic.
+  Errores persistentes junto al campo y sin depender solo del tooltip.
 - Branding visible: Tech Care Solutions, paleta teal/azul oscuro y propuesta A «Continuidad» aprobada: monograma T/C. Se aplica a login, navegacion y factura; los archivos de exploracion se conservan fuera de las pantallas operativas.
 - Avatar con iniciales derivadas del nombre completo, sin fotografia ni indicador de presencia inventado. Mostrar los roles existentes de la sesion; una cuenta puede tener varios.
 - Agrupar la navegacion por operativa, con iconografia por dominio y dashboard de datos reales. Retirar textos academicos, de implementacion, guias y estados de desarrollo de las pantallas publicadas; conservar ayuda operativa y validaciones.

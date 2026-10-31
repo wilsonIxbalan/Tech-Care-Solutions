@@ -1,11 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Fragment, useRef, useState } from 'react'
-import type { ComponentProps } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import type { FieldError } from 'react-hook-form'
+import { TextField } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { clienteSchema } from '@/features/clientes/cliente-schema'
@@ -14,32 +12,6 @@ import type { ClienteDto } from '@/types/domain'
 import { useSession } from '@/features/auth/session-context'
 import { clienteBody, useSaveCliente } from './api'
 import { SaveError } from './save-error'
-
-type ClienteFieldProps = ComponentProps<'input'> & {
-  id: string
-  label: string
-  error?: FieldError
-}
-
-function ClienteField({ id, label, error, required, ...props }: ClienteFieldProps) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}{required && ' *'}</Label>
-      <Input
-        {...props}
-        id={id}
-        required={required}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? `${id}-error` : undefined}
-      />
-      {error && (
-        <p id={`${id}-error`} role="alert" className="text-xs text-destructive">
-          {error.message}
-        </p>
-      )}
-    </div>
-  )
-}
 
 export function ClienteForm({ cliente, onCancel, onSaved }: { cliente?: ClienteDto; onCancel: () => void; onSaved: () => void }) {
   const { user } = useSession()
@@ -119,72 +91,80 @@ export function ClienteForm({ cliente, onCancel, onSaved }: { cliente?: ClienteD
           <div className="grid gap-5 sm:grid-cols-2">
             {tipoCliente === 'INDIVIDUAL' ? (
               <Fragment key="individual">
-                <ClienteField
+                <TextField
                   id="cliente-nombres"
                   label="Nombres"
                   autoComplete="given-name"
                   required
-                  error={form.getFieldState('nombres', formState).error}
+                  maxLength={100}
+                  error={form.getFieldState('nombres', formState).error?.message}
                   {...form.register('nombres')}
                 />
-                <ClienteField
+                <TextField
                   id="cliente-apellidos"
                   label="Apellidos"
                   autoComplete="family-name"
                   required
-                  error={form.getFieldState('apellidos', formState).error}
+                  maxLength={100}
+                  error={form.getFieldState('apellidos', formState).error?.message}
                   {...form.register('apellidos')}
                 />
               </Fragment>
             ) : (
               <Fragment key="empresarial">
-                <ClienteField
+                <TextField
                   id="cliente-razon-social"
                   label="Razón social"
                   autoComplete="organization"
                   required
-                  error={form.getFieldState('razonSocial', formState).error}
+                  maxLength={150}
+                  error={form.getFieldState('razonSocial', formState).error?.message}
                   {...form.register('razonSocial')}
                 />
-                <ClienteField
+                <TextField
                   id="cliente-contacto"
                   label="Nombre de contacto"
-                  error={form.getFieldState('nombreContacto', formState).error}
+                  maxLength={120}
+                  error={form.getFieldState('nombreContacto', formState).error?.message}
                   {...form.register('nombreContacto')}
                 />
               </Fragment>
             )}
 
-            <ClienteField
+            <TextField
               id="cliente-nit"
               label="NIT"
               placeholder="NIT del cliente"
               required
-              error={formState.errors.nit}
+              maxLength={20}
+              error={formState.errors.nit?.message}
               {...form.register('nit')}
             />
-            <ClienteField
+            <TextField
               id="cliente-telefono"
               label="Teléfono"
               type="tel"
               autoComplete="tel"
               required
-              error={formState.errors.telefono}
+              maxLength={20}
+              error={formState.errors.telefono?.message}
               {...form.register('telefono')}
             />
-            <ClienteField
+            <TextField
               id="cliente-email"
               label="Correo electrónico"
               type="email"
               autoComplete="email"
-              error={formState.errors.email}
+              maxLength={120}
+              error={formState.errors.email?.message}
               {...form.register('email')}
             />
-            <ClienteField
+            <TextField
               id="cliente-direccion"
               label="Dirección"
               autoComplete="street-address"
-              error={formState.errors.direccion}
+              maxLength={250}
+              error={formState.errors.direccion?.message}
               {...form.register('direccion')}
             />
           </div>

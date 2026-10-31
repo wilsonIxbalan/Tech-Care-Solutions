@@ -28,7 +28,7 @@ describe('Equipos operativo', () => {
       expect(await screen.findByText(error)).toBeVisible()
       expect(screen.getByLabelText(label)).toBeRequired()
       expect(screen.getByLabelText(label)).toHaveAttribute('aria-invalid', 'true')
-      expect(screen.getByLabelText(label)).toHaveAccessibleDescription(error)
+      expect(screen.getByLabelText(label)).toHaveAccessibleDescription(new RegExp(error))
     }
     expect(writes(fetchMock)).toHaveLength(0)
     expect(screen.getByLabelText(/^Modelo/)).toHaveFocus()

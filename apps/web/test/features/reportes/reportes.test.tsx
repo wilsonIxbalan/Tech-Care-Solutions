@@ -64,7 +64,7 @@ describe('reportes conectados', () => {
     expect(screen.getByRole('table', { name: 'Existencias' })).toHaveTextContent('0')
     expect(screen.getByRole('table', { name: 'Existencias' })).toHaveTextContent('—')
     const [url, options] = vi.mocked(fetch).mock.calls[0]
-    expect(String(url)).toContain('/reportes/inventario?idBodega=1&page=1&pageSize=20')
+    expect(String(url)).toContain('/reportes/inventario?idBodega=1&page=1&pageSize=5')
     expect(options?.credentials).toBe('include')
     fireEvent.change(screen.getByLabelText('Bodega'), { target: { value: '2' } })
     expect(screen.queryByRole('table')).not.toBeInTheDocument()

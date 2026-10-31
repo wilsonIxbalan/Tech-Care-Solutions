@@ -111,6 +111,19 @@ describe('Seguridad HTTP aislada', () => {
     save.mockClear();
   });
 
+  it.each(['a'.repeat(151), 'Ana\u0000Lucía'])(
+    'valida nombre completo antes de guardar y muestra detalles claros', async nombreCompleto => {
+      user.roles = ['ADMINISTRADOR']; user.permisos = ['USUARIOS_GESTIONAR'];
+      const result = await request(app.getHttpServer()).post('/api/v1/usuarios')
+        .set('Cookie', cookie).set('Origin', origin)
+        .send({ nombreUsuario: 'persona.prueba', nombreCompleto, email: 'persona@example.invalid', password: 'synthetic-only-password', roles: ['RECEPCION'] })
+        .expect(400);
+      expect(result.body.error.code).toBe('VALIDACION');
+      expect(result.body.error.details.nombreCompleto.join(' ')).toMatch(/máximo 150|caracteres de control/);
+      expect(save).not.toHaveBeenCalled();
+    },
+  );
+
   it.each([
     { code: 'EREQUEST', number: 40613 },
     { code: 'EREQUEST', number: 40501 },

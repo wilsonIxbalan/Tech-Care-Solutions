@@ -3,11 +3,10 @@ import { useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import type { FieldError, UseFormRegisterReturn } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
+import { AreaField, TextField } from '@/components/shared/form-fields'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
-import { Textarea } from '@/components/ui/textarea'
 import type { EquipoCatalogos } from '@/features/equipos/equipo-catalogos'
 import { createEquipoSchema } from '@/features/equipos/equipo-schema'
 import type { EquipoFormInput, EquipoFormValues } from '@/features/equipos/equipo-schema'
@@ -137,42 +136,11 @@ export function EquipoForm({ equipo, onCancel, onSaved }: { equipo?: EquipoDto; 
               registration={form.register('idMarca')}
               error={errors.idMarca}
             />
-            <div className="space-y-2">
-              <Label htmlFor="equipo-modelo">Modelo *</Label>
-              <Input
-                id="equipo-modelo"
-                autoFocus
-                required
-                aria-invalid={Boolean(errors.modelo)}
-                aria-describedby={errors.modelo ? 'equipo-modelo-error' : undefined}
-                {...form.register('modelo')}
-              />
-              {errors.modelo && <p id="equipo-modelo-error" role="alert" className="text-xs text-destructive">{errors.modelo.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="equipo-numero-serie">Número de serie *</Label>
-              <Input
-                id="equipo-numero-serie"
-                required
-                aria-invalid={Boolean(errors.numeroSerie)}
-                aria-describedby={errors.numeroSerie ? 'equipo-numero-serie-error' : undefined}
-                {...form.register('numeroSerie')}
-              />
-              {errors.numeroSerie && <p id="equipo-numero-serie-error" role="alert" className="text-xs text-destructive">{errors.numeroSerie.message}</p>}
-            </div>
+            <TextField id="equipo-modelo" label="Modelo" autoFocus required maxLength={80} error={errors.modelo?.message} {...form.register('modelo')} />
+            <TextField id="equipo-numero-serie" label="Número de serie" required maxLength={60} error={errors.numeroSerie?.message} {...form.register('numeroSerie')} />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="equipo-descripcion">Descripción *</Label>
-            <Textarea
-              id="equipo-descripcion"
-              required
-              aria-invalid={Boolean(errors.descripcion)}
-              aria-describedby={errors.descripcion ? 'equipo-descripcion-error' : undefined}
-              {...form.register('descripcion')}
-            />
-            {errors.descripcion && <p id="equipo-descripcion-error" role="alert" className="text-xs text-destructive">{errors.descripcion.message}</p>}
-          </div>
+          <AreaField id="equipo-descripcion" label="Descripción" required maxLength={300} error={errors.descripcion?.message} {...form.register('descripcion')} />
 
           <div className="space-y-2"><Label htmlFor="equipo-estado">Estado del equipo</Label><NativeSelect id="equipo-estado" value={estado} onChange={event => setEstado(event.target.value as EquipoDto['estado'])}><option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option><option value="BAJA">Baja</option></NativeSelect></div>
           </fieldset>

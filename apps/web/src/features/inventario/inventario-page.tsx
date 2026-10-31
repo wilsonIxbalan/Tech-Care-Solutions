@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PageHeader } from '@/components/shared/page-header'
+import { DEFAULT_PAGE_SIZE } from '@/lib/pagination'
 import { SelectField, TextField } from '@/components/shared/form-fields'
 import { ReceivedTable } from '@/components/shared/received-table'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
@@ -31,7 +32,7 @@ export function InventarioPage({ catalogos = {}, inventario, movimientos }: { ca
   const [stockPage, setStockPage] = useState(1)
   const [movementPage, setMovementPage] = useState(1)
   const [editor, setEditor] = useState<InventarioDto | 'ajuste' | null>(null)
-  const common = { search: filters.search, idBodega: filters.idBodega, idRepuesto: filters.idRepuesto, pageSize: 20 }
+  const common = { search: filters.search, idBodega: filters.idBodega, idRepuesto: filters.idRepuesto, pageSize: DEFAULT_PAGE_SIZE }
   const stock = useSupplyList<InventarioDto>('inventario', { ...common, page: stockPage, idCategoria: filters.idCategoria, bajoMinimo: filters.bajoMinimo ? filters.bajoMinimo === 'true' : undefined }, inventario === undefined)
   const movements = useSupplyList<MovimientoDto>('inventario/movimientos', { ...common, page: movementPage, codigoTipoMovimiento: filters.codigoTipoMovimiento, idUsuario: filters.idUsuario, fechaDesde: filters.fechaDesde, fechaHasta: filters.fechaHasta }, movimientos === undefined)
   if (!access.stockRead) return <EmptyState title="Acceso restringido" description="No tienes permiso para consultar inventario." />

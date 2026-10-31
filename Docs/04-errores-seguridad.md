@@ -47,6 +47,15 @@ Fuentes técnicas: [rewrites externos Vercel](https://vercel.com/docs/routing/re
 
 ## HTTP → comportamiento de interfaz
 
+Los limites de texto del esquema se validan en DTO, esquemas frontend y atributos
+nativos de los campos. Los errores de validacion se presentan en español junto al
+campo; las ayudas de longitud/formato son persistentes y tienen tooltip por foco
+o clic, cerrado con Escape. No usar solo color o tooltip para explicar un error.
+El backend rechaza controles invisibles C0/C1 salvo tabulacion/saltos de linea de
+texto libre; no recorta passwords ni restringe nombres legitimos a ASCII.
+La obligatoriedad existente de campos opcionales y los formatos fiscales de NIT
+no se redefinen por una mejora visual.
+
 - **400 VALIDACION:** conservar formulario y asignar details a campos; resumen breve si hay varios.
 - **401 CREDENCIALES_INVALIDAS/SESION_INVALIDA:** login genérico «Usuario o contraseña incorrectos»; si expiró, limpiar estado/caché y pedir iniciar sesión de nuevo.
 - **403 PERMISO_DENEGADO:** «No tienes permiso para esta acción», sin reintento. ORIGEN_NO_PERMITIDO: «No se pudo verificar la petición; entra desde la dirección autorizada». Si USUARIO_INACTIVO, cerrar sesión y contactar administración.

@@ -1,8 +1,16 @@
-import type { ComponentProps } from 'react'
+import { useState, type ComponentProps } from 'react'
+import { ChevronDown, Table2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export function Table({ className, containerLabel, ...props }: ComponentProps<'table'> & { containerLabel?: string }) {
-  return <div data-slot="table-container" role={containerLabel ? 'region' : undefined} aria-label={containerLabel} tabIndex={containerLabel ? 0 : undefined} className="w-full overflow-x-auto rounded-lg border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><table data-slot="table" className={cn('w-full caption-bottom bg-card text-sm', className)} {...props} /></div>
+export function Table({ className, containerLabel, defaultOpen = true, ...props }: ComponentProps<'table'> & { containerLabel?: string; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen)
+  const label = containerLabel ?? 'Tabla de datos'
+  return <details data-slot="table-disclosure" open={open} onToggle={event => setOpen(event.currentTarget.open)} className="group/table w-full">
+    <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg border bg-card px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
+      <Table2 className="size-4 text-primary" aria-hidden="true" /><span>{label}</span><ChevronDown className="ml-auto size-4 transition-transform group-open/table:rotate-180" aria-hidden="true" />
+    </summary>
+    <div data-slot="table-container" role={containerLabel ? 'region' : undefined} aria-label={containerLabel} tabIndex={containerLabel ? 0 : undefined} className="mt-2 w-full overflow-x-auto rounded-lg border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><table data-slot="table" className={cn('w-full caption-bottom bg-card text-sm', className)} {...props} /></div>
+  </details>
 }
 export function TableHeader({ className, ...props }: ComponentProps<'thead'>) {
   return <thead className={cn('bg-table-header text-white [&_tr]:border-b [&_tr]:border-table-header [&_tr:hover]:bg-transparent', className)} {...props} />

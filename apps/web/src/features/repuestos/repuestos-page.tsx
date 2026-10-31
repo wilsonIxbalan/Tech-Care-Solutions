@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PageHeader } from '@/components/shared/page-header'
+import { DEFAULT_PAGE_SIZE } from '@/lib/pagination'
 import { TextField, SelectField } from '@/components/shared/form-fields'
 import { ReceivedTable } from '@/components/shared/received-table'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
@@ -15,7 +16,7 @@ export function RepuestosPage({ categorias: suppliedCategories, repuestos }: { c
   const access = useSupplyAccess()
   const catalog = useSupplyCatalogs(access.stockRead && suppliedCategories === undefined)
   const categorias = suppliedCategories ?? catalog.data?.categorias
-  const [filters, setFilters] = useState({ search: '', idCategoria: '', estado: '', page: 1, pageSize: 20 })
+  const [filters, setFilters] = useState({ search: '', idCategoria: '', estado: '', page: 1, pageSize: DEFAULT_PAGE_SIZE })
   const query = useSupplyList<RepuestoRow>('repuestos', filters, repuestos === undefined)
   const [editor, setEditor] = useState<RepuestoRow | 'new' | null>(null)
   if (!access.stockRead) return <EmptyState title="Acceso restringido" description="No tienes permiso para consultar repuestos." />
@@ -26,7 +27,7 @@ export function RepuestosPage({ categorias: suppliedCategories, repuestos }: { c
       <TextField id="repuestos-busqueda" label="Buscar por código o nombre" type="search" maxLength={150} value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value, page: 1 })} />
       <SelectField id="repuestos-categoria" label="Filtrar por categoría" placeholder="Todas" options={categorias?.map(c => ({ value: String(c.idCategoria), label: c.nombre })) ?? []} value={filters.idCategoria} onChange={e => setFilters({ ...filters, idCategoria: e.target.value, page: 1 })} />
       <SelectField id="repuestos-estado" label="Filtrar por estado" placeholder="Todos" options={['ACTIVO', 'INACTIVO'].map(value => ({ value, label: value }))} value={filters.estado} onChange={e => setFilters({ ...filters, estado: e.target.value, page: 1 })} />
-      <SelectField id="repuestos-page-size" label="Por página" allowEmpty={false} options={[10, 20, 50].map(value => ({ value: String(value), label: String(value) }))} value={String(filters.pageSize)} onChange={e => setFilters({ ...filters, pageSize: Number(e.target.value), page: 1 })} />
+      <SelectField id="repuestos-page-size" label="Por página" allowEmpty={false} options={[5, 10, 20, 50].map(value => ({ value: String(value), label: String(value) }))} value={String(filters.pageSize)} onChange={e => setFilters({ ...filters, pageSize: Number(e.target.value), page: 1 })} />
     </div><ReceivedTable state={listState(query, repuestos)} caption="Repuestos" rowKey={r => r.idRepuesto} columns={[
       { title: 'Código', cell: r => r.codigo }, { title: 'Nombre', cell: r => r.nombre }, { title: 'Categoría', cell: r => categorias?.find(c => c.idCategoria === r.idCategoria)?.nombre },
       { title: 'Compra ref. (Q)', cell: r => formatMoney(r.precioCompraReferencia) }, { title: 'Venta (Q)', cell: r => formatMoney(r.precioVenta) }, { title: 'Estado', cell: r => r.estado },

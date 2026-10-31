@@ -19,10 +19,10 @@ export class PurchaseInput {
   @Text(40, true, true) numeroDocumentoProveedor?: string | null;
   @Text(500, true, true) observaciones?: string | null;
   @ApiProperty({ type: [PurchaseItem], minItems: 1, maxItems: 500 })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(500)
-  @ArrayUnique((item: PurchaseItem) => item?.idRepuesto)
+  @IsArray({ message: 'Agrega las líneas de la compra.' })
+  @ArrayMinSize(1, { message: 'La compra necesita al menos una línea.' })
+  @ArrayMaxSize(500, { message: 'La compra admite como máximo 500 líneas.' })
+  @ArrayUnique((item: PurchaseItem) => item?.idRepuesto, { message: 'Cada repuesto debe aparecer una sola vez en la compra.' })
   @Type(() => PurchaseItem)
   @ValidateNested({ each: true })
   items!: PurchaseItem[];

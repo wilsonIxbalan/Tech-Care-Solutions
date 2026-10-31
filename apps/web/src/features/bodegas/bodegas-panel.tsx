@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { invalidateRelatedQueries } from '@/lib/query-invalidation'
+import { DEFAULT_PAGE_SIZE } from '@/lib/pagination'
 import { Button } from '@/components/ui/button'
 import { SelectField, TextField } from '@/components/shared/form-fields'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
@@ -66,7 +67,7 @@ export function BodegasPanel() {
   const trigger = useRef<HTMLButtonElement>(null)
   const id = useId()
   const result = useQuery({ queryKey: ['bodegas', 'gestion', search, page], enabled: allowed && open, queryFn: ({ signal }) => {
-    const params = new URLSearchParams({ page: String(page), pageSize: '20' })
+    const params = new URLSearchParams({ page: String(page), pageSize: String(DEFAULT_PAGE_SIZE) })
     if (search.trim()) params.set('search', search.trim())
     return apiFetch<Bodega[]>(`/bodegas?${params}`, { signal })
   } })

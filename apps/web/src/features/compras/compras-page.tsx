@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { SlidersHorizontal } from 'lucide-react'
 import { useSession } from '@/features/auth/session-context'
 import { PageHeader } from '@/components/shared/page-header'
+import { DEFAULT_PAGE_SIZE } from '@/lib/pagination'
 import { SelectField, TextField } from '@/components/shared/form-fields'
 import { ReceivedTable } from '@/components/shared/received-table'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
@@ -27,7 +28,7 @@ export function ComprasPage({ catalogos = {}, compras, detalle, detalles }: { ca
   const [idCompra, setIdCompra] = useState(detalle?.idCompra ?? 0)
   const [creating, setCreating] = useState(false)
   const [selected, setSelected] = useState<{ proveedor?: SupplyOption; bodega?: SupplyOption }>({})
-  const [filters, setFilters] = useState({ search: '', estado: '', idProveedor: '', idBodegaDestino: '', fechaDesde: '', fechaHasta: '', page: 1, pageSize: 20 })
+  const [filters, setFilters] = useState({ search: '', estado: '', idProveedor: '', idBodegaDestino: '', fechaDesde: '', fechaHasta: '', page: 1, pageSize: DEFAULT_PAGE_SIZE })
   const datesValid = (!filters.fechaDesde || formatCivilDate(filters.fechaDesde) !== '—') && (!filters.fechaHasta || formatCivilDate(filters.fechaHasta) !== '—') && (!filters.fechaDesde || !filters.fechaHasta || filters.fechaDesde <= filters.fechaHasta)
   const query = useSupplyList<CompraResumenDto>('compras', filters, compras === undefined && datesValid)
   const detailQuery = useQuery({ queryKey: ['compras', 'detalle', user?.idUsuario, idCompra], retry: false, enabled: access.purchases && idCompra > 0 && !detalle && !detalles,
@@ -57,7 +58,10 @@ export function ComprasPage({ catalogos = {}, compras, detalle, detalles }: { ca
       { title: 'Acciones', cell: c => <Button variant="outline" onClick={() => setIdCompra(c.idCompra)} aria-label={`Ver ${c.numeroCompra}`}>Ver detalle</Button> },
     ]} />
     {query.isError && <Button variant="outline" onClick={() => void query.refetch()}>Reintentar consulta</Button>}
-    {!compras && <SupplyPagination label="compras" page={filters.page} meta={query.data?.meta} busy={query.isFetching} onPage={page => setFilters({ ...filters, page })} />}</>}
+    {!compras && <div className="flex flex-wrap items-end justify-between gap-4">
+      <SupplyPagination label="compras" page={filters.page} meta={query.data?.meta} busy={query.isFetching} onPage={page => setFilters({ ...filters, page })} />
+      <div className="w-28"><SelectField id="compras-tamano" label="Por página" allowEmpty={false} options={[5, 10, 20, 50].map(value => ({ value: String(value), label: String(value) }))} value={String(filters.pageSize)} onChange={e => setFilters({ ...filters, pageSize: Number(e.target.value), page: 1 })} /></div>
+    </div>}</>}
     </section>
     <section className="space-y-3" aria-label="Detalle de compra"><h2 className="text-lg font-semibold">Detalle de compra</h2>
       {!idCompra ? <p>Selecciona una compra para consultar su detalle.</p> : selectedDetail ? <><CompraDetalle compra={selectedDetail} /><RecibirCompra key={selectedDetail.idCompra} compra={selectedDetail} /></>

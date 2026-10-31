@@ -22,7 +22,7 @@ describe('Clientes operativo', () => {
       expect(await screen.findByText(error)).toBeVisible()
       expect(screen.getByLabelText(label)).toBeRequired()
       expect(screen.getByLabelText(label)).toHaveAttribute('aria-invalid', 'true')
-      expect(screen.getByLabelText(label)).toHaveAccessibleDescription(error)
+      expect(screen.getByLabelText(label)).toHaveAccessibleDescription(new RegExp(error))
     }
     expect(writes(fetchMock)).toHaveLength(0)
     expect(screen.getByLabelText(/^Nombres/)).toHaveFocus()
@@ -33,7 +33,7 @@ describe('Clientes operativo', () => {
     for (const label of [/^Razón social/, /^NIT/, /^Teléfono/]) fill(label, value)
     submit()
     expect(await screen.findByText('Escribe la razón social.')).toBeVisible()
-    expect(screen.getByLabelText(/^Razón social/)).toHaveAccessibleDescription('Escribe la razón social.')
+    expect(screen.getByLabelText(/^Razón social/)).toHaveAccessibleDescription(/Escribe la razón social\./)
     expect(screen.getByText('Escribe el NIT.')).toBeVisible()
     expect(screen.getByText('Escribe el teléfono.')).toBeVisible()
     expect(screen.getByLabelText('Nombre de contacto')).not.toBeRequired()
@@ -72,7 +72,7 @@ describe('Clientes operativo', () => {
   it('valida email y permite corregirlo antes de guardar', async () => {
     const fetchMock = mockHttp(); openForm(); valid(); fill(/^Correo electrónico/, 'invalido'); submit()
     expect(await screen.findByText('Escribe un correo válido.')).toBeVisible()
-    expect(screen.getByLabelText(/^Correo electrónico/)).toHaveAccessibleDescription('Escribe un correo válido.')
+    expect(screen.getByLabelText(/^Correo electrónico/)).toHaveAccessibleDescription(/Escribe un correo válido\./)
     expect(writes(fetchMock)).toHaveLength(0)
     fill(/^Correo electrónico/, 'contacto@example.test')
     await waitFor(() => expect(screen.queryByText('Escribe un correo válido.')).not.toBeInTheDocument())

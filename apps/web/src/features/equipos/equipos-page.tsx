@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { PageHeader } from '@/components/shared/page-header'
+import { DEFAULT_PAGE_SIZE } from '@/lib/pagination'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/states'
 import { SelectField, TextField } from '@/components/shared/form-fields'
 import { Button } from '@/components/ui/button'
@@ -16,7 +17,7 @@ export function EquiposPage() {
   const { user } = useSession()
   const allowed = Boolean(user?.permisos.some(permission => equiposReadPermissions.includes(permission)))
   const manage = Boolean(user?.permisos.includes('EQUIPOS_GESTIONAR'))
-  const [filters, setFilters] = useState({ search: '', estado: '', page: 1, pageSize: 20 })
+  const [filters, setFilters] = useState({ search: '', estado: '', page: 1, pageSize: DEFAULT_PAGE_SIZE })
   const [cliente, setCliente] = useState<ClienteOption | null>(null)
   const equipos = useEquipos({ ...filters, idCliente: cliente?.idCliente })
   const [editor, setEditor] = useState<EquipoDto | 'new' | null>(null)
@@ -40,11 +41,11 @@ export function EquiposPage() {
       <div className="grid gap-4 sm:grid-cols-[1fr_10rem_8rem]">
         <TextField id="equipos-busqueda" label="Buscar equipos" type="search" placeholder="Número de serie o modelo" maxLength={150} value={filters.search} onChange={event => setFilters({ ...filters, search: event.target.value, page: 1 })} />
         <SelectField id="equipos-filtro-estado" label="Estado" placeholder="Todos" options={['ACTIVO', 'INACTIVO', 'BAJA'].map(value => ({ value, label: value }))} value={filters.estado} onChange={event => setFilters({ ...filters, estado: event.target.value, page: 1 })} />
-        <SelectField id="equipos-tamano" label="Por página" allowEmpty={false} options={[10, 20, 50].map(size => ({ value: String(size), label: String(size) }))} value={String(filters.pageSize)} onChange={event => setFilters({ ...filters, pageSize: Number(event.target.value), page: 1 })} />
+        <SelectField id="equipos-tamano" label="Por página" allowEmpty={false} options={[5, 10, 20, 50].map(size => ({ value: String(size), label: String(size) }))} value={String(filters.pageSize)} onChange={event => setFilters({ ...filters, pageSize: Number(event.target.value), page: 1 })} />
       </div>
       {!editor && <ClienteSelector id="equipos-filtro-cliente" selected={cliente} onSelect={selected => { setCliente(selected); setFilters({ ...filters, page: 1 }) }} />}
       {equipos.isPending ? <LoadingState label="Consultando equipos…" /> : equipos.isError ? <ErrorState description={equipos.error.message} onRetry={() => void equipos.refetch()} /> : <>
-        {equipos.data.data.length ? <div className="rounded-xl border bg-card"><Table containerLabel="Equipos"><TableHeader><TableRow>{['Equipo', 'Número de serie', 'Propietario', 'Estado', 'Acciones'].map(title => <TableHead key={title}>{title}</TableHead>)}</TableRow></TableHeader><TableBody>{equipos.data.data.map(equipo => <TableRow key={equipo.idEquipo}>
+        {equipos.data.data.length ? <div className="rounded-xl border bg-card"><Table containerLabel="Equipos"><caption className="sr-only">Equipos</caption><TableHeader><TableRow>{['Equipo', 'Número de serie', 'Propietario', 'Estado', 'Acciones'].map(title => <TableHead key={title}>{title}</TableHead>)}</TableRow></TableHeader><TableBody>{equipos.data.data.map(equipo => <TableRow key={equipo.idEquipo}>
           <TableCell><p className="font-medium">{equipo.marcaNombre} {equipo.modelo}</p><p className="text-xs text-muted-foreground">{equipo.tipoEquipoNombre}</p></TableCell><TableCell className="font-mono text-xs">{equipo.numeroSerie}</TableCell><TableCell>{equipo.clienteNombre}</TableCell><TableCell><Badge variant="outline">{equipo.estado}</Badge></TableCell>
           <TableCell>{manage ? <Button variant="outline" size="sm" disabled={Boolean(editor)} aria-label={`Editar ${equipo.numeroSerie}`} onClick={event => { trigger.current = event.currentTarget; setMessage(''); setEditor(equipo) }}>Editar</Button> : <span className="text-xs text-muted-foreground">Solo consulta</span>}</TableCell>
         </TableRow>)}</TableBody></Table></div> : <EmptyState title="Sin equipos para estos filtros" description="Prueba otra serie o modelo, o cambia los filtros de estado y propietario." />}
